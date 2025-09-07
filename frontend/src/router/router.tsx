@@ -1,30 +1,47 @@
-import { lazy, Suspense } from "react";
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter } from "react-router-dom";
+import { Suspense, lazy } from "react";
 import Layout from "../common/Layout";
 import LoadingPage from "../common/LoadingPage";
 
-const Loading = lazy(() => import("../common/LoadingPage"));
 const Main = lazy(() => import("../pages/MainPage"));
 const Test = lazy(() => import("../pages/TestPage"));
+const OAuthSuccess = lazy(() => import("../pages/OAuthSuccess"));
+const MyPage = lazy(() => import("../pages/MyPage"));
 
 const Router = createBrowserRouter([
   {
     path: "/",
-    Component: Layout,
+    element: <Layout />, // ✅
     children: [
       {
         index: true,
         element: (
-          <Suspense fallback={<Loading />}>
+          <Suspense fallback={<LoadingPage />}>
             <Main />
           </Suspense>
         ),
       },
       {
-        path: "/test",
+        path: "test",
         element: (
           <Suspense fallback={<LoadingPage />}>
             <Test />
+          </Suspense>
+        ),
+      },
+      {
+        path: "oauth/success",
+        element: (
+          <Suspense fallback={<LoadingPage />}>
+            <OAuthSuccess />
+          </Suspense>
+        ),
+      },
+      {
+        path: "mypage",
+        element: (
+          <Suspense fallback={<LoadingPage />}>
+            <MyPage />
           </Suspense>
         ),
       },
