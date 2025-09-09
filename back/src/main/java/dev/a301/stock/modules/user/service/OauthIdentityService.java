@@ -1,9 +1,9 @@
-package dev.a301.stock.service;
+package dev.a301.stock.modules.user.service;
 
-import dev.a301.stock.domain.OauthIdentity;
-import dev.a301.stock.domain.User;
-import dev.a301.stock.repository.OauthIdentityRepository;
-import dev.a301.stock.repository.UserRepository;
+import dev.a301.stock.modules.user.domain.OauthIdentity;
+import dev.a301.stock.modules.user.domain.User;
+import dev.a301.stock.modules.user.repository.OauthIdentityRepository;
+import dev.a301.stock.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

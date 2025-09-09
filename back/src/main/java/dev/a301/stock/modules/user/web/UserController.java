@@ -1,9 +1,10 @@
-package dev.a301.stock.web;
+package dev.a301.stock.modules.user.web;
 
-import dev.a301.stock.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+
+import dev.a301.stock.modules.user.repository.UserRepository;
 
 import java.security.Principal;
 

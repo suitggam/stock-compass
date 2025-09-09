@@ -1,7 +1,7 @@
-package dev.a301.stock.oauth;
+package dev.a301.stock.common.security.oauth;
 
-import dev.a301.stock.jwt.JwtUtil;
-import dev.a301.stock.service.OauthIdentityService;
+import dev.a301.stock.common.security.jwt.JwtUtil;
+import dev.a301.stock.modules.user.service.OauthIdentityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;

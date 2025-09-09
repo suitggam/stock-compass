@@ -1,4 +1,4 @@
-package dev.a301.stock.web;
+package dev.a301.stock.modules.auth.web;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;

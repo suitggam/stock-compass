@@ -1,4 +1,4 @@
-package dev.a301.stock.jwt;
+package dev.a301.stock.common.security.jwt;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;

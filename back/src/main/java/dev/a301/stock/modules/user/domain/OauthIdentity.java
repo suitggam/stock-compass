@@ -1,4 +1,4 @@
-package dev.a301.stock.domain;
+package dev.a301.stock.modules.user.domain;
 
 import jakarta.persistence.*;
 import lombok.*;

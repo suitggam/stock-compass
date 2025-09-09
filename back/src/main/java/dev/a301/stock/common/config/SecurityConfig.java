@@ -1,8 +1,8 @@
-package dev.a301.stock.config;
+package dev.a301.stock.common.config;
 
-import dev.a301.stock.jwt.JwtAuthFilter;
-import dev.a301.stock.jwt.JwtUtil;
-import dev.a301.stock.oauth.OAuth2SuccessHandler;
+import dev.a301.stock.common.security.jwt.JwtAuthFilter;
+import dev.a301.stock.common.security.jwt.JwtUtil;
+import dev.a301.stock.common.security.oauth.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

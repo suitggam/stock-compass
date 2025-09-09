@@ -1,4 +1,4 @@
-package dev.a301.stock.jwt;
+package dev.a301.stock.common.security.jwt;
 
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
