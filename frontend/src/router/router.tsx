@@ -1,16 +1,17 @@
-import { createBrowserRouter } from "react-router-dom";
-import { Suspense, lazy } from "react";
-import Layout from "../common/Layout";
-import LoadingPage from "../common/LoadingPage";
+import { createBrowserRouter } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
+import Layout from '../common/Layout';
+import LoadingPage from '../common/LoadingPage';
 
-const Main = lazy(() => import("../pages/MainPage"));
-const Test = lazy(() => import("../pages/TestPage"));
-const OAuthSuccess = lazy(() => import("../pages/OAuthSuccess"));
-const MyPage = lazy(() => import("../pages/MyPage"));
+const Main = lazy(() => import('../pages/MainPage'));
+const Test = lazy(() => import('../pages/TestPage'));
+const OAuthSuccess = lazy(() => import('../pages/OAuthSuccess'));
+const MyPage = lazy(() => import('../pages/MyPage'));
+const OAuthFail = lazy(() => import('../pages/OAuthFail')); // ★ 추가
 
 const Router = createBrowserRouter([
   {
-    path: "/",
+    path: '/',
     element: <Layout />, // ✅
     children: [
       {
@@ -22,7 +23,7 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: "test",
+        path: 'test',
         element: (
           <Suspense fallback={<LoadingPage />}>
             <Test />
@@ -30,7 +31,7 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: "oauth/success",
+        path: 'oauth/success',
         element: (
           <Suspense fallback={<LoadingPage />}>
             <OAuthSuccess />
@@ -38,7 +39,15 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: "mypage",
+        path: 'oauth/fail', // ★ 추가
+        element: (
+          <Suspense fallback={<LoadingPage />}>
+            <OAuthFail />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'mypage',
         element: (
           <Suspense fallback={<LoadingPage />}>
             <MyPage />

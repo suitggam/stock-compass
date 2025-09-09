@@ -77,6 +77,38 @@ public class JwtUtil {
         .compact();
   }
 
+  public String generateAccessToken(Integer userNo, String socialEmail, String nickname) {
+    var now = Instant.now();
+    return Jwts.builder()
+        .setSubject(String.valueOf(userNo))
+        .addClaims(Map.of(
+            "uid", userNo,
+            "email", socialEmail,
+            "nickname", nickname,
+            "typ", "access"
+        ))
+        .setIssuedAt(Date.from(now))
+        .setExpiration(Date.from(now.plusSeconds(accessExp)))
+        .signWith(key, SignatureAlgorithm.HS256)
+        .compact();
+}
+
+public String generateRefreshToken(Integer userNo, String socialEmail) {
+    var now = Instant.now();
+    return Jwts.builder()
+        .setSubject(String.valueOf(userNo))
+        .addClaims(Map.of(
+            "uid", userNo,
+            "email", socialEmail,
+            "typ", "refresh"
+        ))
+        .setIssuedAt(Date.from(now))
+        .setExpiration(Date.from(now.plusSeconds(refreshExp)))
+        .signWith(key, SignatureAlgorithm.HS256)
+        .compact();
+}
+
+
   public Jws<Claims> parse(String token) {
     return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
   }

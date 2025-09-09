@@ -1,43 +1,65 @@
 package dev.a301.stock.modules.user.web;
 
+import dev.a301.stock.modules.user.domain.User;
+import dev.a301.stock.modules.user.repository.UserRepository;
+import dev.a301.stock.modules.user.web.dto.LoginUserDto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import dev.a301.stock.modules.user.repository.UserRepository;
-
-import java.security.Principal;
+import java.util.Map;
 
 @RestController
+@RequestMapping("/api/users")
 @RequiredArgsConstructor
-@RequestMapping("/users")
 public class UserController {
 
-  private final UserRepository userRepo;
+  private final UserRepository userRepository;
 
-  private Integer userNoOf(Principal principal) {
-    if (principal == null) return null;
-    try { return Integer.valueOf(principal.getName()); }
-    catch (NumberFormatException e) { return null; }
+  // principal 에서 userNo 꺼내기 (JwtAuthFilter가 Integer로 넣음)
+  private int currentUserNo(Authentication auth) {
+    Object p = auth.getPrincipal();
+    if (p instanceof Integer i) return i;
+    if (p instanceof String s) return Integer.parseInt(s);
+    throw new IllegalStateException("Unexpected principal: " + p);
   }
 
-  @GetMapping("/login-user")
-  public ResponseEntity<?> me(Principal principal) {
-    Integer userNo = userNoOf(principal);
-    if (userNo == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-    return userRepo.findLoginUserDtoById(userNo)
-        .<ResponseEntity<?>>map(ResponseEntity::ok)
-        .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+  @GetMapping("/check-nickname")
+  public ResponseEntity<Map<String, Object>> checkNickname(@RequestParam("value") String value) {
+    boolean taken = userRepository.existsByNickname(value);
+    return ResponseEntity.ok(Map.of("available", !taken));
   }
 
-  @PatchMapping("/me")
-  public ResponseEntity<?> updateNickname(Principal principal, @RequestParam String nickname) {
-    Integer userNo = userNoOf(principal);
-    if (userNo == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+  @PutMapping("/nickname")
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<?> updateNickname(Authentication auth, @RequestBody Map<String, String> body) {
+    String newNick = body.get("nickname");
+    if (newNick == null || newNick.isBlank() || newNick.length() > 30) {
+      return ResponseEntity.badRequest().body(Map.of("message", "닉네임은 1~30자"));
+    }
+    if (userRepository.existsByNickname(newNick)) {
+      return ResponseEntity.status(409).body(Map.of("message", "이미 사용 중인 닉네임"));
+    }
 
-    return userRepo.findById(userNo)
-        .map(u -> { u.setNickname(nickname); userRepo.save(u); return ResponseEntity.ok().build(); })
-        .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    int userNo = currentUserNo(auth);
+    User u = userRepository.findById(userNo).orElseThrow();
+    u.setNickname(newNick);
+    userRepository.save(u);
+
+    return ResponseEntity.ok(Map.of("nickname", newNick));
+  }
+
+  @GetMapping("/me")
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<LoginUserDto> me(Authentication auth) {
+    int userNo = currentUserNo(auth);
+    User u = userRepository.findById(userNo).orElseThrow();
+    return ResponseEntity.ok(LoginUserDto.builder()
+        .userNo(u.getUserNo())
+        .socialEmail(u.getSocialEmail())
+        .nickname(u.getNickname())
+        .build());
   }
 }
