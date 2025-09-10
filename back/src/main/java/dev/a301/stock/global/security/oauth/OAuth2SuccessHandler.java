@@ -2,6 +2,7 @@ package dev.a301.stock.global.security.oauth;
 
 import dev.a301.stock.entity.user.OauthIdentity;
 import dev.a301.stock.entity.user.User;
+import dev.a301.stock.global.util.HashUtils;
 import dev.a301.stock.repository.user.UserRepository;
 import dev.a301.stock.service.auth.TokenService;
 import dev.a301.stock.service.user.OauthIdentityService;
@@ -38,13 +39,25 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
   private final UserRepository userRepository;
   private final OauthIdentityService oauthIdentityService;
-  private final TokenService tokenService;   // ✅ TokenService 주입 (발급+저장 책임 집중)
+  private final TokenService tokenService;   // 발급+저장 책임 집중
 
   @Value("${app.oauth2.redirect-success:http://localhost:5173/oauth/success}")
   private String redirectSuccessUrl;
 
   @Value("${app.oauth2.redirect-fail:http://localhost:5173/oauth/fail}")
   private String redirectFailUrl;
+
+  @Value("${app.cookie.refresh-name:refresh_token}")
+  private String refreshCookieName;
+
+  @Value("${app.cookie.same-site:Lax}")
+  private String refreshSameSite;
+
+  @Value("${app.cookie.secure:false}")
+  private boolean refreshSecure;
+
+  @Value("${app.cookie.max-age-days:14}")
+  private long refreshMaxAgeDays;
 
   @Override
   @Transactional
@@ -108,26 +121,40 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         oauthIdentityService.link(user, provider, providerUserId, email, picture, emailVerified);
       }
 
-      // ✅ JWT 발급(둘 다 TokenService로 위임: access, refresh)
+      // === 새로 굽기 전에, 과거 경로/도메인의 refresh_token 쿠키들 싹 정리 ===
+      clearStaleRefreshCookies(request, response);
+
+      // === 액세스/리프레시 발급 ===
       String accessToken  = tokenService.issueAccessToken(user.getUserNo(), user.getNickname());
+
+      // refreshToken은 "쿠키에 내려갈 원문"이 반환되어야 함
       String refreshToken = tokenService.issueRefreshToken(
           user.getUserNo(),
           request.getHeader("User-Agent"),
           clientIp(request)
       );
-      // ⛔️ 더 이상 refreshTokenService.save(...) 같은 중복저장은 하지 않음
 
-      // ✅ HttpOnly 쿠키로 refresh 전송 (개발용 속성)
-      ResponseCookie cookie = ResponseCookie.from("refresh_token", refreshToken)
+      // 디버깅: 원문/해시 prefix
+      String rRawPfx  = prefix(refreshToken);
+      String rHashPfx = prefix(HashUtils.sha256Hex(refreshToken));
+      log.info("[RT-ISSUE] uid={} raw.prefix={} hash.prefix={} ua={} ip={}",
+          user.getUserNo(), rRawPfx, rHashPfx,
+          safe(request.getHeader("User-Agent")), clientIp(request));
+
+      // (선택) 개발 편의 헤더
+      response.setHeader("X-RT-Prefix", rRawPfx);
+
+      // === 새 리프레시를 HttpOnly 쿠키로 ===
+      ResponseCookie cookie = ResponseCookie.from(refreshCookieName, refreshToken)
           .httpOnly(true)
-          .secure(false)          // dev: false, prod 배포 시 true
-          .sameSite("Lax")        // dev 프록시 환경에 안전
-          .path("/")              // 어디서든 전송
-          .maxAge(Duration.ofDays(14))
+          .secure(refreshSecure)
+          .sameSite(refreshSameSite)   // 로컬이면 Lax, 분리 도메인이면 None + secure=true
+          .path("/")
+          .maxAge(Duration.ofDays(refreshMaxAgeDays))
           .build();
       response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-      // 토큰은 URL에 넣지 않음. 프론트는 /api/auth/refresh로 access 받기
+      // 리다이렉트 (액세스는 URL에 싣지 않음)
       String json = """
           {"userNo":%d,"socialEmail":"%s","nickname":"%s"}
           """.formatted(user.getUserNo(), esc(user.getSocialEmail()), esc(user.getNickname())).trim();
@@ -149,7 +176,36 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     }
   }
 
-  // helpers
+  /* ---------- helpers ---------- */
+
+  private void clearStaleRefreshCookies(HttpServletRequest req, HttpServletResponse res) {
+    String host = req.getServerName(); // localhost 등
+    // 다양한 경로 조합
+    String[] paths = { "/", "/api", "/api/auth", "/users" };
+    // 도메인 조합: host-only(미지정), 명시적 localhost, 127.0.0.1 (개발에서 섞어쓴 흔적 제거)
+    String[] domains = { null, "localhost", "127.0.0.1" };
+
+    for (String p : paths) {
+      for (String d : domains) {
+        ResponseCookie del = buildDeleteCookie(p, d);
+        res.addHeader(HttpHeaders.SET_COOKIE, del.toString());
+      }
+    }
+    log.info("[RT-CLEAR] delete stale cookies host={} paths={} domains=hostOnly,localhost,127.0.0.1",
+        host, String.join(",", "/", "/api", "/api/auth", "/users"));
+  }
+
+  private ResponseCookie buildDeleteCookie(String path, String domain) {
+    ResponseCookie.ResponseCookieBuilder b = ResponseCookie.from(refreshCookieName, "")
+        .httpOnly(true)
+        .secure(refreshSecure)
+        .sameSite(refreshSameSite)
+        .path(path)
+        .maxAge(0);
+    if (domain != null) b.domain(domain);
+    return b.build();
+  }
+
   private void sendFail(HttpServletResponse response, String reason) throws IOException {
     String fail = UriComponentsBuilder.fromUriString(redirectFailUrl)
         .queryParam("reason", reason)
@@ -190,5 +246,14 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     String ip = req.getHeader("X-Forwarded-For");
     if (ip == null || ip.isBlank()) ip = req.getRemoteAddr();
     return ip;
+  }
+
+  private static String prefix(String s) {
+    if (s == null) return "null";
+    return s.length() <= 10 ? s : s.substring(0, 10);
+  }
+
+  private static String safe(String s) {
+    return s == null ? "" : (s.length() > 200 ? s.substring(0, 200) + "..." : s);
   }
 }

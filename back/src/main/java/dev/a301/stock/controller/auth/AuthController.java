@@ -1,160 +1,159 @@
 package dev.a301.stock.controller.auth;
 
-import dev.a301.stock.dto.auth.response.AuthResponse;
-import dev.a301.stock.dto.user.response.UserSummaryResponse;
 import dev.a301.stock.entity.user.User;
-import dev.a301.stock.repository.user.UserRepository;
+import dev.a301.stock.global.util.HashUtils;
 import dev.a301.stock.service.auth.RefreshTokenService;
 import dev.a301.stock.service.auth.TokenService;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
-import org.springframework.util.StringUtils;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
-  private final UserRepository userRepository;
-  private final TokenService tokenService;              // 발급+저장 책임 집중
-  private final RefreshTokenService refreshTokenService; // consume / logout 삭제 책임
+  private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
-  // --- 쿠키 속성(프로퍼티) ---
+  private final TokenService tokenService;
+  private final RefreshTokenService refreshTokenService;
+
   @Value("${app.cookie.refresh-name:refresh_token}")
   private String refreshCookieName;
-  @Value("${app.cookie.same-site:Lax}")   // dev: Lax, 배포: None(HTTPS에서 secure=true)
-  private String sameSite;                // "Lax" | "Strict" | "None"
+
+  @Value("${app.cookie.same-site:Lax}")
+  private String refreshSameSite;
+
   @Value("${app.cookie.secure:false}")
-  private boolean cookieSecure;           // dev=false, prod=true
-  @Value("${app.cookie.path:/}")
-  private String cookiePath;
+  private boolean refreshSecure;
+
   @Value("${app.cookie.max-age-days:14}")
-  private long cookieMaxAgeDays;
-  @Value("${app.cookie.session:false}")   // 세션쿠키 원하면 true
-  private boolean cookieSession;
+  private long refreshMaxAgeDays;
 
-  public record LoginRequest(String email, String nickname) {}
-
-  @PostMapping("/login")
-  public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest req, HttpServletRequest httpReq) {
-    if (!StringUtils.hasText(req.email())) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "email required");
-    }
-
-    // 유저 찾거나 생성
-    User user = userRepository.findBySocialEmail(req.email())
-        .orElseGet(() -> userRepository.save(
-            User.builder()
-                .socialEmail(req.email())
-                .nickname(StringUtils.hasText(req.nickname()) ? req.nickname() : ("user_" + System.currentTimeMillis()))
-                .build()
-        ));
-
-    Integer userNo = user.getUserNo();
-
-    // ★ access / refresh 발급 (refresh는 TokenService가 DB에도 저장)
-    String access  = tokenService.issueAccessToken(userNo, user.getNickname());
-    String refresh = tokenService.issueRefreshToken(userNo, ua(httpReq), ip(httpReq));
-
-    // ★ 쿠키로 전달 (컨트롤러는 저장 안함!)
-    ResponseCookie cookie = buildRefreshCookie(refresh);
-    var summary = new UserSummaryResponse(userNo, user.getNickname(), user.getSocialEmail());
-    var body = new AuthResponse(summary, access);
-
-    return ResponseEntity.ok()
-        .header(HttpHeaders.SET_COOKIE, cookie.toString())
-        .body(body);
-  }
-
-  /**
-   * 회전(rotate):
-   * 1) 기존 refresh 유효성 확인 + 하드삭제(consume)
-   * 2) 새 access / refresh 발급 (발급 시 DB 저장은 TokenService가 수행)
-   * 3) 새 refresh 쿠키로 교체
-   */
+  /** 액세스 재발급 */
   @PostMapping("/refresh")
-  public ResponseEntity<Map<String, String>> refresh(
-      @CookieValue(value = "refresh_token", required = false) String refresh,
-      HttpServletRequest req
-  ) {
-    if (!StringUtils.hasText(refresh)) {
-      return unauthorizedAndDeleteCookie("no refresh cookie");
+  public ResponseEntity<?> refresh(HttpServletRequest req, HttpServletResponse res) {
+    String raw = resolveRefreshFromCookies(req);
+    if (raw == null) {
+      log.warn("[REFRESH] no refresh cookie");
+      addCookieDeletes(res);
+      return ResponseEntity.status(401).body(Map.of("message", "no refresh cookie"));
     }
 
     try {
-      // 1) 기존 토큰 consume(유효성 검사 + 하드 삭제) → 유저 반환
-      User user = refreshTokenService.consumeAndGetUser(refresh);
+      User user = refreshTokenService.consumeAndGetUser(raw);
 
-      // 2) 새 토큰 발급(저장은 TokenService 내부에서 처리)
-      String newAccess  = tokenService.issueAccessToken(user.getUserNo(), user.getNickname());
-      String newRefresh = tokenService.issueRefreshToken(user.getUserNo(), ua(req), ip(req));
+      String access = tokenService.issueAccessToken(user.getUserNo(), user.getNickname());
+      String newRefresh = tokenService.issueRefreshToken(
+          user.getUserNo(),
+          req.getHeader("User-Agent"),
+          clientIp(req)
+      );
 
-      // 3) 쿠키 교체
-      ResponseCookie cookie = buildRefreshCookie(newRefresh);
-      return ResponseEntity.ok()
-          .header(HttpHeaders.SET_COOKIE, cookie.toString())
-          .body(Map.of("accessToken", newAccess));
+      addCookie(res, newRefresh);
+      addCookieDeletes(res); // 혹시 남은 변종 정리
 
-    } catch (Exception e) {
-      // DB에 없거나 만료/경합 등 → 쿠키 정리 + 401
-      return unauthorizedAndDeleteCookie("invalid/expired refresh");
+      return ResponseEntity.ok(Map.of("accessToken", access));
+
+    } catch (IllegalStateException ex) {
+      log.warn("[REFRESH] invalid/expired: {}", ex.getMessage());
+      addCookieDeletes(res);
+      return ResponseEntity.status(401).body(Map.of("message", "invalid/expired refresh"));
     }
   }
 
+  /** 로그아웃 */
   @PostMapping("/logout")
-  public ResponseEntity<Void> logout(@CookieValue(value = "refresh_token", required = false) String refresh) {
-    // DB에서 해당 refresh 하드 삭제(있으면)
-    refreshTokenService.deleteOnLogout(refresh);
-    // 브라우저 쿠키 삭제
-    return ResponseEntity.noContent()
-        .header(HttpHeaders.SET_COOKIE, deleteRefreshCookie().toString())
-        .build();
+  public ResponseEntity<?> logout(HttpServletRequest req, HttpServletResponse res) {
+    String raw = resolveRefreshFromCookies(req);
+    refreshTokenService.deleteOnLogout(raw);
+    addCookieDeletes(res);
+    return ResponseEntity.noContent().build();
   }
 
-  // ---------------- helpers ----------------
+  /* ---------- helpers ---------- */
 
-  private ResponseCookie buildRefreshCookie(String value) {
-    ResponseCookie.ResponseCookieBuilder b = ResponseCookie.from(refreshCookieName, value)
-        .httpOnly(true)
-        .secure(cookieSecure)
-        .sameSite(sameSite)
-        .path(cookiePath);
-    if (!cookieSession) {
-      b.maxAge(Duration.ofDays(cookieMaxAgeDays));
+  /** 같은 이름의 쿠키가 여러 개 있으면, DB에 존재하는 해시와 매칭되는 값을 선택 */
+  private String resolveRefreshFromCookies(HttpServletRequest req) {
+    Cookie[] cookies = req.getCookies();
+    if (cookies == null || cookies.length == 0) return null;
+
+    List<String> candidates = new ArrayList<>();
+    for (Cookie c : cookies) {
+      if (refreshCookieName.equals(c.getName())) {
+        String v = c.getValue();
+        if (v != null && !v.isBlank()) candidates.add(v);
+      }
     }
-    return b.build();
+    if (candidates.isEmpty()) return null;
+
+    // 디버깅: 후보 목록 로깅 + DB 존재여부
+    for (String v : candidates) {
+      String hp = prefix(HashUtils.sha256Hex(v));
+      boolean exists = refreshTokenService.findValid(HashUtils.sha256Hex(v)).isPresent();
+      log.info("[REFRESH] candidate raw.prefix={} hash.prefix={} inDB={}", prefix(v), hp, exists);
+    }
+
+    // 1) DB에 있는 해시와 일치하는 후보 우선 선택
+    for (String v : candidates) {
+      if (refreshTokenService.findValid(HashUtils.sha256Hex(v)).isPresent()) {
+        log.info("[REFRESH] picked DB-matched cookie prefix={}", prefix(v));
+        return v;
+      }
+    }
+    // 2) 없으면 첫 번째(결국 401 처리)
+    log.info("[REFRESH] fall back to first cookie prefix={}", prefix(candidates.get(0)));
+    return candidates.get(0);
   }
 
-  private ResponseCookie deleteRefreshCookie() {
-    return ResponseCookie.from(refreshCookieName, "")
+  private void addCookie(HttpServletResponse res, String raw) {
+    ResponseCookie cookie = ResponseCookie.from(refreshCookieName, raw)
         .httpOnly(true)
-        .secure(cookieSecure)
-        .sameSite(sameSite)
-        .path(cookiePath)
-        .maxAge(0)
+        .secure(refreshSecure)
+        .sameSite(refreshSameSite)
+        .path("/")
+        .maxAge(Duration.ofDays(refreshMaxAgeDays))
         .build();
+    res.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
   }
 
-  private ResponseEntity<Map<String, String>> unauthorizedAndDeleteCookie(String msg) {
-    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-        .header(HttpHeaders.SET_COOKIE, deleteRefreshCookie().toString())
-        .body(Map.of("message", msg));
+  /** 다양한 경로/도메인의 예전 쿠키 제거(클라이언트가 여러 개를 보내는 현상 방지) */
+  private void addCookieDeletes(HttpServletResponse res) {
+    String[] paths = { "/", "/api", "/api/auth", "/users" };
+    String[] domains = { null, "localhost", "127.0.0.1" };
+
+    for (String p : paths) {
+      for (String d : domains) {
+        ResponseCookie.ResponseCookieBuilder b = ResponseCookie.from(refreshCookieName, "")
+            .httpOnly(true)
+            .secure(refreshSecure)
+            .sameSite(refreshSameSite)
+            .path(p)
+            .maxAge(0);
+        if (d != null) b.domain(d);
+        res.addHeader(HttpHeaders.SET_COOKIE, b.build().toString());
+      }
+    }
   }
 
-  private static String ua(HttpServletRequest req) {
-    return req.getHeader("User-Agent");
-  }
-
-  private static String ip(HttpServletRequest req) {
+  private static String clientIp(HttpServletRequest req) {
     String ip = req.getHeader("X-Forwarded-For");
-    if (!StringUtils.hasText(ip)) ip = req.getRemoteAddr();
-    return ip;
+    return (ip == null || ip.isBlank()) ? req.getRemoteAddr() : ip;
+  }
+
+  private static String prefix(String s) {
+    if (s == null) return "null";
+    return s.length() <= 10 ? s : s.substring(0, 10);
   }
 }
