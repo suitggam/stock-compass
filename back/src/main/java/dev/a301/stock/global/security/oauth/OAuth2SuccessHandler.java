@@ -2,10 +2,8 @@ package dev.a301.stock.global.security.oauth;
 
 import dev.a301.stock.entity.user.OauthIdentity;
 import dev.a301.stock.entity.user.User;
-import dev.a301.stock.global.security.jwt.JwtUtil;
-import dev.a301.stock.global.util.HashUtils;
-import dev.a301.stock.service.auth.RefreshTokenService;
 import dev.a301.stock.repository.user.UserRepository;
+import dev.a301.stock.service.auth.TokenService;
 import dev.a301.stock.service.user.OauthIdentityService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -35,12 +33,12 @@ import java.util.Random;
 @Component
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
+
   private static final Logger log = LoggerFactory.getLogger(OAuth2SuccessHandler.class);
 
   private final UserRepository userRepository;
   private final OauthIdentityService oauthIdentityService;
-  private final JwtUtil jwtUtil;
-  private final RefreshTokenService refreshTokenService; // ★ 추가
+  private final TokenService tokenService;   // ✅ TokenService 주입 (발급+저장 책임 집중)
 
   @Value("${app.oauth2.redirect-success:http://localhost:5173/oauth/success}")
   private String redirectSuccessUrl;
@@ -50,7 +48,9 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
   @Override
   @Transactional
-  public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
+  public void onAuthenticationSuccess(HttpServletRequest request,
+                                      HttpServletResponse response,
+                                      Authentication authentication) throws IOException {
     try {
       OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
       OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
@@ -108,27 +108,26 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         oauthIdentityService.link(user, provider, providerUserId, email, picture, emailVerified);
       }
 
-      // ★ JWT 발급 (access는 최소 claim, refresh는 PII 제거)
-      String accessToken  = jwtUtil.issueAccess(user.getUserNo(), user.getNickname());
-      String refreshToken = jwtUtil.issueRefresh(user.getUserNo());
+      // ✅ JWT 발급(둘 다 TokenService로 위임: access, refresh)
+      String accessToken  = tokenService.issueAccessToken(user.getUserNo(), user.getNickname());
+      String refreshToken = tokenService.issueRefreshToken(
+          user.getUserNo(),
+          request.getHeader("User-Agent"),
+          clientIp(request)
+      );
+      // ⛔️ 더 이상 refreshTokenService.save(...) 같은 중복저장은 하지 않음
 
-      // ★ refresh 토큰 DB에는 해시로 저장 (UA/IP 저장 가능)
-      String ua  = request.getHeader("User-Agent");
-      String ip  = clientIp(request);
-      String hash = HashUtils.sha256Hex(refreshToken);
-      refreshTokenService.save(user.getUserNo(), hash,
-          jwtUtil.getExpiry(refreshToken).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime(),
-          ua, ip);
-
-      // ★ HttpOnly 쿠키로 refresh 전송
+      // ✅ HttpOnly 쿠키로 refresh 전송 (개발용 속성)
       ResponseCookie cookie = ResponseCookie.from("refresh_token", refreshToken)
-          .httpOnly(true).secure(true).sameSite("Strict")
-          .path("/api/auth") // /refresh, /logout의 경로
+          .httpOnly(true)
+          .secure(false)          // dev: false, prod 배포 시 true
+          .sameSite("Lax")        // dev 프록시 환경에 안전
+          .path("/")              // 어디서든 전송
           .maxAge(Duration.ofDays(14))
           .build();
       response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-      // ★ URL에 토큰 넣지 말고(로그/히스토리 노출), FE가 /api/auth/refresh로 access 받도록
+      // 토큰은 URL에 넣지 않음. 프론트는 /api/auth/refresh로 access 받기
       String json = """
           {"userNo":%d,"socialEmail":"%s","nickname":"%s"}
           """.formatted(user.getUserNo(), esc(user.getSocialEmail()), esc(user.getNickname())).trim();
@@ -137,7 +136,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
           .encodeToString(json.getBytes(StandardCharsets.UTF_8));
 
       String target = UriComponentsBuilder.fromUriString(redirectSuccessUrl)
-          .queryParam("payload", payload) // 토큰 없음
+          .queryParam("payload", payload)
           .build(true)
           .toUriString();
 
@@ -186,6 +185,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     if (s == null) return "";
     return s.replace("\\", "\\\\").replace("\"", "\\\"");
   }
+
   private String clientIp(HttpServletRequest req) {
     String ip = req.getHeader("X-Forwarded-For");
     if (ip == null || ip.isBlank()) ip = req.getRemoteAddr();

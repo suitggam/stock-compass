@@ -1,8 +1,8 @@
 package dev.a301.stock.repository.auth;
 
 import dev.a301.stock.entity.auth.RefreshToken;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
@@ -10,18 +10,28 @@ import java.util.Optional;
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
 
-  // 기존 단순 조회 (필요하면 남겨둬도 됨)
-  Optional<RefreshToken> findByTokenHashAndRevokedFalseAndExpiresAtAfter(String tokenHash, LocalDateTime now);
-
-  // ✅ LAZY 문제 해결용: user를 함께 로딩
+  /**
+   * 회전 시 동시성 제어를 위한 행 잠금 조회.
+   * - 유효기간 안이고, revoked=false 인 경우만 반환
+   */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("""
-    select rt
-    from RefreshToken rt
-    join fetch rt.user u
-    where rt.tokenHash = :tokenHash
-      and rt.revoked = false
-      and rt.expiresAt > :now
-  """)
-  Optional<RefreshToken> findValidWithUser(@Param("tokenHash") String tokenHash,
-                                           @Param("now") LocalDateTime now);
+      select r
+      from RefreshToken r
+      where r.tokenHash = :hash
+        and r.revoked = false
+        and r.expiresAt > :now
+      """)
+  Optional<RefreshToken> findValidForUpdate(@Param("hash") String hash,
+                                            @Param("now") LocalDateTime now);
+
+  /** 평상시 유효성 확인용(잠금 없음) */
+  Optional<RefreshToken> findByTokenHashAndRevokedFalseAndExpiresAtAfter(
+      String tokenHash, LocalDateTime now
+  );
+
+  /** 만료 토큰 일괄 정리(선택) */
+  @Modifying
+  @Query("delete from RefreshToken r where r.expiresAt <= :now")
+  int deleteAllExpired(@Param("now") LocalDateTime now);
 }

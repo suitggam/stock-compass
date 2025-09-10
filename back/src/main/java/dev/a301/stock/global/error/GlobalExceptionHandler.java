@@ -30,7 +30,6 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Map<String, Object>> handleOthers(Exception ex) {
-    // TODO: logger.error("Unhandled exception", ex);
     Map<String, Object> body = new HashMap<>();
     body.put("message", "internal error");
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);

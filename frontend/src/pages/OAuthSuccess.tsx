@@ -6,13 +6,12 @@ const OAuthSuccess: React.FC = () => {
   const nav = useNavigate();
 
   useEffect(() => {
-    // 리프레시 쿠키를 사용해 access 발급
     api
       .post<{ accessToken: string }>('/api/auth/refresh', {})
-      .then((data) => {
-        if (data?.accessToken) {
-          token.set(data.accessToken);
-          nav('/mypage', { replace: true });
+      .then((res) => {
+        if (res?.accessToken) {
+          token.set(res.accessToken);
+          nav('/', { replace: true });
         } else {
           nav('/oauth/fail?reason=missing_access', { replace: true });
         }
