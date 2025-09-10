@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # MySQL 데이터베이스
+  mysql:
+    image: mysql:8.0
+    container_name: stock_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-stock123!}
+      MYSQL_DATABASE: ${DB_NAME:-stock_db}
+      MYSQL_USER: ${DB_USER:-stock_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-stock123!}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    networks:
+      - stock_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD:-stock123!}"]
+      timeout: 20s
+      retries: 10
+      interval: 30s
+
+  # Spring Boot 백엔드
+  spring-backend:
+    build: 
+      context: ./back
+      dockerfile: Dockerfile
+    container_name: stock_backend
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILE:-prod}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME:-stock_db}?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${DB_USER:-stock_user}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-stock123!}
+      - SERVER_PORT=8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - stock_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+      start_period: 60s
+
+  # React 프론트엔드
+  react-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: stock_frontend
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8080
+    ports:
+      - "80:80"
+    depends_on:
+      spring-backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - stock_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+
+  # Jenkins (CI/CD)
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: stock_jenkins
+    environment:
+      - JENKINS_OPTS=--httpPort=8081
+    ports:
+      - "8081:8081"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
+    restart: unless-stopped
+    networks:
+      - stock_network
+    user: root
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/login"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+      start_period: 60s
+
+volumes:
+  mysql_data:
+    driver: local
+  jenkins_home:
+    driver: local
+
+networks:
+  stock_network:
+    driver: bridge
+
