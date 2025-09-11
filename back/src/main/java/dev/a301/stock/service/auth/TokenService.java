@@ -1,7 +1,9 @@
 package dev.a301.stock.service.auth;
 
+import dev.a301.stock.entity.user.User;
 import dev.a301.stock.global.security.jwt.JwtUtil;
 import dev.a301.stock.global.util.HashUtils;
+import dev.a301.stock.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,39 +16,28 @@ public class TokenService {
 
   private final JwtUtil jwtUtil;
   private final RefreshTokenService refreshTokenService;
+  private final UserRepository userRepo;
 
-  /** access 토큰 발급 (닉네임을 클레임에 포함하는 정책) */
+  /* ===== Access ===== */
   public String issueAccessToken(Integer userNo, String nickname) {
     return jwtUtil.issueAccess(userNo, nickname);
   }
 
-  /**
-   * refresh 토큰 발급 + DB 저장(해시)
-   * - 컨트롤러에서는 이 메서드만 호출하고, 별도의 save()를 다시 부르지 마세요(중복 저장 방지).
-   */
-  public String issueRefreshToken(Integer userNo, String userAgent, String ip) {
-    String rawRefresh = jwtUtil.issueRefresh(userNo);
-
-    // 만료시각 계산
-    LocalDateTime expLdt = getRefreshExpiry(rawRefresh);
-
-    // 해시 저장
-    String hash = HashUtils.sha256Hex(rawRefresh);
-    refreshTokenService.save(userNo, hash, expLdt, userAgent, ip);
-
-    // HttpOnly 쿠키로 내려보낼 원문 반환
-    return rawRefresh;
-  }
-
-  /** refresh JWT의 만료 시각을 LocalDateTime으로 반환 */
-  public LocalDateTime getRefreshExpiry(String refreshJwt) {
-    // JwtUtil.getExpiry(...) 가 Instant (또는 Date->Instant) 를 반환한다고 가정
-    return jwtUtil.getExpiry(refreshJwt)
-        .atZone(ZoneId.systemDefault())
-        .toLocalDateTime();
+  public String issueAccessTokenByUserId(Integer userNo) {
+    User u = userRepo.findById(userNo).orElseThrow();
+    return jwtUtil.issueAccess(userNo, u.getNickname());
   }
 
   public boolean validateAccess(String token) {
     return jwtUtil.validate(token);
+  }
+
+  /* ===== Refresh (원문 반환 + DB 저장) ===== */
+  public String issueRefreshToken(Integer userNo, String userAgent, String ip) {
+    String rawRefresh = jwtUtil.issueRefresh(userNo);                              // 1) 발급
+    LocalDateTime expLdt = jwtUtil.getExpiry(rawRefresh).atZone(ZoneId.systemDefault()).toLocalDateTime();
+    String hash = HashUtils.sha256Hex(rawRefresh);
+    refreshTokenService.save(userNo, hash, expLdt, userAgent, ip);                // 2) 저장(1회용)
+    return rawRefresh;                                                             // 3) 쿠키로 내려보낼 원문
   }
 }

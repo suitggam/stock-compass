@@ -18,7 +18,6 @@ function MainPage() {
   const [openNickDialog, setOpenNickDialog] = useState(false);
   const nav = useNavigate();
 
-  // 로그인 상태 확보(없으면 refresh → me)
   useEffect(() => {
     (async () => {
       try {
@@ -26,13 +25,15 @@ function MainPage() {
           try {
             const res = await api.post<{ accessToken: string }>('/api/auth/refresh', {});
             if (res?.accessToken) token.set(res.accessToken);
-          } catch {
-            // 비로그인 상태
+          } catch (e) {
+            // 비로그인/쿠키없음 등은 정상 흐름이므로 무시
+            console.debug('[refresh] skip:', e);
           }
         }
         if (token.get()) {
           const me = await api.get<User>('/api/users/me');
           setUser(me);
+          if (!me.nickname || /^user(_|\d|$)/i.test(me.nickname)) setOpenNickDialog(true);
         } else {
           setUser(null);
         }
@@ -45,90 +46,57 @@ function MainPage() {
   const goGoogle = () => (window.location.href = `${API_BASE}/users/auth/google`);
   const goKakao = () => (window.location.href = `${API_BASE}/users/auth/kakao`);
 
-  const onLogout = async () => {
+  const logout = async () => {
     try {
       await api.post<void>('/api/auth/logout', {});
-    } catch {
-      // ignore
+    } catch (e) {
+      // 이미 로그아웃 상태 등은 무시
+      console.debug('[logout] ignored:', e);
     } finally {
       token.clear();
       setUser(null);
     }
   };
 
-  // “닉네임이 기본생성처럼 보이면 모달 추천” (정책에 맞게 조정)
-  const looksAuto = (n: string) => /^user(_\d+)?$/i.test(n) || /_\d{4}$/.test(n);
-
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-800 text-white">
-        불러오는 중…
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center">불러오는 중…</div>;
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-gradient-to-br from-indigo-500 to-purple-800">
-      <h1 className="text-white text-3xl font-bold">메인페이지입니다.</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6">
+      <h1 className="text-3xl font-bold">메인페이지</h1>
 
       {!user ? (
-        // 비로그인: 로그인 버튼 노출
         <div className="flex gap-3">
-          <button
-            onClick={goGoogle}
-            className="px-5 py-3 rounded-xl bg-white text-gray-800 font-semibold shadow"
-          >
-            🔵 구글로 로그인
+          <button onClick={goGoogle} className="px-4 py-2 rounded bg-blue-600 text-white">
+            구글 로그인
           </button>
-          <button
-            onClick={goKakao}
-            className="px-5 py-3 rounded-xl bg-yellow-300 text-black font-semibold shadow"
-          >
-            🟡 카카오로 로그인
+          <button onClick={goKakao} className="px-4 py-2 rounded bg-yellow-400 text-black">
+            카카오 로그인
           </button>
         </div>
       ) : (
-        // 로그인됨: 로그인 버튼 감춤 + 마이페이지/닉네임/로그아웃
         <div className="flex flex-col items-center gap-4">
-          <div className="text-white/90">
-            <span className="opacity-80">안녕하세요,</span>{' '}
-            <span className="font-semibold">{user.nickname}</span>
-            <span className="opacity-80">님!</span>
+          <div>
+            안녕하세요, <b>{user.nickname}</b> 님!
           </div>
-
           <div className="flex gap-3">
-            <button
-              onClick={() => nav('/mypage')}
-              className="px-5 py-3 rounded-xl bg-white text-gray-800 font-semibold shadow"
-            >
-              마이페이지로 이동
+            <button onClick={() => nav('/mypage')} className="px-4 py-2 rounded bg-gray-200">
+              마이페이지
             </button>
             <button
               onClick={() => setOpenNickDialog(true)}
-              className="px-5 py-3 rounded-xl bg-white/90 text-indigo-700 font-semibold shadow"
+              className="px-4 py-2 rounded bg-emerald-200"
             >
-              닉네임 설정/변경
+              닉네임 변경
             </button>
-            <button
-              onClick={onLogout}
-              className="px-5 py-3 rounded-xl bg-white/80 text-rose-700 font-semibold shadow"
-            >
+            <button onClick={logout} className="px-4 py-2 rounded bg-rose-200">
               로그아웃
             </button>
           </div>
-
-          {looksAuto(user.nickname) && (
-            <div className="text-sm text-yellow-100">
-              기본 닉네임처럼 보여요.{' '}
-              <button className="underline" onClick={() => setOpenNickDialog(true)}>
-                변경하기
-              </button>
-            </div>
-          )}
         </div>
       )}
 
-      {/* 닉네임 모달 */}
       <NicknameDialog
         open={openNickDialog}
         initialNickname={user?.nickname}

@@ -124,8 +124,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
       // === 새로 굽기 전에, 과거 경로/도메인의 refresh_token 쿠키들 싹 정리 ===
       clearStaleRefreshCookies(request, response);
 
-      // === 액세스/리프레시 발급 ===
-      String accessToken  = tokenService.issueAccessToken(user.getUserNo(), user.getNickname());
 
       // refreshToken은 "쿠키에 내려갈 원문"이 반환되어야 함
       String refreshToken = tokenService.issueRefreshToken(

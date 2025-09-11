@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { api, token } from "../api/client";
+import React, { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { api, token } from '../api/client';
 
-const GUARD_KEY = "oauth_refresh_guard_ts";
+const GUARD_KEY = 'oauth_refresh_guard_ts';
 
 const OAuthSuccess: React.FC = () => {
   const nav = useNavigate();
@@ -12,38 +12,32 @@ const OAuthSuccess: React.FC = () => {
     if (ran.current) return;
     ran.current = true;
 
-    // ⬇️ 이전에 남아있던 만료 access 헤더가 refresh를 방해하지 않도록 먼저 정리
+    // 직전 access 제거(Authorization 헤더 안 붙도록)
     token.clear();
 
-    // React 18 StrictMode 재마운트 대비(짧은 TTL)
+    // 새로고침 루프 가드 (8초 내 중복호출 방지)
     const now = Date.now();
-    const last = Number(sessionStorage.getItem(GUARD_KEY) || "0");
+    const last = Number(sessionStorage.getItem(GUARD_KEY) || '0');
     if (now - last < 8000) return;
     sessionStorage.setItem(GUARD_KEY, String(now));
 
     (async () => {
       try {
-        const res = await api.post<{ accessToken: string }>(
-          "/api/auth/refresh",
-          {}
-        );
+        // ★ 서버가 리프레시 쿠키를 읽어 accessToken을 내려줌
+        const res = await api.post<{ accessToken: string }>('/api/auth/refresh', {});
         if (res?.accessToken) {
           token.set(res.accessToken);
-          nav("/", { replace: true });
+          nav('/', { replace: true });
         } else {
-          nav("/oauth/fail?reason=missing_access", { replace: true });
+          nav('/oauth/fail?reason=refresh_failed', { replace: true });
         }
       } catch {
-        nav("/oauth/fail?reason=refresh_failed", { replace: true });
+        nav('/oauth/fail?reason=refresh_failed', { replace: true });
       }
     })();
   }, [nav]);
 
-  return (
-    <div className="min-h-screen grid place-items-center text-gray-600">
-      로그인 처리중…
-    </div>
-  );
+  return <div className="min-h-screen grid place-items-center text-gray-600">로그인 처리중…</div>;
 };
 
 export default OAuthSuccess;

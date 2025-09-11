@@ -10,10 +10,8 @@ import java.util.Optional;
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
 
-  /**
-   * 회전 시 동시성 제어를 위한 행 잠금 조회.
-   * - 유효기간 안이고, revoked=false 인 경우만 반환
-   */
+  /** 회수(소비) 시 동시성 제어를 위한 행 잠금 조회 + user 즉시 로딩 */
+  @EntityGraph(attributePaths = "user")
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("""
       select r
@@ -25,7 +23,8 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
   Optional<RefreshToken> findValidForUpdate(@Param("hash") String hash,
                                             @Param("now") LocalDateTime now);
 
-  /** 평상시 유효성 확인용(잠금 없음) */
+  /** 평상시 유효성 확인용(잠금 없음) + user 즉시 로딩 */
+  @EntityGraph(attributePaths = "user")
   Optional<RefreshToken> findByTokenHashAndRevokedFalseAndExpiresAtAfter(
       String tokenHash, LocalDateTime now
   );
