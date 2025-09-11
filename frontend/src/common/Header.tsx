@@ -37,19 +37,19 @@ export default function Header() {
           </Link>
           <Link
             to={"/game"}
-            className="text-slate-300 hover:text-white font-medium transition-colors"
+            className="text-slate-300 hover:text-white font-bold transition-colors "
           >
             투자 성향 파악 게임
           </Link>
           <Link
             to={"/stock"}
-            className="text-slate-300 hover:text-white font-medium transition-colors"
+            className="text-slate-300 hover:text-white font-bold transition-colors"
           >
             모의 투자
           </Link>
           <Link
             to={"/ranking"}
-            className="text-slate-300 hover:text-white font-medium transition-colors"
+            className="text-slate-300 hover:text-white font-bold transition-colors"
           >
             모의 투자 랭킹
           </Link>
@@ -66,12 +66,12 @@ export default function Header() {
           />
           <button
             onClick={handleSearch}
-            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all font-semibold shadow-lg"
+            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all font-bold shadow-lg"
           >
             검색
           </button>
           <Link to={"/login"}>
-            <button className="px-6 py-3 border border-slate-600 text-slate-300 rounded-xl hover:border-slate-500 hover:text-white transition-colors">
+            <button className="px-6 py-3 border border-slate-600 text-slate-300 rounded-xl hover:border-slate-500 hover:text-white transition-colors font-bold ">
               로그인
             </button>
           </Link>

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { API_BASE, api, token } from '../api/client';
-import { useNavigate } from 'react-router'; // ✅ dom 아님
-import NicknameDialog from '../components/NicknameDialog';
+import { useEffect, useState } from "react";
+import { API_BASE, api, token } from "../api/client";
+import { useNavigate } from "react-router"; // ✅ dom 아님
+import NicknameDialog from "../components/NicknameDialog";
 
 type User = {
   userNo: number;
@@ -12,7 +12,7 @@ type User = {
   cash: number;
 };
 
-export default function MainPage() {
+export default function LoginPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [openNickDialog, setOpenNickDialog] = useState(false);
@@ -23,16 +23,20 @@ export default function MainPage() {
       try {
         if (!token.get()) {
           try {
-            const res = await api.post<{ accessToken: string }>('/api/auth/refresh', {});
+            const res = await api.post<{ accessToken: string }>(
+              "/api/auth/refresh",
+              {}
+            );
             if (res?.accessToken) token.set(res.accessToken);
           } catch (e) {
-            console.debug('[refresh] skip:', e);
+            console.debug("[refresh] skip:", e);
           }
         }
         if (token.get()) {
-          const me = await api.get<User>('/api/users/me');
+          const me = await api.get<User>("/api/users/me");
           setUser(me);
-          if (!me.nickname || /^user(_|\d|$)/i.test(me.nickname)) setOpenNickDialog(true);
+          if (!me.nickname || /^user(_|\d|$)/i.test(me.nickname))
+            setOpenNickDialog(true);
         } else {
           setUser(null);
         }
@@ -42,14 +46,15 @@ export default function MainPage() {
     })();
   }, []);
 
-  const goGoogle = () => (window.location.href = `${API_BASE}/users/auth/google`);
+  const goGoogle = () =>
+    (window.location.href = `${API_BASE}/users/auth/google`);
   const goKakao = () => (window.location.href = `${API_BASE}/users/auth/kakao`);
 
   const logout = async () => {
     try {
-      await api.post<void>('/api/auth/logout', {});
+      await api.post<void>("/api/auth/logout", {});
     } catch (e) {
-      console.debug('[logout] ignored:', e);
+      console.debug("[logout] ignored:", e);
     } finally {
       token.clear();
       setUser(null);
@@ -57,7 +62,11 @@ export default function MainPage() {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">불러오는 중…</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        불러오는 중…
+      </div>
+    );
   }
 
   return (
@@ -66,10 +75,16 @@ export default function MainPage() {
 
       {!user ? (
         <div className="flex gap-3">
-          <button onClick={goGoogle} className="px-4 py-2 rounded bg-blue-600 text-white">
+          <button
+            onClick={goGoogle}
+            className="px-4 py-2 rounded bg-blue-600 text-white"
+          >
             구글 로그인
           </button>
-          <button onClick={goKakao} className="px-4 py-2 rounded bg-yellow-400 text-black">
+          <button
+            onClick={goKakao}
+            className="px-4 py-2 rounded bg-yellow-400 text-black"
+          >
             카카오 로그인
           </button>
         </div>
@@ -79,7 +94,10 @@ export default function MainPage() {
             안녕하세요, <b>{user.nickname}</b> 님!
           </div>
           <div className="flex gap-3">
-            <button onClick={() => nav('/mypage')} className="px-4 py-2 rounded bg-gray-200">
+            <button
+              onClick={() => nav("/mypage")}
+              className="px-4 py-2 rounded bg-gray-200"
+            >
               마이페이지
             </button>
             <button
@@ -99,7 +117,9 @@ export default function MainPage() {
         open={openNickDialog}
         initialNickname={user?.nickname}
         onClose={() => setOpenNickDialog(false)}
-        onSaved={(newNick) => setUser((u) => (u ? { ...u, nickname: newNick } : u))}
+        onSaved={(newNick) =>
+          setUser((u) => (u ? { ...u, nickname: newNick } : u))
+        }
       />
     </div>
   );

@@ -4,7 +4,7 @@ plugins {
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
-group = 'dev.a301.stock'          
+group = 'stock'
 version = '0.0.1-SNAPSHOT'
 description = 'Stock'
 
@@ -16,7 +16,7 @@ java {
 }
 
 springBoot {
-    mainClass = 'dev.a301.stock.StockApiApplication'  
+    mainClass = 'StockApiApplication'
 }
 
 configurations {
@@ -44,7 +44,7 @@ dependencies {
 
   // DB 드라이버 (부트 BOM이 버전 관리하므로 보통 버전 명시 불필요)
   runtimeOnly 'com.mysql:mysql-connector-j'
-  // .env 로 일단 설정 나중에 이그노어에 추가 해서 보안 방지 
+  // .env 로 일단 설정 나중에 이그노어에 추가 해서 보안 방지
   implementation 'me.paulschwarz:spring-dotenv:4.0.0'
 
   // Lombok
@@ -55,6 +55,15 @@ dependencies {
   testImplementation 'org.springframework.boot:spring-boot-starter-test'
   testImplementation 'org.springframework.security:spring-security-test'
   testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	compileOnly 'org.projectlombok:lombok'
+	testCompileOnly 'org.projectlombok:lombok'
+	runtimeOnly 'com.mysql:mysql-connector-j'
+	annotationProcessor 'org.projectlombok:lombok'
+	testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
 tasks.named('test') {
