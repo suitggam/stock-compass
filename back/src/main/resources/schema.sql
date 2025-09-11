@@ -1,6 +1,6 @@
-CREATE DATABASE IF NOT EXISTS stockapp
+CREATE DATABASE IF NOT EXISTS survive_stock
   CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE stockapp;
+USE survive_stock;
 
 -- users (변경 반영)
 CREATE TABLE IF NOT EXISTS users (

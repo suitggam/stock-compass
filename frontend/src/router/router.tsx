@@ -1,29 +1,30 @@
-import { createBrowserRouter } from 'react-router';
-import { Suspense, lazy } from 'react';
-import Layout from '../common/Layout';
-import LoadingPage from '../common/LoadingPage';
+import { createBrowserRouter } from "react-router";
+import { Suspense, lazy } from "react";
+import Layout from "../common/Layout";
+import LoadingPage from "../common/LoadingPage";
 
-const Main = lazy(() => import('../pages/MainPage'));
-const Test = lazy(() => import('../pages/TestPage'));
-const OAuthSuccess = lazy(() => import('../pages/OAuthSuccess'));
-const MyPage = lazy(() => import('../pages/MyPage'));
-const OAuthFail = lazy(() => import('../pages/OAuthFail'));
+const Home = lazy(() => import("../pages/HomePage"));
+const Login = lazy(() => import("../pages/LoginPage"));
+const Test = lazy(() => import("../pages/TestPage"));
+const OAuthSuccess = lazy(() => import("../pages/OAuthSuccess"));
+const MyPage = lazy(() => import("../pages/MyPage"));
+const OAuthFail = lazy(() => import("../pages/OAuthFail"));
 
 const Router = createBrowserRouter([
   {
-    path: '/',
+    path: "/",
     element: <Layout />, // ✅
     children: [
       {
         index: true,
         element: (
           <Suspense fallback={<LoadingPage />}>
-            <Main />
+            <Home />
           </Suspense>
         ),
       },
       {
-        path: 'test',
+        path: "test",
         element: (
           <Suspense fallback={<LoadingPage />}>
             <Test />
@@ -31,7 +32,15 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: 'oauth/success',
+        path: "login",
+        element: (
+          <Suspense fallback={<LoadingPage />}>
+            <Login />
+          </Suspense>
+        ),
+      },
+      {
+        path: "oauth/success",
         element: (
           <Suspense fallback={<LoadingPage />}>
             <OAuthSuccess />
@@ -39,7 +48,7 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: 'oauth/fail',
+        path: "oauth/fail",
         element: (
           <Suspense fallback={<LoadingPage />}>
             <OAuthFail />
@@ -47,7 +56,7 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: 'mypage',
+        path: "mypage",
         element: (
           <Suspense fallback={<LoadingPage />}>
             <MyPage />
