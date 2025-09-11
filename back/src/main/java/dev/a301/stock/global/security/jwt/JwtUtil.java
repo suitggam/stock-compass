@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
@@ -27,24 +28,28 @@ public class JwtUtil {
       @Value("${jwt.access-exp-seconds}") long accessExp,
       @Value("${jwt.refresh-exp-seconds}") long refreshExp
   ) {
-    // 1) 공백/따옴표 제거
-    String s = (secret == null ? "" : secret.trim());
-    if (s.startsWith("\"") && s.endsWith("\"") && s.length() >= 2) {
-      s = s.substring(1, s.length() - 1);
+    String normalized = stripQuotes(secret);
+
+    // 1) 명시 프리픽스 우선: base64:, base64url:, plain:
+    byte[] keyBytes = null;
+    if (normalized.startsWith("base64:")) {
+      keyBytes = safeBase64(normalized.substring("base64:".length()), false);
+    } else if (normalized.startsWith("base64url:")) {
+      keyBytes = safeBase64(normalized.substring("base64url:".length()), true);
+    } else if (normalized.startsWith("plain:")) {
+      keyBytes = normalized.substring("plain:".length()).getBytes(StandardCharsets.UTF_8);
+    } else {
+      // 2) 자동 감지: 표준 Base64 -> Base64URL -> 평문
+      keyBytes = tryDecodeBase64(normalized);
+      if (keyBytes == null) keyBytes = tryDecodeBase64Url(normalized);
+      if (keyBytes == null) keyBytes = normalized.getBytes(StandardCharsets.UTF_8);
     }
 
-    // 2) Base64 우선 사용, 실패 시 UTF-8 바이트 폴백
-    byte[] keyBytes;
-    try {
-      keyBytes = Decoders.BASE64.decode(s);
-    } catch (IllegalArgumentException e) {
-      keyBytes = s.getBytes(StandardCharsets.UTF_8);
-    }
-
-    // 3) 길이 검증(>=32 bytes = 256 bits)
+    // 3) 최소 길이 보장 (>= 32 bytes = 256 bits)
     if (keyBytes.length < 32) {
-      throw new IllegalArgumentException(
-          "JWT secret must be >= 256 bits (32 bytes). current=" + (keyBytes.length * 8) + " bits");
+      // 개발/유연성 위해 보완: 평문/짧은 키는 SHA-256으로 256비트로 도출
+      keyBytes = sha256(keyBytes);
+      log.warn("JWT secret was shorter than 256 bits. Derived a 256-bit key with SHA-256.");
     }
 
     this.key = Keys.hmacShaKeyFor(keyBytes);
@@ -56,7 +61,6 @@ public class JwtUtil {
 
   /* ===================== 발급 ===================== */
 
-  // Access 토큰: 최소 필요한 클레임만 (uid, typ=access)
   public String issueAccess(Integer userNo, String nickname) {
     var now = Instant.now();
     return Jwts.builder()
@@ -72,7 +76,6 @@ public class JwtUtil {
         .compact();
   }
 
-  // Refresh 토큰: PII 최소화 권장(typ=refresh 만)
   public String issueRefresh(Integer userNo) {
     var now = Instant.now();
     return Jwts.builder()
@@ -84,19 +87,7 @@ public class JwtUtil {
         .compact();
   }
 
-  /* ====== (선택) 기존 generate* 유지하고 싶으면 아래처럼 래핑 ======
-  public String generateAccessToken(Integer userNo, String socialEmail, String nickname) {
-    // 필요하면 email도 넣되, 진짜 필요한지 검토
-    return issueAccess(userNo, nickname);
-  }
-
-  public String generateRefreshToken(Integer userNo, String socialEmail) {
-    // refresh에 email을 넣지 않는 걸 권장
-    return issueRefresh(userNo);
-  }
-  */
-
-  /* ===================== 파싱/검증 헬퍼 ===================== */
+  /* ===================== 파싱/검증 ===================== */
 
   public boolean validate(String token) {
     try {
@@ -123,8 +114,7 @@ public class JwtUtil {
     try {
       var claims = Jwts.parserBuilder().setSigningKey(key).build()
           .parseClaimsJws(token).getBody();
-      Object typ = claims.get("typ");
-      return "access".equals(typ);
+      return "access".equals(claims.get("typ"));
     } catch (JwtException | IllegalArgumentException e) {
       return false;
     }
@@ -134,15 +124,57 @@ public class JwtUtil {
     try {
       var claims = Jwts.parserBuilder().setSigningKey(key).build()
           .parseClaimsJws(token).getBody();
-      Object typ = claims.get("typ");
-      return "refresh".equals(typ);
+      return "refresh".equals(claims.get("typ"));
     } catch (JwtException | IllegalArgumentException e) {
       return false;
     }
   }
 
-  /* ===================== 필요시 원시 파서 ===================== */
   public Jws<Claims> parse(String token) {
     return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+  }
+
+  /* ===================== 내부 헬퍼 ===================== */
+
+  private static String stripQuotes(String s) {
+    if (s == null) return "";
+    String t = s.trim();
+    if (t.length() >= 2 && t.startsWith("\"") && t.endsWith("\"")) {
+      t = t.substring(1, t.length() - 1);
+    }
+    return t;
+  }
+
+  private static byte[] tryDecodeBase64(String s) {
+    try {
+      return Decoders.BASE64.decode(s);
+    } catch (RuntimeException ignore) { // DecodingException 포함
+      return null;
+    }
+  }
+
+  private static byte[] tryDecodeBase64Url(String s) {
+    try {
+      return Decoders.BASE64URL.decode(s);
+    } catch (RuntimeException ignore) {
+      return null;
+    }
+  }
+
+  private static byte[] safeBase64(String s, boolean url) {
+    try {
+      return url ? Decoders.BASE64URL.decode(s) : Decoders.BASE64.decode(s);
+    } catch (RuntimeException e) {
+      throw new IllegalArgumentException("Invalid " + (url ? "Base64URL" : "Base64") + " JWT secret", e);
+    }
+  }
+
+  private static byte[] sha256(byte[] input) {
+    try {
+      MessageDigest md = MessageDigest.getInstance("SHA-256");
+      return md.digest(input);
+    } catch (Exception e) {
+      throw new IllegalStateException("SHA-256 not available", e);
+    }
   }
 }
