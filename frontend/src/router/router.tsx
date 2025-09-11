@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router';
 import { Suspense, lazy } from 'react';
 import Layout from '../common/Layout';
 import LoadingPage from '../common/LoadingPage';
@@ -7,7 +7,7 @@ const Main = lazy(() => import('../pages/MainPage'));
 const Test = lazy(() => import('../pages/TestPage'));
 const OAuthSuccess = lazy(() => import('../pages/OAuthSuccess'));
 const MyPage = lazy(() => import('../pages/MyPage'));
-const OAuthFail = lazy(() => import('../pages/OAuthFail')); // ★ 추가
+const OAuthFail = lazy(() => import('../pages/OAuthFail'));
 
 const Router = createBrowserRouter([
   {
@@ -39,7 +39,7 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: 'oauth/fail', // ★ 추가
+        path: 'oauth/fail',
         element: (
           <Suspense fallback={<LoadingPage />}>
             <OAuthFail />

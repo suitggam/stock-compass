@@ -1,4 +1,4 @@
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router'; // ✅ dom 아님
 
 export default function OAuthFail() {
   const [sp] = useSearchParams();

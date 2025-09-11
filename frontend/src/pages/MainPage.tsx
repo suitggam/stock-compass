@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { API_BASE, api, token } from '../api/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router'; // ✅ dom 아님
 import NicknameDialog from '../components/NicknameDialog';
 
 type User = {
@@ -12,7 +12,7 @@ type User = {
   cash: number;
 };
 
-function MainPage() {
+export default function MainPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [openNickDialog, setOpenNickDialog] = useState(false);
@@ -26,7 +26,6 @@ function MainPage() {
             const res = await api.post<{ accessToken: string }>('/api/auth/refresh', {});
             if (res?.accessToken) token.set(res.accessToken);
           } catch (e) {
-            // 비로그인/쿠키없음 등은 정상 흐름이므로 무시
             console.debug('[refresh] skip:', e);
           }
         }
@@ -50,7 +49,6 @@ function MainPage() {
     try {
       await api.post<void>('/api/auth/logout', {});
     } catch (e) {
-      // 이미 로그아웃 상태 등은 무시
       console.debug('[logout] ignored:', e);
     } finally {
       token.clear();
@@ -106,4 +104,3 @@ function MainPage() {
     </div>
   );
 }
-export default MainPage;

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api, token } from '../api/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 type User = {
   userNo: number;
