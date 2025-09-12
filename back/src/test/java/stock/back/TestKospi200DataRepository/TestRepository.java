@@ -1,13 +1,12 @@
 package stock.back.TestKospi200DataRepository;
 
+import com.stock.survive.entity.Kospi200DataEntity;
+import com.stock.survive.repository.Kospi200DataRepository;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import stock.back.entity.Kospi200DataEntity;
-import stock.back.repository.Kospi200DataRepository;
-
 import java.util.List;
 import java.util.Optional;
 
