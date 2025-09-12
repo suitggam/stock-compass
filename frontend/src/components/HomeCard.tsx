@@ -1,22 +1,16 @@
 import StarGraySvg from "../svg/StarGraySvg";
-import type { kospi200_5years } from "../types/Kospi200_5years";
+import type { Kospi200_Realtime } from "../types/Kospi200_Realtime";
 
 function numberFormat(num: number) {
   return num.toLocaleString();
 }
 
-function formatMarketCap(marketCap: number) {
-  const inManWon = Math.floor(marketCap / 10000);
-  return inManWon.toLocaleString();
-}
+// function formatMarketCap(marketCap: number) {
+//   const inManWon = Math.floor(marketCap / 10000);
+//   return inManWon.toLocaleString();
+// }
 
-function HomeCard({
-  ticker,
-  company_name,
-  close_price,
-  market_cap,
-  volume,
-}: kospi200_5years) {
+function HomeCard({ ticker, company_name, price, rate }: Kospi200_Realtime) {
   return (
     <div className="bg-white/20 border-white/30 backdrop-blur-sm rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border">
       {/* 헤더 - 회사명과 즐겨찾기 */}
@@ -38,11 +32,7 @@ function HomeCard({
           IT
         </div>
         <div className="text-white/90 text-sm">
-          시총{" "}
-          <span className="text-white font-medium">
-            {formatMarketCap(market_cap)}
-          </span>{" "}
-          조
+          시총 <span className="text-white font-medium">1</span> 조
         </div>
       </div>
 
@@ -50,15 +40,20 @@ function HomeCard({
       <div className="flex justify-between items-end">
         <div>
           <div className="text-white text-xl font-bold">
-            {numberFormat(close_price)}원
+            {numberFormat(price)}원
           </div>
-          <div className="text-green-400 text-sm font-medium">+1.71%</div>
+          <div
+            className={`text-sm font-medium ${
+              Number(rate) >= 0 ? "text-green-400" : "text-red-400"
+            }`}
+          >
+            {Number(rate) >= 0 ? "+" : ""}
+            {Number(rate).toFixed(2)}%
+          </div>
         </div>
         <div className="text-right">
           <div className="text-white/70 text-xs">거래량</div>
-          <div className="text-white/90 text-sm font-medium">
-            {numberFormat(volume)}
-          </div>
+          <div className="text-white/90 text-sm font-medium">1</div>
         </div>
       </div>
     </div>
