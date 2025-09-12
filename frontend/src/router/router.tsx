@@ -1,30 +1,65 @@
-import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router";
+import { Suspense, lazy } from "react";
 import Layout from "../common/Layout";
 import LoadingPage from "../common/LoadingPage";
 
-const Loading = lazy(() => import("../common/LoadingPage"));
-const Main = lazy(() => import("../pages/MainPage"));
+const Home = lazy(() => import("../pages/HomePage"));
+const Login = lazy(() => import("../pages/LoginPage"));
 const Test = lazy(() => import("../pages/TestPage"));
+const OAuthSuccess = lazy(() => import("../pages/OAuthSuccess"));
+const MyPage = lazy(() => import("../pages/MyPage"));
+const OAuthFail = lazy(() => import("../pages/OAuthFail"));
 
 const Router = createBrowserRouter([
   {
     path: "/",
-    Component: Layout,
+    element: <Layout />, // ✅
     children: [
       {
         index: true,
         element: (
-          <Suspense fallback={<Loading />}>
-            <Main />
+          <Suspense fallback={<LoadingPage />}>
+            <Home />
           </Suspense>
         ),
       },
       {
-        path: "/test",
+        path: "test",
         element: (
           <Suspense fallback={<LoadingPage />}>
             <Test />
+          </Suspense>
+        ),
+      },
+      {
+        path: "login",
+        element: (
+          <Suspense fallback={<LoadingPage />}>
+            <Login />
+          </Suspense>
+        ),
+      },
+      {
+        path: "oauth/success",
+        element: (
+          <Suspense fallback={<LoadingPage />}>
+            <OAuthSuccess />
+          </Suspense>
+        ),
+      },
+      {
+        path: "oauth/fail",
+        element: (
+          <Suspense fallback={<LoadingPage />}>
+            <OAuthFail />
+          </Suspense>
+        ),
+      },
+      {
+        path: "mypage",
+        element: (
+          <Suspense fallback={<LoadingPage />}>
+            <MyPage />
           </Suspense>
         ),
       },
