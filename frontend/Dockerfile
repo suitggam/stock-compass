@@ -13,6 +13,10 @@ RUN npm ci --only=production
 # 소스 코드 복사
 COPY . .
 
+# Build argument for API base URL
+ARG VITE_API_BASE_URL=/api
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 # 애플리케이션 빌드
 RUN npm run build
 
