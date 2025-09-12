@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "realtime_stock")
-public class RealtimeKospi200Entity {
+public class RealtimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
