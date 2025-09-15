@@ -9,6 +9,7 @@ from pyspark.sql import SparkSession
 import pyspark.sql.functions as F
 from pyspark.sql.types import *
 from pyspark.sql.window import Window
+from pyspark.storagelevel import StorageLevel
 import pandas as pd
 import numpy as np
 import networkx as nx
@@ -89,18 +90,42 @@ def init_spark_session():
         print(f"❌ Docker Spark 클러스터 연결 실패: {e}")
         sys.exit(1)
 
-def load_csv_data(spark, csv_file):
-    """CSV 파일을 Spark DataFrame으로 로드"""
+def load_data(spark, file_path):
+    """CSV 또는 Excel 파일을 Spark DataFrame으로 로드"""
     
-    print("📁 CSV 파일 로드 중...")
+    print("📁 파일 로드 중...")
     print("=" * 50)
     
     try:
-        news_df = spark.read \
-            .option("header", "true") \
-            .option("inferSchema", "true") \
-            .option("encoding", "UTF-8") \
-            .csv(csv_file)
+        # 파일 확장자 확인
+        if file_path.endswith('.xlsx') or file_path.endswith('.xls'):
+            print("📊 Excel 파일 감지 - Pandas로 읽기")
+            
+            # Pandas로 엑셀 읽기
+            import pandas as pd
+            pandas_df = pd.read_excel(file_path)
+            
+            # Spark DataFrame으로 변환
+            news_df = spark.createDataFrame(pandas_df)
+            
+            print(f"✅ Excel 파일 로드 성공!")
+            print(f"   원본 행 수: {len(pandas_df):,}건")
+            
+        else:
+            print("📄 CSV 파일 감지 - Spark로 읽기")
+            
+            # CSV 파일 읽기 (다양한 옵션 시도)
+            news_df = spark.read \
+                .option("header", "true") \
+                .option("inferSchema", "true") \
+                .option("encoding", "UTF-8") \
+                .option("sep", ",") \
+                .option("quote", '"') \
+                .option("escape", '"') \
+                .option("multiLine", "true") \
+                .option("ignoreLeadingWhiteSpace", "true") \
+                .option("ignoreTrailingWhiteSpace", "true") \
+                .csv(file_path)
         
         news_df.cache()
         
@@ -111,10 +136,34 @@ def load_csv_data(spark, csv_file):
         print(f"   전체 뉴스: {total_count:,}건")
         print(f"   컬럼 수: {column_count}개")
         
+        # 컬럼 정보 출력
+        print(f"\n📋 컬럼 정보:")
+        print("-" * 60)
+        for i, col in enumerate(news_df.columns, 1):
+            print(f"   {i:2d}. {col}")
+        
+        # 샘플 데이터 확인
+        print("\n🔍 데이터 샘플 확인:")
+        print("-" * 80)
+        sample_data = news_df.limit(3).collect()
+        for i, row in enumerate(sample_data, 1):
+            print(f"\n📄 샘플 {i}:")
+            row_dict = dict(row.asDict())
+            for key, value in row_dict.items():
+                # 값이 너무 길면 잘라서 표시
+                if isinstance(value, str) and len(value) > 100:
+                    display_value = value[:100] + "..."
+                else:
+                    display_value = value
+                print(f"   {key}: {display_value}")
+            print("-" * 40)
+        
         return news_df
         
     except Exception as e:
         print(f"❌ 파일 로드 실패: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def extract_kospi200_connections(spark, news_df):
@@ -126,9 +175,9 @@ def extract_kospi200_connections(spark, news_df):
     # '기관' 컬럼 찾기
     org_column = None
     columns = news_df.columns
-    
+    print(columns)
     for column_name in columns:
-        if '기관' in column_name or 'company' in column_name.lower() or 'organization' in column_name.lower():
+        if '기관' in column_name:
             org_column = column_name
             break
     
@@ -187,12 +236,14 @@ def extract_kospi200_connections(spark, news_df):
             print("❌ 데이터에서 KOSPI 200 기업을 찾을 수 없습니다!")
             return None
         
-        # 5단계: 같은 뉴스 내에서 기업 간 연결 생성
+        # 5단계: 같은 뉴스 내에서 기업 간 연결 생성 (뉴스 내 동일 기업 중복 제거 후 쌍 생성)
         print("🔄 5단계: 기업 간 연결 관계 생성...")
-        
-        # Self-join으로 같은 뉴스 내 기업 쌍 생성
-        connections = kospi200_companies_filtered.alias("c1").join(
-            kospi200_companies_filtered.alias("c2"),
+        # 뉴스 내 중복 기업 제거
+        dedup_companies = kospi200_companies_filtered.select("news_id", "company").distinct()
+
+        # Self-join으로 같은 뉴스 내 기업 쌍 생성 (사전순 정렬로 중복 제거)
+        connections = dedup_companies.alias("c1").join(
+            dedup_companies.alias("c2"),
             (F.col("c1.news_id") == F.col("c2.news_id")) & 
             (F.col("c1.company") < F.col("c2.company"))  # 중복 제거 및 순서 정렬
         ).select(
@@ -262,7 +313,17 @@ def calculate_pagerank(spark, connections_df):
             F.col("company1").alias("src"),
             F.col("company2").alias("dst"),
             F.col("weight").cast("double")
+        ).repartition(400, "src")
+
+        # 무방향 등가: 엣지 대칭화 후 합치기 (가중치 합산)
+        edges_sym = edges.unionByName(
+            edges.select(
+                F.col("dst").alias("src"),
+                F.col("src").alias("dst"),
+                F.col("weight").alias("weight")
+            )
         )
+        edges = edges_sym.groupBy("src", "dst").agg(F.sum("weight").alias("weight"))
         
         # PageRank 파라미터
         damping = 0.85
@@ -277,11 +338,15 @@ def calculate_pagerank(spark, connections_df):
             "norm_w", F.when(F.col("out_w") > 0, F.col("weight") / F.col("out_w")).otherwise(F.lit(0.0))
         ).select("src", "dst", "norm_w")
         
-        # 반복 계산
-        iterations = 25
-        print(f"🔄 PageRank 반복 계산 ({iterations}회)...")
+        # 반복 계산 (수렴 조건 추가)
+        iterations = 30  # 25 → 30으로 증가
+        convergence_threshold = 1e-6  # 수렴 임계값
+        print(f"🔄 PageRank 반복 계산 (최대 {iterations}회, 수렴 임계값: {convergence_threshold})...")
         
         for i in range(iterations):
+            # 이전 rank 저장 (수렴 체크용)
+            prev_ranks = ranks
+            
             # contribution 계산
             contribs = edges_norm.join(
                 ranks.withColumnRenamed("company", "src"), on="src", how="left"
@@ -298,8 +363,22 @@ def calculate_pagerank(spark, connections_df):
                 "rank", F.lit(base_val) + F.lit(damping) * F.col("sum_contrib")
             ).select("company", "rank")
             
+            # 수렴 체크 (매 5회마다)
             if (i + 1) % 5 == 0:
-                print(f"   반복 {i + 1}/{iterations} 완료")
+                # rank 변화량 계산
+                rank_diff = ranks.join(
+                    prev_ranks.withColumnRenamed("rank", "prev_rank"), 
+                    on="company", how="inner"
+                ).withColumn(
+                    "diff", F.abs(F.col("rank") - F.col("prev_rank"))
+                ).agg(F.max("diff")).collect()[0][0]
+                
+                print(f"   반복 {i + 1}/{iterations} 완료 (최대 변화량: {rank_diff:.8f})")
+                
+                # 수렴 확인
+                if rank_diff < convergence_threshold:
+                    print(f"   ✅ {i + 1}회 반복에서 수렴 완료!")
+                    break
         
         pagerank_results = ranks.select(
             F.col("company"), F.col("rank").alias("pagerank_score")
@@ -329,6 +408,129 @@ def calculate_pagerank(spark, connections_df):
         traceback.print_exc()
         return None
 
+def analyze_company(spark, company_name, pagerank_results, connections_df):
+    """특정 기업에 대한 상세 분석"""
+    
+    print(f"\n🔍 '{company_name}' 기업 상세 분석")
+    print("=" * 60)
+    
+    try:
+        # 1. PageRank 점수 확인
+        company_pagerank = pagerank_results.filter(
+            F.col("company").contains(company_name)
+        ).collect()
+        
+        if not company_pagerank:
+            print(f"❌ '{company_name}' 기업을 찾을 수 없습니다!")
+            print("💡 기업명을 정확히 입력해주세요. (예: 삼성전자, 현대차)")
+            return
+        
+        # 2. PageRank 정보
+        company_score = company_pagerank[0]['pagerank_score']
+        total_companies = pagerank_results.count()
+        
+        # 전체 순위 계산
+        rank_position = pagerank_results.filter(
+            F.col("pagerank_score") > company_score
+        ).count() + 1
+        
+        print(f"📊 기본 정보:")
+        print(f"   기업명: {company_pagerank[0]['company']}")
+        print(f"   PageRank 점수: {company_score:.6f}")
+        print(f"   전체 순위: {rank_position}위 / {total_companies}개 기업")
+        print(f"   상위 {rank_position/total_companies*100:.1f}%")
+        
+        # 3. 연결 관계 분석
+        company_connections = connections_df.filter(
+            (F.col("company1").contains(company_name)) | 
+            (F.col("company2").contains(company_name))
+        )
+        
+        total_connections = company_connections.count()
+        
+        if total_connections > 0:
+            avg_weight = company_connections.agg(F.avg("weight")).collect()[0][0]
+            max_weight = company_connections.agg(F.max("weight")).collect()[0][0]
+            
+            print(f"\n🔗 연결 관계 분석:")
+            print(f"   총 연결 수: {total_connections}개")
+            print(f"   평균 연결 강도: {avg_weight:.1f}회")
+            print(f"   최대 연결 강도: {max_weight}회")
+            
+            # 4. 주요 연결 기업들
+            print(f"\n🤝 주요 연결 기업 TOP 10:")
+            print("-" * 50)
+            
+            # company1이 대상 기업인 경우
+            connections_as_source = company_connections.filter(
+                F.col("company1").contains(company_name)
+            ).select(
+                F.col("company2").alias("partner"),
+                F.col("weight")
+            )
+            
+            # company2가 대상 기업인 경우
+            connections_as_target = company_connections.filter(
+                F.col("company2").contains(company_name)
+            ).select(
+                F.col("company1").alias("partner"),
+                F.col("weight")
+            )
+            
+            # 모든 연결 통합
+            all_connections = connections_as_source.union(connections_as_target)
+            
+            # 파트너별 총 연결 강도 계산
+            partner_connections = all_connections.groupBy("partner").agg(
+                F.sum("weight").alias("total_weight")
+            ).orderBy(F.desc("total_weight")).limit(10)
+            
+            top_partners = partner_connections.collect()
+            for i, row in enumerate(top_partners, 1):
+                print(f"   {i:2d}. {row['partner']}: {row['total_weight']}회")
+            
+            # 5. 연결 패턴 분석
+            print(f"\n📈 연결 패턴 분석:")
+            
+            # 연결 강도 분포
+            weight_distribution = company_connections.groupBy("weight").count().orderBy("weight").collect()
+            print(f"   연결 강도 분포:")
+            for row in weight_distribution:
+                print(f"     {row['weight']}회: {row['count']}개 연결")
+            
+            # 6. 영향력 분석
+            print(f"\n💡 영향력 분석:")
+            
+            # 높은 연결 강도를 가진 관계들
+            strong_connections = company_connections.filter(F.col("weight") >= 5).count()
+            print(f"   강한 연결 (5회 이상): {strong_connections}개")
+            
+            # 연결 다양성
+            unique_partners = all_connections.select("partner").distinct().count()
+            print(f"   연결된 기업 수: {unique_partners}개")
+            print(f"   연결 다양성: {unique_partners/total_connections*100:.1f}%")
+            
+        else:
+            print(f"\n❌ '{company_name}'과 연결된 기업이 없습니다.")
+            print("   이 기업은 뉴스에서 다른 KOSPI 200 기업과 함께 언급되지 않았습니다.")
+        
+        # 7. 권장사항
+        print(f"\n💭 분석 결과:")
+        if company_score > 0.01:
+            print(f"   ✅ '{company_name}'은 높은 영향력을 가진 기업입니다.")
+            print(f"   📈 뉴스에서 자주 언급되며 다른 기업들과 강한 연결을 가지고 있습니다.")
+        elif company_score > 0.005:
+            print(f"   ⚖️  '{company_name}'은 중간 수준의 영향력을 가진 기업입니다.")
+            print(f"   📊 적당한 연결 관계를 가지고 있습니다.")
+        else:
+            print(f"   ⚠️  '{company_name}'은 상대적으로 낮은 영향력을 가진 기업입니다.")
+            print(f"   📉 뉴스에서의 언급 빈도나 연결 관계가 제한적입니다.")
+        
+    except Exception as e:
+        print(f"❌ 기업 분석 실패: {e}")
+        import traceback
+        traceback.print_exc()
+
 def main():
     """메인 실행 함수 (완전 함수형)"""
     
@@ -356,8 +558,8 @@ def main():
     spark = init_spark_session()
     
     try:
-        # 1. CSV 로드
-        news_df = load_csv_data(spark, csv_file)
+        # 1. 데이터 로드 (CSV 또는 Excel)
+        news_df = load_data(spark, csv_file)
         if news_df is None:
             return
         
@@ -381,6 +583,33 @@ def main():
         print(f"   TOP 3 영향력 기업:")
         for i, row in enumerate(top_3, 1):
             print(f"     {i}. {row['company']} (점수: {row['pagerank_score']:.6f})")
+        
+        # 기업 상세 분석
+        print(f"\n" + "="*60)
+        print("🔍 기업 상세 분석 모드")
+        print("="*60)
+        
+        while True:
+            try:
+                company_input = input("\n📝 분석할 기업명을 입력하세요 (종료: 'quit'): ").strip()
+                
+                if company_input.lower() in ['quit', 'exit', 'q']:
+                    print("👋 분석을 종료합니다.")
+                    break
+                
+                if not company_input:
+                    print("⚠️  기업명을 입력해주세요.")
+                    continue
+                
+                # 기업 분석 실행
+                analyze_company(spark, company_input, pagerank_results, connections_df)
+                
+            except KeyboardInterrupt:
+                print("\n👋 분석을 종료합니다.")
+                break
+            except Exception as e:
+                print(f"❌ 입력 처리 오류: {e}")
+                continue
     
     finally:
         print("🔄 Spark 세션 종료 중...")
