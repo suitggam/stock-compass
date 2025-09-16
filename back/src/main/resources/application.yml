@@ -8,6 +8,13 @@ spring:
     password: ssafy
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      username: ${REDIS_USERNAME:default}
+      password: ${REDIS_PASSWORD}
+
   jpa:
     hibernate:
       ddl-auto: create # create는 매번 테이블 재생성, update는 기존 데이터 유지하면서 변경 반영
@@ -15,3 +22,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-exp-minutes: ${JWT_ACCESS_EXP_MINUTES:60}
+  refresh-exp-days: ${JWT_REFRESH_EXP_DAYS:14}
