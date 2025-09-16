@@ -66,11 +66,10 @@ public class JWTCheckFilter extends OncePerRequestFilter {
             // uid는 Number로 올 수 있음 → int로 안전 변환
             Integer uid = (claims.get("uid") instanceof Number)
                     ? ((Number) claims.get("uid")).intValue()
-                    : Integer.valueOf(String.valueOf(claims.get("uid")));
+                    : Integer.parseInt(String.valueOf(claims.get("uid")));
 
-            String role = String.valueOf(claims.get("role"));
             var auth = new UsernamePasswordAuthenticationToken(
-                    uid, null, List.of(new SimpleGrantedAuthority(role)));
+                    uid, null, List.of());
 
             auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(auth);

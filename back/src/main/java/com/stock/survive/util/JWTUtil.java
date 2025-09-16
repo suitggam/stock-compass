@@ -39,11 +39,6 @@ public class JWTUtil {
                 .compact();
     }
 
-    /** 분 단위가 편하면 오버로드도 제공 */
-    public String generateToken(Map<String, Object> claims, int minutes) {
-        return generateToken(claims, Duration.ofMinutes(minutes));
-    }
-
     /** 유효성 검증 + 클레임 반환 (실패 시 JwtException/ExpiredJwtException 등 발생) */
     public Claims parse(String token) throws JwtException, ExpiredJwtException {
         return parser.parseClaimsJws(token).getBody();

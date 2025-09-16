@@ -23,7 +23,7 @@ const MyPage: React.FC = () => {
     const ensureAccess = async () => {
       if (!token.get()) {
         try {
-          const data = await api.post<{ accessToken: string }>('/api/auth/refresh', {});
+          const data = await api.post<{ accessToken: string }>('/users/auth/refresh', {});
           if (data?.accessToken) token.set(data.accessToken);
         } catch (e) {
           // 비로그인 → 메인으로
@@ -34,7 +34,7 @@ const MyPage: React.FC = () => {
       }
 
       try {
-        const data = await api.get<User>('/api/users/me');
+        const data = await api.get<User>('/users/login-user');
         setUser(data);
       } catch (e) {
         console.debug('[me] failed:', e);
@@ -93,7 +93,7 @@ const MyPage: React.FC = () => {
             className="px-3 py-2 rounded bg-rose-500 text-white"
             onClick={async () => {
               try {
-                await api.post<void>('/api/auth/logout', {});
+                await api.post<void>('/users/logout', {});
               } catch (e) {
                 console.debug('[logout in mypage] ignored:', e);
               } finally {

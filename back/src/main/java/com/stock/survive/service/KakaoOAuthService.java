@@ -131,12 +131,6 @@ public class KakaoOAuthService {
     // --- Kakao 응답 모델(필요 필드만) ---
     public static class KakaoTokenResponse {
         public String access_token;
-        public String token_type;
-        public Long expires_in;
-        public String refresh_token;
-        public Long refresh_token_expires_in;
-        public String id_token;
-        public Map<String,Object> scope;
     }
     public static class KakaoUserResponse {
         public long id;
