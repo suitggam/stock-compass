@@ -6,8 +6,8 @@ import websockets
 import pymysql
 
 # ===================== 계정 정보 =====================
-APP_KEY = "PSgXaH8s5e6LjYFuJcx6XIEt7fk4idpDKiOU"
-SECRET_KEY = "rI+GejeP/8lysdn0ooKkuSNLTlXERdY6UtJHLNjaHwwRtd+cQ+70RKZyoDiU9SHjWMchZn0odqt+bitxZ47EnkSq3LPy/EvOrwZPmHJxCTfdKdlqPNy5oS6OE22xsS99whjbjuU4zGOL0AnwWRUo="
+APP_KEY = ""
+SECRET_KEY = ""
 CUSTTYPE = "P"
 TR_TYPE = "1"
 SUBSCRIBE_CODES = ["005930", "035720", "000880"]

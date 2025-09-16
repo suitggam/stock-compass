@@ -29,7 +29,7 @@ function HomeCard({
   marketCap,
 }: DisplayStock) {
   return (
-    <div className="bg-white/20 border-white/30 backdrop-blur-sm rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border">
+    <div className="cursor-pointer bg-white/20 border-white/30 backdrop-blur-sm rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border">
       {/* 헤더 - 회사명과 즐겨찾기 */}
       <div className="flex justify-between items-start mb-3">
         <div className="flex-1">

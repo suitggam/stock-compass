@@ -14,7 +14,7 @@ public class StockRealtime {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long realtimeNo;
 
     @Column(length = 10, nullable = false)
     private String ticker;
