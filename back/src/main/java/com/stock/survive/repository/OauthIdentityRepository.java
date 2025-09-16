@@ -1,0 +1,4 @@
+package com.stock.survive.repository;
+
+public interface OauthIdentityRepository {
+}
