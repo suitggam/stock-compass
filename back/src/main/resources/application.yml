@@ -23,6 +23,12 @@ spring:
       hibernate:
         format_sql: true
 
+  oauth:
+    kakao:
+      client-id: ${KAKAO_CLIENT_ID}
+      client-secret: ${KAKAO_CLIENT_SECRET:}   # 없으면 비워둠
+      redirect-uri: http://localhost:8080/users/auth/kakao/callback
+
 jwt:
   secret: ${JWT_SECRET}
   access-exp-minutes: ${JWT_ACCESS_EXP_MINUTES:60}
