@@ -3,6 +3,7 @@ package com.stock.survive.controller;
 import com.stock.survive.dto.AuthResponse;
 import com.stock.survive.dto.UserSummaryDto;
 import com.stock.survive.entity.User;
+import com.stock.survive.service.GoogleOAuthService;
 import com.stock.survive.service.KakaoOAuthService;
 import com.stock.survive.service.TokenService;
 import com.stock.survive.service.UserLinkService;
@@ -69,6 +70,7 @@ import java.util.Map;
 public class AuthController {
 
     private final KakaoOAuthService kakao;
+    private final GoogleOAuthService google;
     private final UserLinkService linker;
     private final TokenService tokenService;
 
@@ -78,7 +80,30 @@ public class AuthController {
     //일단 테스트용으로 로그인 페이지로 넘어가게 하려고 테스트용
     @Value("${app.front-redirect-after:/login}")
     private String frontAfter;
+    
+    //구글
+    @GetMapping("/auth/google")
+    public void googleLogin(HttpServletResponse res) throws Exception {
+        res.sendRedirect(google.buildAuthorizeUrl());
+    }
 
+    @GetMapping("/auth/google/callback")
+    public void googleCallback(@RequestParam String code,
+                               @RequestParam String state,
+                               HttpServletResponse res) throws Exception {
+        google.verifyState(state);
+        var info = google.exchangeAndFetchUser(code);
+        var user = linker.linkOrCreateByProvider(info);
+
+        var pair = tokenService.issue(user);
+        tokenService.setRefreshCookie(res, pair.refresh());
+
+        String base = frontBase.replaceAll("/+$", "");
+        String after = frontAfter.startsWith("/") ? frontAfter : ("/" + frontAfter);
+        res.sendRedirect(base + after);
+    }
+
+    //카카오
     @GetMapping("/auth/kakao")
     public void kakaoLogin(HttpServletResponse res) throws Exception {
         res.sendRedirect(kakao.buildAuthorizeUrl());
