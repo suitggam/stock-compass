@@ -1,0 +1,23 @@
+export interface WebSocketRealtime {
+  ticker: string;
+  companyName: string;
+  price: string;
+  rate: number;
+}
+
+export interface BackendRealtime {
+  ticker: string;
+  volume: number;
+  marketCap: number;
+  categoryName: string;
+}
+
+export interface EndDay {
+  ticker: string;
+  companyName: string;
+  endPrice: number;
+  rate: number;
+  volume: number;
+  marketCap: number;
+  categoryName: string;
+}

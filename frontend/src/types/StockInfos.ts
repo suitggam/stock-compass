@@ -1,7 +1,7 @@
-export interface kospi200_5years {
+export interface StockInfos {
   id: number;
   ticker: string;
-  company_name: string;
+  companyName: string;
   date: string;
   open_price: number;
   high_price: number;
@@ -10,11 +10,11 @@ export interface kospi200_5years {
   volume: number;
   market_cap: number;
 }
-export const mockData: kospi200_5years[] = [
+export const mockData: StockInfos[] = [
   {
     id: 1,
     ticker: "005930",
-    company_name: "삼성전자",
+    companyName: "삼성전자",
     date: "2025-09-10",
     open_price: 59300,
     high_price: 59400,
