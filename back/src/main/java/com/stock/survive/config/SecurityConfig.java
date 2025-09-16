@@ -46,7 +46,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/users/auth/**",   // 카카오/구글 + refresh
-                                "/users/logout",    // 로그아웃은 토큰 없어도 허용 가능(선호에 따라 authenticated로 바꿔도 됨)
+                                "/users/logout",
                                 "/error",
                                 "/actuator/health"
                         ).permitAll()
@@ -74,10 +74,5 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
         return source;
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(); // 폼 로그인 안 써도 있어도 무방
     }
 }
