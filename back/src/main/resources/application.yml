@@ -1,6 +1,10 @@
 server:
   port: 8080
 
+app:
+  front-redirect: http://localhost:5173
+  front-redirect-after: /login
+
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/survive_stock?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=utf8
