@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { API_BASE, api, token } from "../api/client";
-import { useNavigate } from "react-router"; // ✅ dom 아님
+import { useNavigate } from "react-router";
 import NicknameDialog from "../components/NicknameDialog";
 
 type User = {
@@ -23,17 +23,14 @@ export default function LoginPage() {
       try {
         if (!token.get()) {
           try {
-            const res = await api.post<{ accessToken: string }>(
-              "/api/auth/refresh",
-              {}
-            );
+            const res = await api.post<{ accessToken: string }>('/users/auth/refresh', {});
             if (res?.accessToken) token.set(res.accessToken);
           } catch (e) {
             console.debug("[refresh] skip:", e);
           }
         }
         if (token.get()) {
-          const me = await api.get<User>("/api/users/me");
+          const me = await api.get<User>('/users/login-user');
           setUser(me);
           if (!me.nickname || /^user(_|\d|$)/i.test(me.nickname))
             setOpenNickDialog(true);
@@ -46,13 +43,12 @@ export default function LoginPage() {
     })();
   }, []);
 
-  const goGoogle = () =>
-    (window.location.href = `${API_BASE}/users/auth/google`);
+  const goGoogle = () => alert('구글 로그인은 구현 중입니다 🙏');
   const goKakao = () => (window.location.href = `${API_BASE}/users/auth/kakao`);
 
   const logout = async () => {
     try {
-      await api.post<void>("/api/auth/logout", {});
+      await api.post<void>('/users/logout', {});
     } catch (e) {
       console.debug("[logout] ignored:", e);
     } finally {
