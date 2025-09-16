@@ -38,9 +38,7 @@ public class UserController {
         if (nn.length() < 2 || nn.length() > 30) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_NICKNAME");
         }
-        // 엔티티가 @Getter만 있으면 빌더/세터가 없으니, 필요 시 엔티티에 닉네임 변경 메서드 추가하세요.
-        // 예: u.changeNickname(nn);
-        // 여기선 JPA 업데이트를 위해 리플렉션/세터가 필요 -> 프로젝트 스타일에 맞게 구현
+        // 닉네임 변경 메서드 추가 필요
         try {
             var f = User.class.getDeclaredField("nickname");
             f.setAccessible(true);

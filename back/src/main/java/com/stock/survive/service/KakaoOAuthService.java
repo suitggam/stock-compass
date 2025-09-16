@@ -5,6 +5,7 @@ import com.stock.survive.dto.OAuthUserInfo;
 import com.stock.survive.entity.PlatformType;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -20,7 +21,9 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Log4j2
 public class KakaoOAuthService {
+
 
     private final KakaoOAuthProperties props;
     private final RestTemplate restTemplate = new RestTemplate();
@@ -32,6 +35,7 @@ public class KakaoOAuthService {
 
     /** 1) 인가 URL 생성 (state를 세션에 저장) */
     public String buildAuthorizeUrl() {
+        log.info("[KAKAO] clientId={}, redirect={}", props.getClientId(), props.getRedirectUri());
         String state = UUID.randomUUID().toString();
         session().setAttribute("OAUTH2_KAKAO_STATE", state);
 
