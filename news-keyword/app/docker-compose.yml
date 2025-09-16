@@ -4,11 +4,17 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ../news:/app/news:ro  # CSV 파일이 있는 디렉토리를 읽기 전용으로 마운트
+      - ../spark/data:/app/spark/data:ro  # CSV 파일이 있는 디렉토리를 읽기 전용으로 마운트
       - .:/app:rw  # 개발 시 코드 변경을 위한 마운트
     environment:
       - PYTHONPATH=/app
       - SPARK_LOCAL_IP=0.0.0.0
+      # OpenAI API 키 설정 (실제 키로 변경하거나 .env 파일 사용)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-your_openai_api_key_here}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DEBUG=${DEBUG:-False}
+    env_file:
+      - .env  # .env 파일에서 환경 변수 로드
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
