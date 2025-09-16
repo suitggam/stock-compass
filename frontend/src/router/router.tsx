@@ -9,6 +9,7 @@ const Test = lazy(() => import("../pages/TestPage"));
 const OAuthSuccess = lazy(() => import("../pages/OAuthSuccess"));
 const MyPage = lazy(() => import("../pages/MyPage"));
 const OAuthFail = lazy(() => import("../pages/OAuthFail"));
+const TendencyGame = lazy(() => import("../pages/TendencyGamePage"));
 
 const Router = createBrowserRouter([
   {
@@ -60,6 +61,14 @@ const Router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingPage />}>
             <MyPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "game",
+        element: (
+          <Suspense fallback={<LoadingPage />}>
+            <TendencyGame />
           </Suspense>
         ),
       },
