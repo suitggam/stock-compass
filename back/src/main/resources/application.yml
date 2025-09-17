@@ -6,6 +6,10 @@ app:
   front-redirect-after: /login
 
 spring:
+
+  config:
+    import: optional:dotenv:file:.env,optional:dotenv:file:./back/.env
+
   datasource:
     url: jdbc:mysql://localhost:3306/survive_stock?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=utf8
     username: root

@@ -30,7 +30,7 @@ public class JWTCheckFilter extends OncePerRequestFilter {
     private final JWTUtil jwtUtil;
 
     private static final List<String> WHITELIST_PREFIXES = List.of(
-            "/users/auth/",    // /users/auth/kakao, /users/auth/kakao/callback, /users/auth/refresh ...
+            "/users/auth/",
             "/error",
             "/actuator/health",
             "/favicon.ico"
