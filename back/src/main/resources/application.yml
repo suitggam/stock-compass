@@ -1,12 +1,30 @@
 server:
   port: 8080
 
+app:
+  front-redirect: http://localhost:5173
+  front-redirect-after: /login
+
 spring:
+
+  config:
+    import: optional:dotenv:file:.env,optional:dotenv:file:./back/.env
+
   datasource:
     url: jdbc:mysql://localhost:3306/survive_stock?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=utf8
     username: root
     password: ssafy
     driver-class-name: com.mysql.cj.jdbc.Driver
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      username: ${REDIS_USERNAME:default}
+      password: ${REDIS_PASSWORD}
+      ssl:
+        enabled: ${REDIS_SSL:false}
+      timeout: 3s
 
   jpa:
     hibernate:
@@ -15,3 +33,19 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+oauth:
+  kakao:
+    client-id: ${KAKAO_CLIENT_ID}
+    client-secret: ${KAKAO_CLIENT_SECRET:}
+    redirect-uri: http://localhost:8080/users/auth/kakao/callback
+
+  google:
+    client-id: ${GOOGLE_CLIENT_ID}
+    client-secret: ${GOOGLE_CLIENT_SECRET:}
+    redirect-uri: http://localhost:8080/users/auth/google/callback
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-exp-minutes: ${JWT_ACCESS_EXP_MINUTES:60}
+  refresh-exp-days: ${JWT_REFRESH_EXP_DAYS:14}
