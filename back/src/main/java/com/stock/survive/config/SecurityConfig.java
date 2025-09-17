@@ -46,7 +46,8 @@ public class SecurityConfig {
                                 "/users/auth/**",   // 카카오/구글 + refresh
                                 "/users/logout",
                                 "/error",
-                                "/actuator/health"
+                                "/actuator/health",
+                                "/api/stock/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
