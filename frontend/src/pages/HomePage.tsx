@@ -10,17 +10,20 @@ import {
   getStockRealtimeWithPage,
   getEndDayWithPage,
 } from "../api/StockRealtimeApi";
+import { Link } from "react-router";
 
 export default function HomePage() {
-  const [wsStocks, setWsStocks] = useState<WebSocketRealtime[]>([]);
   const [backendStocks, setBackendStocks] = useState<BackendRealtime[]>([]);
+  const [wsStocks, setWsStocks] = useState<Map<string, WebSocketRealtime>>(
+    new Map()
+  );
   const [endDayStocks, setEndDayStocks] = useState<EndDay[]>([]);
   const [isMarketOpen, setIsMarketOpen] = useState(true);
 
   // 페이지네이션 상태
   const [page, setPage] = useState(1);
   const [size] = useState(21);
-  const [totalPages, setTotalPages] = useState(1); // 최소 1페이지
+  const [totalPages, setTotalPages] = useState(1);
 
   // 0️⃣ 장 시간 확인 (09:00 ~ 15:30)
   useEffect(() => {
@@ -38,33 +41,31 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // 1️⃣ 장 상태에 따라 데이터 가져오기 (페이지네이션 적용)
+  // 1️⃣ 1분 단위로 백엔드 전체 데이터 가져오기
   useEffect(() => {
-    const fetchData = async () => {
-      if (isMarketOpen) {
-        try {
+    const fetchBackend = async () => {
+      try {
+        if (isMarketOpen) {
           const response: PageResponseDto<BackendRealtime> =
-            await getStockRealtimeWithPage(page, size);
+            await getStockRealtimeWithPage(1, 1000); // 전체
           setBackendStocks(response.dtoList);
-          setTotalPages(response.totalPage || 1);
-        } catch (err) {
-          console.error("❌ 백엔드 API 에러:", err);
-        }
-      } else {
-        try {
+          setTotalPages(Math.ceil(response.dtoList.length / size));
+        } else {
           const response: PageResponseDto<EndDay> = await getEndDayWithPage(
             page,
             size
           );
           setEndDayStocks(response.dtoList);
           setTotalPages(response.totalPage || 1);
-        } catch (err) {
-          console.error("❌ EndDay API 에러:", err);
         }
+      } catch (err) {
+        console.error("❌ API 에러:", err);
       }
     };
 
-    fetchData();
+    fetchBackend();
+    const interval = setInterval(fetchBackend, 60 * 1000); // 1분 단위 새로고침
+    return () => clearInterval(interval);
   }, [isMarketOpen, page, size]);
 
   // 2️⃣ WebSocket 연결 (장 열려있을 때만)
@@ -78,7 +79,17 @@ export default function HomePage() {
     ws.onmessage = (event) => {
       try {
         const data: WebSocketRealtime[] = JSON.parse(event.data);
-        setWsStocks(data);
+        setWsStocks((prev) => {
+          const updated = new Map(prev);
+          data.forEach((d) => {
+            updated.set(d.ticker, {
+              ticker: d.ticker,
+              price: d.price,
+              rate: d.rate,
+            });
+          });
+          return updated;
+        });
       } catch (err) {
         console.error("❌ WS 데이터 파싱 오류:", err, event.data);
       }
@@ -90,48 +101,41 @@ export default function HomePage() {
     return () => ws.close();
   }, [isMarketOpen]);
 
-  // 3️⃣ 화면에 보여줄 데이터 결정 (중복 제거 + 전체 ticker 표시)
-  const displayStocks: EndDay[] = (() => {
+  // 3️⃣ 화면에 보여줄 데이터 결정
+  const displayStocks: (BackendRealtime & {
+    endPrice?: number;
+    rate?: number;
+  })[] = (() => {
     if (!isMarketOpen) return endDayStocks;
 
-    const backendMap = new Map(backendStocks.map((b) => [b.ticker, b]));
-    const allTickers = Array.from(
-      new Set([
-        ...wsStocks.map((w) => w.ticker),
-        ...backendStocks.map((b) => b.ticker),
-      ])
-    );
-
-    return allTickers.map((ticker) => {
-      const wsItem = wsStocks.find((w) => w.ticker === ticker);
-      const backendItem = backendMap.get(ticker);
-
+    const startIdx = (page - 1) * size;
+    const endIdx = startIdx + size;
+    return backendStocks.slice(startIdx, endIdx).map((b) => {
+      const wsItem = wsStocks.get(b.ticker);
       return {
-        ticker,
-        companyName: wsItem?.companyName ?? "알수없음",
-        endPrice: Number(wsItem?.price ?? 0),
-        rate: wsItem?.rate ?? 0,
-        volume: backendItem?.volume ?? 0,
-        marketCap: backendItem?.marketCap ?? 0,
-        categoryName: backendItem?.categoryName ?? "알수없음",
+        ...b,
+        endPrice: wsItem ? Number(wsItem.price) : 0,
+        rate: wsItem ? wsItem.rate : 0,
       };
     });
   })();
 
   return (
     <div>
-      <div className=" grid grid-cols-3 gap-4 p-4">
+      <div className="grid grid-cols-3 gap-4 p-4">
         {displayStocks.map((stock) => (
-          <HomeCard
-            key={stock.ticker}
-            ticker={stock.ticker}
-            companyName={stock.companyName}
-            price={stock.endPrice}
-            rate={stock.rate}
-            volume={stock.volume}
-            marketCap={stock.marketCap}
-            categoryName={stock.categoryName}
-          />
+          <Link to={stock.ticker}>
+            <HomeCard
+              key={stock.ticker}
+              ticker={stock.ticker}
+              companyName={stock.companyName}
+              price={stock.endPrice ?? 0}
+              rate={stock.rate ?? 0}
+              volume={stock.volume}
+              marketCap={stock.marketCap}
+              categoryName={stock.categoryName}
+            />
+          </Link>
         ))}
       </div>
 

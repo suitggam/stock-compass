@@ -1,12 +1,12 @@
 export interface WebSocketRealtime {
   ticker: string;
-  companyName: string;
   price: string;
   rate: number;
 }
 
 export interface BackendRealtime {
   ticker: string;
+  companyName: string;
   volume: number;
   marketCap: number;
   categoryName: string;
