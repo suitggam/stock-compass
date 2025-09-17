@@ -41,7 +41,7 @@ public class OauthIdentity {
     @Column(name="provider_email",length = 254)
     private String providerEmail;
 
-    @Column(name="profile_img_url", length = 512)
+    @Column(name="profile_image_url", length = 512)
     private String profileImgUrl;
 
     @Builder.Default
