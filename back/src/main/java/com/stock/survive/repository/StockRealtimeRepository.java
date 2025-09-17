@@ -12,18 +12,21 @@ import org.springframework.stereotype.Repository;
 public interface StockRealtimeRepository extends JpaRepository<StockRealtime, Long> {
 
     @Query("""
-                SELECT new com.stock.survive.dto.StockRealtimeDto(
-                    si.ticker,
-                    inf.volume,
-                    inf.marketCap,
-                    sc.categoryName
-                )
-                FROM StockItems si
-                JOIN si.category sc
-                JOIN si.infos inf
-                WHERE inf.date = (
-                    SELECT MAX(sinf.date) FROM StockInfos sinf WHERE sinf.stockItem.itemNo = si.itemNo
-                )
-            """)
+    SELECT new com.stock.survive.dto.StockRealtimeDto(
+        si.ticker,
+        si.companyName,
+        inf.volume,
+        inf.marketCap,
+        sc.categoryName
+    )
+    FROM StockItems si
+    JOIN si.category sc
+    JOIN si.infos inf
+    WHERE inf.date = (
+        SELECT MAX(sinf.date) FROM StockInfos sinf WHERE sinf.stockItem.itemNo = si.itemNo
+    )
+    ORDER BY si.itemNo ASC
+""")
     Page<StockRealtimeDto> findAllWithLatestInfo(Pageable pageable);
+
 }

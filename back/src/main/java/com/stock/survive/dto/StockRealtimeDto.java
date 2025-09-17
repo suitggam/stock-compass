@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class StockRealtimeDto {
     private String ticker;
+    private String companyName;
     private Long volume;
     private Long marketCap;
     private String categoryName;
