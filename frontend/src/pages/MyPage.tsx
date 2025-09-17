@@ -18,6 +18,7 @@ const MyPage: React.FC = () => {
   const nav = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false); // ← 추가
 
   useEffect(() => {
     const ensureAccess = async () => {
@@ -26,13 +27,11 @@ const MyPage: React.FC = () => {
           const data = await api.post<{ accessToken: string }>('/users/auth/refresh', {});
           if (data?.accessToken) token.set(data.accessToken);
         } catch (e) {
-          // 비로그인 → 메인으로
           console.debug('[refresh in mypage] redirect:', e);
           nav('/', { replace: true });
           return;
         }
       }
-
       try {
         const data = await api.get<User>('/users/login-user');
         setUser(data);
@@ -43,18 +42,14 @@ const MyPage: React.FC = () => {
         setLoading(false);
       }
     };
-
     ensureAccess();
   }, [nav]);
 
-  if (loading) {
-    return <div className="min-h-screen grid place-items-center">불러오는 중…</div>;
-  }
-  if (!user) {
+  if (loading) return <div className="min-h-screen grid place-items-center">불러오는 중…</div>;
+  if (!user)
     return (
       <div className="min-h-screen grid place-items-center">유저 정보를 불러오지 못했어요.</div>
     );
-  }
 
   return (
     <div className="min-h-screen p-6">
@@ -85,17 +80,17 @@ const MyPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-6 flex gap-2">
+        <div className="mt-6 flex flex-wrap gap-2">
           <button className="px-3 py-2 rounded border" onClick={() => nav('/')}>
             돌아가기
           </button>
           <button
-            className="px-3 py-2 rounded bg-rose-500 text-white"
+            className="px-3 py-2 rounded bg-indigo-600 text-white"
             onClick={async () => {
               try {
                 await api.post<void>('/users/logout', {});
-              } catch (e) {
-                console.debug('[logout in mypage] ignored:', e);
+              } catch (err) {
+                console.debug('[logout ignored]', err);
               } finally {
                 token.clear();
                 nav('/', { replace: true });
@@ -103,6 +98,29 @@ const MyPage: React.FC = () => {
             }}
           >
             로그아웃
+          </button>
+
+          {/* 회원탈퇴 버튼 */}
+          <button
+            className="px-3 py-2 rounded bg-rose-600 text-white disabled:opacity-50"
+            disabled={deleting}
+            onClick={async () => {
+              if (!confirm('정말 탈퇴하시겠어요? 이 작업은 되돌릴 수 없습니다.')) return;
+              setDeleting(true);
+              try {
+                await api.del<void>('/users/delete'); // 204 예상
+                await api.logout(); // 서버 로그아웃 + 토큰 파기
+                alert('탈퇴가 완료되었습니다.');
+                nav('/', { replace: true });
+              } catch (e) {
+                console.error('[delete user] failed:', e);
+                alert('탈퇴 중 오류가 발생했어요.');
+              } finally {
+                setDeleting(false);
+              }
+            }}
+          >
+            {deleting ? '탈퇴 중…' : '회원탈퇴'}
           </button>
         </div>
       </div>

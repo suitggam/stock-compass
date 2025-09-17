@@ -2,6 +2,8 @@ package com.stock.survive.config;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -18,7 +20,8 @@ public class GoogleOAuthProperties {
     private String clientSecret;
 
     @NotBlank
-    private String redirectUri = "http://localhost:8080/users/auth/google/callback";
+    @Value("${oauth.google.redirect-uri}")
+    private String redirectUri;
 
     // 구글 표준 엔드포인트(기본값)
     private String authorizeUri = "https://accounts.google.com/o/oauth2/v2/auth";

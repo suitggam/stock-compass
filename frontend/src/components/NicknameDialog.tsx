@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
 
 type Props = {
@@ -8,25 +8,28 @@ type Props = {
   onSaved: (newNickname: string) => void;
 };
 
-function debounce<Args extends unknown[]>(fn: (...args: Args) => void, ms = 350) {
-  let t: ReturnType<typeof setTimeout> | undefined;
-  return (...args: Args) => {
-    if (t) clearTimeout(t);
-    t = setTimeout(() => fn(...args), ms);
-  };
-}
+// 백엔드: PATCH /users/me  (body: { nickname })
+// 응답: UserSummaryDto(여기선 nickname만 사용)
+type UserSummary = { nickname: string; [k: string]: unknown };
+
+// axios류 에러에서 메시지 뽑기 (any 금지)
+type ApiError = { response?: { data?: { message?: string; error?: string } } };
+const extractMsg = (err: unknown) => {
+  if (typeof err === 'object' && err !== null) {
+    const e = err as ApiError;
+    return e.response?.data?.message ?? e.response?.data?.error;
+  }
+  return undefined;
+};
 
 const NicknameDialog: React.FC<Props> = ({ open, initialNickname, onClose, onSaved }) => {
   const [nick, setNick] = useState(initialNickname ?? '');
-  const [checking, setChecking] = useState(false);
-  const [available, setAvailable] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setNick(initialNickname ?? '');
-    setAvailable(null);
     setError(null);
   }, [open, initialNickname]);
 
@@ -37,60 +40,30 @@ const NicknameDialog: React.FC<Props> = ({ open, initialNickname, onClose, onSav
     return null;
   };
 
-  const checkAvailability = useMemo(
-    () =>
-      debounce(async (v: string) => {
-        const fmtErr = validateFormat(v);
-        if (fmtErr) {
-          setError(fmtErr);
-          setAvailable(null);
-          setChecking(false);
-          return;
-        }
-        setError(null);
-        setChecking(true);
-        try {
-          // 서버에 맞춰 엔드포인트 이름만 맞추세요.
-          // 예시: GET /api/users/check-nickname?nickname=xxx  -> { available: boolean }
-          const res = await api.get<{ available: boolean }>(
-            `/api/users/check-nickname?nickname=${encodeURIComponent(v)}`,
-          );
-          setAvailable(res.available);
-        } catch {
-          setAvailable(null);
-          setError('중복 확인 중 오류가 발생했어요.');
-        } finally {
-          setChecking(false);
-        }
-      }, 400),
-    [],
-  );
-
   useEffect(() => {
     if (!open) return;
     if (!nick) {
-      setAvailable(null);
       setError(null);
       return;
     }
-    checkAvailability(nick);
-  }, [nick, open, checkAvailability]);
+    setError(validateFormat(nick));
+  }, [nick, open]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const fmtErr = validateFormat(nick);
     if (fmtErr) return setError(fmtErr);
-    if (!available) return setError('사용 가능한 닉네임을 입력해 주세요.');
 
     try {
       setSaving(true);
-      // 서버에 맞춰 엔드포인트 이름만 맞추세요.
-      // 예시: PATCH /api/users/me/nickname  body: { nickname }
-      await api.post<void>('/api/users/me/nickname', { nickname: nick });
-      onSaved(nick);
+      const body = { nickname: nick.trim() };
+      // 백엔드 스펙: PATCH /users/me -> UserSummaryDto
+      const res = await api.patch<UserSummary>('/users/me', body);
+      onSaved(res.nickname ?? body.nickname);
       onClose();
-    } catch {
-      setError('닉네임 저장에 실패했어요.');
+    } catch (err: unknown) {
+      const msg = extractMsg(err) ?? '닉네임 저장에 실패했어요.';
+      setError(msg);
     } finally {
       setSaving(false);
     }
@@ -98,26 +71,24 @@ const NicknameDialog: React.FC<Props> = ({ open, initialNickname, onClose, onSav
 
   if (!open) return null;
 
+  const canSubmit = !saving && !error && nick.trim().length >= 2 && nick.trim().length <= 30;
+
   return (
     <div className="fixed inset-0 bg-black/40 grid place-items-center z-50">
       <form onSubmit={onSubmit} className="w-[420px] rounded-2xl bg-white p-6 shadow-xl">
         <h2 className="text-xl font-bold mb-3">닉네임 설정</h2>
-        <p className="text-sm text-gray-600 mb-4">서비스에서 사용할 공개 닉네임을 정해주세요.</p>
+        <p className="text-sm text-gray-600 mb-4">서비스에서 사용할 닉네임을 정해주세요.</p>
 
         <input
           autoFocus
           value={nick}
           onChange={(e) => setNick(e.target.value)}
           className="w-full border rounded-lg px-3 py-2 mb-2"
-          placeholder="예) 코딩하는펭귄"
+          placeholder="예) 테토보이즈리더"
         />
 
-        {checking && <div className="text-sm text-gray-500 mb-2">중복 확인 중…</div>}
-        {available === true && (
-          <div className="text-sm text-green-600 mb-2">사용 가능한 닉네임이에요!</div>
-        )}
-        {available === false && (
-          <div className="text-sm text-red-600 mb-2">이미 사용 중인 닉네임이에요.</div>
+        {!error && nick && (
+          <div className="text-sm text-green-600 mb-2">사용 가능한 닉네임입니다.</div>
         )}
         {error && <div className="text-sm text-red-600 mb-2">{error}</div>}
 
@@ -127,7 +98,7 @@ const NicknameDialog: React.FC<Props> = ({ open, initialNickname, onClose, onSav
           </button>
           <button
             type="submit"
-            disabled={saving || checking || !available}
+            disabled={!canSubmit}
             className="px-4 py-2 rounded-lg bg-indigo-600 text-white disabled:opacity-50"
           >
             {saving ? '저장 중…' : '저장'}
