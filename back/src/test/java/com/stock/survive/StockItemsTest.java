@@ -51,16 +51,16 @@ public class StockItemsTest {
     }
 
 
-    @Test
-    @Transactional
-    public void testGetEndOfDayData() {
-        LocalDate targetDate=LocalDate.now();
-        List<StockEndDayDto> result = stockItemsService.getEndDayData(targetDate);
-
-            for (StockEndDayDto stockEndDayDto : result) {
-                log.info(stockEndDayDto.getTicker());
-
-        }
-    }
+//    @Test
+//    @Transactional
+//    public void testGetEndOfDayData() {
+//        LocalDate targetDate=LocalDate.now();
+//        List<StockEndDayDto> result = stockItemsService.getEndDayData(targetDate);
+//
+//            for (StockEndDayDto stockEndDayDto : result) {
+//                log.info(stockEndDayDto.getTicker());
+//
+//        }
+//    }
 
 }

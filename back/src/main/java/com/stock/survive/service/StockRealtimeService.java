@@ -1,12 +1,13 @@
 package com.stock.survive.service;
 
+import com.stock.survive.dto.PageRequestDto;
+import com.stock.survive.dto.PageResponseDto;
 import com.stock.survive.dto.StockRealtimeDto;
-import org.springframework.stereotype.Service;
+import jakarta.transaction.Transactional;
 
-import java.util.List;
-
-@Service
+@Transactional
 public interface StockRealtimeService {
-    List<StockRealtimeDto> getAllStockRealtimeWithLatestInfo();
+
+    PageResponseDto<StockRealtimeDto> getList(PageRequestDto pageRequestDto);
 
 }

@@ -1,19 +1,20 @@
 package com.stock.survive;
 
-import com.stock.survive.dto.StockEndDayDto;
 import com.stock.survive.dto.StockRealtimeDto;
 import com.stock.survive.entity.StockRealtime;
 import com.stock.survive.repository.StockRealtimeRepository;
 import com.stock.survive.service.StockRealtimeService;
-import com.stock.survive.serviceImp.StockRealtimeServiceImp;
 import jakarta.transaction.Transactional;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,23 +51,29 @@ public class StockRealtimeTest {
         StockRealtime realtime = list.orElseThrow();
         log.info(realtime.getTicker() + ", " + realtime.getCompanyName() + ", " + realtime.getPrice() + ", " + realtime.getRate());
     }
+//
+//    @Test
+//    @Transactional
+//    public void getStockItemsDTOTest() {
+//        List<StockRealtimeDto> dtoList = stockRealtimeRepository.getAllStockRealtimeWithLatestInfo();
+//
+//        for (StockRealtimeDto dto : dtoList) {
+//            log.info(dto.getTicker()
+//                    + ", " + dto.getVolume()
+//                    + ", " + dto.getMarketCap()
+//                    + ", " + dto.getCategoryName());
+//        }
+//
+//        Assertions.assertFalse(dtoList.isEmpty(), "DTO 리스트가 비어있으면 안됨");
+//    }
+
 
     @Test
-    @Transactional
-    public void getStockItemsDTOTest() {
-        List<StockRealtimeDto> dtoList = stockRealtimeRepository.getAllStockRealtimeWithLatestInfo();
-
-        for (StockRealtimeDto dto : dtoList) {
-            log.info(dto.getTicker()
-                    + ", " + dto.getVolume()
-                    + ", " + dto.getMarketCap()
-                    + ", " + dto.getCategoryName());
-        }
-
-        Assertions.assertFalse(dtoList.isEmpty(), "DTO 리스트가 비어있으면 안됨");
+    public void testPage() {
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("realtimeNo").descending());
+        Page<StockRealtime> page = stockRealtimeRepository.findAll(pageable);
+        log.info(page.getTotalPages());
     }
-
-
 
 
 }

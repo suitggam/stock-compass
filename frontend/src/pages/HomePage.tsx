@@ -4,8 +4,12 @@ import type {
   WebSocketRealtime,
   BackendRealtime,
   EndDay,
+  PageResponseDto,
 } from "../types/StockRealtime";
-import { getStockRealtime, getEndDay } from "../api/StockRealtimeAPi";
+import {
+  getStockRealtimeWithPage,
+  getEndDayWithPage,
+} from "../api/StockRealtimeApi";
 
 export default function HomePage() {
   const [wsStocks, setWsStocks] = useState<WebSocketRealtime[]>([]);
@@ -13,7 +17,12 @@ export default function HomePage() {
   const [endDayStocks, setEndDayStocks] = useState<EndDay[]>([]);
   const [isMarketOpen, setIsMarketOpen] = useState(true);
 
-  // 0️⃣ 장 시간 확인 (09:00 ~ 15:30 사이)
+  // 페이지네이션 상태
+  const [page, setPage] = useState(1);
+  const [size] = useState(21);
+  const [totalPages, setTotalPages] = useState(1); // 최소 1페이지
+
+  // 0️⃣ 장 시간 확인 (09:00 ~ 15:30)
   useEffect(() => {
     const checkMarketOpen = () => {
       const now = new Date();
@@ -25,24 +34,38 @@ export default function HomePage() {
     };
 
     checkMarketOpen();
-    const interval = setInterval(checkMarketOpen, 60 * 1000); // 1분마다 확인
+    const interval = setInterval(checkMarketOpen, 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // 1️⃣ 장 상태에 따라 데이터 가져오기
+  // 1️⃣ 장 상태에 따라 데이터 가져오기 (페이지네이션 적용)
   useEffect(() => {
-    if (isMarketOpen) {
-      // 장이 열리면 실시간 WS + Backend 정보
-      getStockRealtime()
-        .then(setBackendStocks)
-        .catch((err) => console.error("❌ 백엔드 API 에러:", err));
-    } else {
-      // 장이 닫히면 마감 데이터
-      getEndDay()
-        .then(setEndDayStocks)
-        .catch((err) => console.error("❌ EndDay API 에러:", err));
-    }
-  }, [isMarketOpen]);
+    const fetchData = async () => {
+      if (isMarketOpen) {
+        try {
+          const response: PageResponseDto<BackendRealtime> =
+            await getStockRealtimeWithPage(page, size);
+          setBackendStocks(response.dtoList);
+          setTotalPages(response.totalPage || 1);
+        } catch (err) {
+          console.error("❌ 백엔드 API 에러:", err);
+        }
+      } else {
+        try {
+          const response: PageResponseDto<EndDay> = await getEndDayWithPage(
+            page,
+            size
+          );
+          setEndDayStocks(response.dtoList);
+          setTotalPages(response.totalPage || 1);
+        } catch (err) {
+          console.error("❌ EndDay API 에러:", err);
+        }
+      }
+    };
+
+    fetchData();
+  }, [isMarketOpen, page, size]);
 
   // 2️⃣ WebSocket 연결 (장 열려있을 때만)
   useEffect(() => {
@@ -71,10 +94,7 @@ export default function HomePage() {
   const displayStocks: EndDay[] = (() => {
     if (!isMarketOpen) return endDayStocks;
 
-    // backendStocks를 Map으로 변환 (ticker -> BackendRealtime)
     const backendMap = new Map(backendStocks.map((b) => [b.ticker, b]));
-
-    // 모든 ticker를 포함하도록 wsStocks + backendStocks 병합
     const allTickers = Array.from(
       new Set([
         ...wsStocks.map((w) => w.ticker),
@@ -99,19 +119,54 @@ export default function HomePage() {
   })();
 
   return (
-    <div className="grid grid-cols-3 gap-4 p-4">
-      {displayStocks.map((stock) => (
-        <HomeCard
-          key={stock.ticker}
-          ticker={stock.ticker}
-          companyName={stock.companyName}
-          price={stock.endPrice}
-          rate={stock.rate}
-          volume={stock.volume}
-          marketCap={stock.marketCap}
-          categoryName={stock.categoryName}
-        />
-      ))}
+    <div>
+      <div className=" grid grid-cols-3 gap-4 p-4">
+        {displayStocks.map((stock) => (
+          <HomeCard
+            key={stock.ticker}
+            ticker={stock.ticker}
+            companyName={stock.companyName}
+            price={stock.endPrice}
+            rate={stock.rate}
+            volume={stock.volume}
+            marketCap={stock.marketCap}
+            categoryName={stock.categoryName}
+          />
+        ))}
+      </div>
+
+      {/* 4️⃣ 페이지네이션 UI */}
+      <div className="pagination flex justify-center gap-2 mt-4 flex-wrap">
+        <button
+          disabled={page === 1}
+          className="cursor-pointer px-3 py-1 border rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+          onClick={() => setPage((p) => Math.max(p - 1, 1))}
+        >
+          Prev
+        </button>
+
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+          <button
+            key={p}
+            className={`cursor-pointer px-3 py-1 border rounded ${
+              p === page
+                ? "bg-blue-500 text-white"
+                : "bg-gray-200 hover:bg-gray-300"
+            }`}
+            onClick={() => setPage(p)}
+          >
+            {p}
+          </button>
+        ))}
+
+        <button
+          disabled={page === totalPages}
+          className="cursor-pointer px-3 py-1 border rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+          onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }

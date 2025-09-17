@@ -1,13 +1,17 @@
 package com.stock.survive.service;
 
+import com.stock.survive.dto.PageRequestDto;
+import com.stock.survive.dto.PageResponseDto;
 import com.stock.survive.dto.StockEndDayDto;
+import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
 
-@Service
+@Transactional
 public interface StockItemsService {
-
-    List<StockEndDayDto> getEndDayData(LocalDate targetDate);
+    PageResponseDto<StockEndDayDto> getEndDayData(PageRequestDto pageRequestDto, LocalDate targetDate);
 }
