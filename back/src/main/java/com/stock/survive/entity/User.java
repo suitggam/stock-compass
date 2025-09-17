@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+import java.util.ArrayList;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -44,6 +47,14 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @OneToMany(mappedBy = "user",
+            cascade = CascadeType.REMOVE,
+            orphanRemoval = true)
+    @Builder.Default
+    private List<OauthIdentity> identities = new ArrayList<>();
+
+
+    // 시간 처리 함수
     @PrePersist
     void onCreate() {
         // createdAt/updatedAt 자동 세팅
@@ -55,4 +66,10 @@ public class User {
     void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    public void changeNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+
 }

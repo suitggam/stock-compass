@@ -1,6 +1,8 @@
 package com.stock.survive.config;
 
 import lombok.Data;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -10,8 +12,9 @@ import org.springframework.stereotype.Component;
 public class KakaoOAuthProperties {
     private String clientId;
     private String clientSecret;
-
-    private String redirectUri = "http://localhost:8080/users/auth/kakao/callback";
+    
+    @Value("${oauth.kakao.redirect-uri}")
+    private String redirectUri;
     private String authorizeUri = "https://kauth.kakao.com/oauth/authorize";
     private String tokenUri     = "https://kauth.kakao.com/oauth/token";
     private String userinfoUri  = "https://kapi.kakao.com/v2/user/me";
