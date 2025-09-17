@@ -43,11 +43,19 @@ RUN pip install --no-cache-dir --timeout 1000 -r requirements.txt
 # 애플리케이션 코드 복사
 COPY . .
 
-# news 디렉토리 생성 (실제 환경에서는 볼륨 마운트 사용)
-RUN mkdir -p news
+# spark/data 디렉토리 생성 (실제 환경에서는 볼륨 마운트 사용)
+RUN mkdir -p spark/data
+
+# .env 파일이 있다면 복사 (선택사항)
+# COPY .env .env
+
+# 환경 변수 설정 (기본값)
+ENV OPENAI_API_KEY=""
+ENV LOG_LEVEL="INFO"
+ENV DEBUG="False"
 
 # 포트 노출
 EXPOSE 8000
 
 # 애플리케이션 실행
-CMD ["python", "run_api.py"]
+CMD ["python", "main.py"]

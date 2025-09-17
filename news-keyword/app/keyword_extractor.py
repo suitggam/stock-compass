@@ -3,9 +3,12 @@ import os
 import logging
 import pandas as pd
 import re
+import glob
+from datetime import datetime, timedelta
 from collections import Counter
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, split, explode, count, collect_list, when, size, slice, regexp_replace, trim, length, lower
+from smart_keyword_filter import SmartKeywordFilter
 
 # 로깅 설정
 logger = logging.getLogger(__name__)
@@ -16,6 +19,7 @@ class KeywordExtractor:
     def __init__(self):
         self.spark = None
         self.csv_file_path = None
+        self.smart_filter = SmartKeywordFilter()
         
     def initialize_spark(self):
         """SparkSession 초기화 (Java 11과 PySpark 3.3.0 호환성 최적화)"""
@@ -73,40 +77,102 @@ class KeywordExtractor:
                 self.spark = None
                 raise
     
-    def find_csv_file(self, start_date: str, end_date: str) -> str:
+    def find_csv_files(self, start_date: str, end_date: str) -> List[str]:
         """
-        날짜 범위에 해당하는 CSV 파일을 찾습니다.
-        현재는 고정된 파일명을 사용하지만, 나중에 확장 가능합니다.
+        날짜 범위에 해당하는 CSV 파일들을 찾습니다.
+        spark/data 디렉토리에서 해당 기간의 모든 CSV 파일을 반환합니다.
         """
-        # 현재는 고정된 파일 사용
-        csv_filename = "NewsResult_20200901-20200903__sheet.csv"
-        csv_path = os.path.join("news", csv_filename)
         
-        if os.path.exists(csv_path):
-            logger.info(f"CSV 파일을 찾았습니다: {csv_path}")
-            return csv_path
-        else:
-            raise FileNotFoundError(f"CSV 파일을 찾을 수 없습니다: {csv_path}")
+        # 데이터 디렉토리 경로
+        data_dir = "../spark/data"
+        if not os.path.exists(data_dir):
+            data_dir = "spark/data"  # Docker 환경에서의 경로
+        if not os.path.exists(data_dir):
+            raise FileNotFoundError(f"데이터 디렉토리를 찾을 수 없습니다: {data_dir}")
+        
+        # 입력 날짜를 datetime 객체로 변환
+        start_dt = datetime.strptime(start_date, "%Y%m%d")
+        end_dt = datetime.strptime(end_date, "%Y%m%d")
+        
+        # CSV 파일 패턴 목록
+        patterns = [
+            f"{data_dir}/NewsResult_*.csv",
+            f"{data_dir}/NewsResult_*__sheet.csv"
+        ]
+        
+        matching_files = []
+        
+        for pattern in patterns:
+            csv_files = glob.glob(pattern)
+            
+            for csv_file in csv_files:
+                # 파일명에서 날짜 범위 추출
+                filename = os.path.basename(csv_file)
+                try:
+                    # NewsResult_YYYYMMDD-YYYYMMDD.csv 또는 NewsResult_YYYYMMDD-YYYYMMDD__sheet.csv
+                    date_part = filename.replace("NewsResult_", "").replace(".csv", "").replace("__sheet", "")
+                    
+                    if "-" in date_part:
+                        file_start_str, file_end_str = date_part.split("-")
+                        file_start_dt = datetime.strptime(file_start_str, "%Y%m%d")
+                        file_end_dt = datetime.strptime(file_end_str, "%Y%m%d")
+                        
+                        # 날짜 범위가 겹치는지 확인
+                        if (file_start_dt <= end_dt and file_end_dt >= start_dt):
+                            matching_files.append(csv_file)
+                            logger.info(f"매칭된 파일: {filename} ({file_start_str}-{file_end_str})")
+                            
+                except ValueError as e:
+                    # 날짜 파싱 실패 시 건너뛰기
+                    logger.debug(f"날짜 파싱 실패, 파일 건너뛰기: {filename}")
+                    continue
+        
+        if not matching_files:
+            raise FileNotFoundError(f"날짜 범위 {start_date}-{end_date}에 해당하는 CSV 파일을 찾을 수 없습니다.")
+        
+        matching_files.sort()  # 파일명 순으로 정렬
+        logger.info(f"총 {len(matching_files)}개의 CSV 파일을 찾았습니다.")
+        
+        return matching_files
     
     def extract_keywords_with_pandas(self, company_name: str, start_date: str, end_date: str, top_keywords: int) -> Dict:
         """
         pandas를 사용한 키워드 추출 (백업 방법)
+        여러 CSV 파일을 읽어서 통합 처리
         """
         logger.info("pandas를 사용하여 키워드 추출을 시도합니다.")
         
-        # CSV 파일 경로 찾기
-        csv_path = self.find_csv_file(start_date, end_date)
+        # CSV 파일들 경로 찾기
+        csv_files = self.find_csv_files(start_date, end_date)
         
-        # CSV 파일 읽기
-        df = pd.read_csv(csv_path, encoding='utf-8')
+        all_dataframes = []
+        total_loaded_rows = 0
         
-        logger.info(f"CSV 파일 로드 완료. 총 {len(df)}개 행")
+        # 모든 CSV 파일 읽기
+        for csv_path in csv_files:
+            try:
+                logger.info(f"CSV 파일 읽는 중: {os.path.basename(csv_path)}")
+                df = pd.read_csv(csv_path, encoding='utf-8')
+                all_dataframes.append(df)
+                total_loaded_rows += len(df)
+                logger.info(f"  - 로드된 행 수: {len(df)}")
+            except Exception as e:
+                logger.warning(f"CSV 파일 읽기 실패: {csv_path}, 오류: {e}")
+                continue
+        
+        if not all_dataframes:
+            raise FileNotFoundError("읽을 수 있는 CSV 파일이 없습니다.")
+        
+        # 모든 데이터프레임 병합
+        df = pd.concat(all_dataframes, ignore_index=True)
+        logger.info(f"총 {len(csv_files)}개 파일에서 {total_loaded_rows}개 행 로드 완료")
+        logger.info(f"병합 후 총 {len(df)}개 행")
         logger.info(f"컬럼명: {list(df.columns)}")
         
         # 기업 필터링 (기관 컬럼에서 해당 기업이 포함된 행들을 가져옴)
         if '기관' in df.columns:
             # 기관 컬럼에 NaN이 아니고 회사명이 포함된 행 필터링
-            mask = df['기관'].notna() & df['기관'].str.contains(company_name, na=False)
+            mask = df['기관'].notna() & df['기관'].str.contains(company_name, na=False, regex=False)
             filtered_df = df[mask]
             total_count = len(filtered_df)
             
@@ -160,7 +226,7 @@ class KeywordExtractor:
                     "total_news_count": total_count,
                     "keywords": keywords_dict,
                     "top_keywords": top_keywords_list,
-                    "message": f"pandas로 성공적으로 키워드를 추출했습니다. 총 {len(keywords_dict)}개 키워드 발견"
+                    "message": f"pandas로 성공적으로 키워드를 추출했습니다. 총 {len(keywords_dict)}개 키워드 발견 (파일 {len(csv_files)}개 처리)"
                 }
             else:
                 return {
@@ -173,6 +239,89 @@ class KeywordExtractor:
                 }
         else:
             raise ValueError("기관 컬럼을 찾을 수 없습니다.")
+
+    def extract_smart_keywords_from_csv(self, company_name: str, start_date: str, end_date: str, top_keywords: int, use_ai_filter: bool = True) -> Dict:
+        """
+        CSV 파일에서 특정 기업의 키워드를 추출하고 AI 필터링을 적용합니다.
+        
+        Args:
+            company_name: 기업명
+            start_date: 시작 날짜 (YYYYMMDD)
+            end_date: 종료 날짜 (YYYYMMDD)
+            top_keywords: 상위 키워드 개수
+            use_ai_filter: AI 필터링 사용 여부
+        """
+        # 기본 키워드 추출
+        base_result = self.extract_keywords_from_csv(company_name, start_date, end_date, top_keywords * 2)  # 더 많은 키워드 추출
+        
+        if not use_ai_filter or not base_result.get('keywords'):
+            return base_result
+        
+        try:
+            logger.info(f"AI 필터링 시작: {len(base_result['keywords'])}개 키워드")
+            
+            # SmartKeywordFilter 가용성 확인
+            if not self.smart_filter.is_available():
+                logger.warning("OpenAI API를 사용할 수 없습니다. .env 파일의 OPENAI_API_KEY를 확인해주세요.")
+                base_result['ai_filtered'] = False
+                base_result['ai_analysis'] = "OpenAI API 키가 설정되지 않았습니다."
+                base_result['message'] += " (AI 필터링 사용 불가)"
+                return base_result
+            
+            # AI 필터링 적용
+            filtered_keywords, filtered_top_keywords = self.smart_filter.filter_stock_related_keywords(
+                base_result['keywords'], 
+                company_name, 
+                top_keywords
+            )
+            
+            # 필터링 결과 검증
+            if not filtered_keywords:
+                logger.warning("AI 필터링 결과가 비어있습니다. 원본 키워드를 반환합니다.")
+                # 원본 키워드의 상위 키워드만 반환
+                original_top = list(base_result['keywords'].items())[:top_keywords]
+                base_result['keywords'] = dict(original_top)
+                base_result['top_keywords'] = [k for k, v in original_top]
+                base_result['ai_filtered'] = False
+                base_result['ai_analysis'] = "AI 필터링에서 유효한 키워드를 찾지 못했습니다."
+                base_result['original_keyword_count'] = len(base_result['keywords'])
+                base_result['filtered_keyword_count'] = 0
+                base_result['message'] += " (AI 필터링 결과 없음)"
+                return base_result
+            
+            # 키워드 분석 추가
+            analysis = ""
+            if self.smart_filter.is_available() and filtered_keywords:
+                try:
+                    analysis = self.smart_filter.get_keyword_analysis(filtered_keywords, company_name)
+                except Exception as e:
+                    logger.warning(f"AI 분석 중 오류: {e}")
+                    analysis = "키워드 분석을 수행할 수 없습니다."
+            
+            # 결과 업데이트
+            result = base_result.copy()
+            result['keywords'] = filtered_keywords
+            result['top_keywords'] = filtered_top_keywords
+            result['ai_analysis'] = analysis
+            result['ai_filtered'] = True
+            result['original_keyword_count'] = len(base_result['keywords'])
+            result['filtered_keyword_count'] = len(filtered_keywords)
+            if self.smart_filter.is_available():
+                result['message'] = f"AI 필터링 완료: {len(base_result['keywords'])}개 → {len(filtered_keywords)}개 키워드 (주가 관련성 기준)"
+            else:
+                result['message'] = f"규칙 기반 필터링 완료: {len(base_result['keywords'])}개 → {len(filtered_keywords)}개 키워드 (주가 관련성 기준)"
+            
+            logger.info(f"AI 필터링 성공: {len(base_result['keywords'])}개 → {len(filtered_keywords)}개")
+            logger.info(f"필터링된 주요 키워드: {filtered_top_keywords[:5]}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"AI 필터링 중 오류 발생: {e}")
+            # AI 필터링 실패 시 원본 결과 반환
+            base_result['ai_filtered'] = False
+            base_result['ai_analysis'] = "AI 필터링을 사용할 수 없습니다."
+            base_result['message'] += " (AI 필터링 실패로 원본 키워드 반환)"
+            return base_result
 
     def extract_keywords_from_csv(self, company_name: str, start_date: str, end_date: str, top_keywords: int) -> Dict:
         """
@@ -187,25 +336,43 @@ class KeywordExtractor:
                 logger.warning("PySpark 초기화 실패, pandas로 폴백합니다.")
                 return self.extract_keywords_with_pandas(company_name, start_date, end_date, top_keywords)
             
-            # CSV 파일 경로 찾기
-            csv_path = self.find_csv_file(start_date, end_date)
+            # CSV 파일들 경로 찾기
+            csv_files = self.find_csv_files(start_date, end_date)
             
-            logger.info(f"PySpark로 CSV 파일 읽기 시작: {csv_path}")
+            logger.info(f"PySpark로 CSV 파일들 읽기 시작: {len(csv_files)}개 파일")
             
-            # CSV 파일 읽기
-            df = self.spark.read \
-                .option("header", "true") \
-                .option("inferSchema", "true") \
-                .option("encoding", "UTF-8") \
-                .option("multiline", "true") \
-                .option("escape", '"') \
-                .csv(csv_path)
+            # 모든 CSV 파일 읽기 및 병합
+            dataframes = []
+            for csv_path in csv_files:
+                try:
+                    logger.info(f"파일 읽는 중: {os.path.basename(csv_path)}")
+                    temp_df = self.spark.read \
+                        .option("header", "true") \
+                        .option("inferSchema", "true") \
+                        .option("encoding", "UTF-8") \
+                        .option("multiline", "true") \
+                        .option("escape", '"') \
+                        .csv(csv_path)
+                    
+                    dataframes.append(temp_df)
+                    logger.info(f"  - 파일 로드 완료: {os.path.basename(csv_path)}")
+                except Exception as e:
+                    logger.warning(f"파일 읽기 실패: {csv_path}, 오류: {e}")
+                    continue
+            
+            if not dataframes:
+                raise FileNotFoundError("읽을 수 있는 CSV 파일이 없습니다.")
+            
+            # 모든 데이터프레임 병합
+            df = dataframes[0]
+            for temp_df in dataframes[1:]:
+                df = df.union(temp_df)
             
             # 데이터 캐싱 (성능 향상)
             df.cache()
             
             total_rows = df.count()
-            logger.info(f"CSV 파일 로드 완료. 총 {total_rows}개 행")
+            logger.info(f"총 {len(csv_files)}개 파일에서 {total_rows}개 행 로드 완료")
             logger.info(f"컬럼명: {df.columns}")
             
             # 기업 필터링 (기관 컬럼에서 해당 기업이 포함된 행들을 가져옴)
@@ -270,7 +437,7 @@ class KeywordExtractor:
                         "total_news_count": total_count,
                         "keywords": keywords_dict,
                         "top_keywords": top_keywords_list,
-                        "message": f"PySpark로 성공적으로 키워드를 추출했습니다. 총 {len(keywords_dict)}개 키워드 발견"
+                        "message": f"PySpark로 성공적으로 키워드를 추출했습니다. 총 {len(keywords_dict)}개 키워드 발견 (파일 {len(csv_files)}개 처리)"
                     }
                 else:
                     return {
