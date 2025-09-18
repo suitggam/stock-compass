@@ -204,14 +204,20 @@ app/
 
 ## 📊 데이터 처리 흐름
 
-### 기본 키워드 추출 (use_ai_filter=false)
+### 스마트 엔진 선택
 1. **요청 접수**: 클라이언트에서 기업명과 날짜 범위 전송
-2. **파일 검색**: 해당 기간의 CSV 파일 찾기
-3. **데이터 로드**: PySpark로 CSV 파일 읽기
-4. **필터링**: 기관 컬럼에서 해당 기업이 포함된 행 추출
-5. **키워드 추출**: 키워드 컬럼에서 키워드 분리 및 정리
-6. **빈도 계산**: 각 키워드의 출현 빈도 계산
-7. **결과 반환**: JSON 형식으로 결과 반환
+2. **파일 검색**: S3에서 해당 기간의 CSV 파일 찾기
+3. **파일 크기 계산**: S3에서 파일들의 총 크기 확인
+4. **엔진 선택**: 
+   - **15GB 이상**: PySpark 사용 (대용량 데이터 처리)
+   - **15GB 미만**: Pandas 사용 (빠른 처리)
+
+### 기본 키워드 추출 (use_ai_filter=false)
+1. **데이터 로드**: 선택된 엔진으로 CSV 파일 읽기
+2. **필터링**: 기관 컬럼에서 해당 기업이 포함된 행 추출
+3. **키워드 추출**: 키워드 컬럼에서 키워드 분리 및 정리
+4. **빈도 계산**: 각 키워드의 출현 빈도 계산
+5. **결과 반환**: JSON 형식으로 결과 반환
 
 ### 🤖 OpenAI 스마트 키워드 필터링 (use_ai_filter=true)
 1. **1단계**: 위의 기본 키워드 추출 과정 실행
@@ -235,7 +241,22 @@ app/
 
 ## 📁 데이터 구조
 
-API는 `spark/data` 디렉토리에 있는 CSV 파일들을 동적으로 읽습니다:
+API는 S3 버킷에서 CSV 파일들을 동적으로 읽습니다:
+
+### S3 설정
+
+API는 다음 환경 변수를 통해 S3 설정을 관리합니다:
+
+```bash
+# AWS 자격 증명
+AWS_ACCESS_KEY_ID=your_access_key_id
+AWS_SECRET_ACCESS_KEY=your_secret_access_key
+AWS_DEFAULT_REGION=ap-northeast-2
+
+# S3 버킷 설정
+S3_BUCKET=cheesecrust-spark-data-bucket
+S3_PREFIX=outputs/data/
+```
 
 ### 파일명 패턴
 - `NewsResult_YYYYMMDD-YYYYMMDD.csv` 
@@ -243,13 +264,13 @@ API는 `spark/data` 디렉토리에 있는 CSV 파일들을 동적으로 읽습�
 
 ### 지원 기간
 - **2019년부터 2025년까지**의 뉴스 데이터
-- 사용자가 입력한 날짜 범위에 해당하는 모든 CSV 파일을 자동으로 찾아서 병합 처리
+- 사용자가 입력한 날짜 범위에 해당하는 모든 CSV 파일을 S3에서 자동으로 찾아서 병합 처리
 
-### 예시 파일들
+### 예시 S3 파일 경로
 ```
-NewsResult_20200102-20200105.csv
-NewsResult_20210301-20210304__sheet.csv
-NewsResult_20220101-20220105.csv
+s3://cheesecrust-spark-data-bucket/outputs/data/NewsResult_20200102-20200105.csv
+s3://cheesecrust-spark-data-bucket/outputs/data/NewsResult_20210301-20210304.csv
+s3://cheesecrust-spark-data-bucket/outputs/data/NewsResult_20220101-20220105.csv
 ```
 
 ### 사용 예시
@@ -262,13 +283,15 @@ NewsResult_20220101-20220105.csv
 }
 ```
 
-위 요청은 2021년 3월 전체 기간의 모든 관련 CSV 파일을 읽어서 처리합니다.
+위 요청은 2021년 3월 전체 기간의 모든 관련 CSV 파일을 S3에서 읽어서 처리합니다.
 
 ## 🚀 확장 계획
 
 - [x] **여러 CSV 파일을 자동으로 찾아서 처리** ✅ 완료
 - [x] **🤖 OpenAI 기반 스마트 키워드 필터링** ✅ 완료
 - [x] **AI 키워드 분석 및 시장 트렌드 해석** ✅ 완료
+- [x] **S3에서 직접 CSV 파일 읽기** ✅ 완료
+- [x] **파일 크기 기반 스마트 엔진 선택** ✅ 완료
 - [ ] 캐싱 기능 추가로 응답 속도 개선  
 - [ ] 키워드 추출 알고리즘 개선 (Word2Vec, BERT 등)
 - [ ] 비동기 처리로 대용량 데이터 처리 성능 향상

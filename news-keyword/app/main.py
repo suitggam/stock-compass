@@ -25,6 +25,14 @@ class KeywordRequest(BaseModel):
     top_keywords: Optional[int] = 20  # 상위 키워드 개수 (기본값: 20)
     use_ai_filter: Optional[bool] = True  # AI 필터링 사용 여부 (기본값: True)
 
+class NewsArticle(BaseModel):
+    """뉴스 기사 정보 모델"""
+    title: str
+    date: str
+    url: str
+    matched_keywords_count: int
+    matched_keywords: List[str]
+
 class KeywordResponse(BaseModel):
     """키워드 추출 응답 모델"""
     company_name: str
@@ -32,6 +40,7 @@ class KeywordResponse(BaseModel):
     total_news_count: int
     keywords: Dict[str, int]  # {"키워드": 빈도수, ...}
     top_keywords: List[str]
+    top_news_articles: Optional[List[NewsArticle]] = []  # 상위 키워드가 많이 포함된 뉴스 기사들
     message: str
     ai_filtered: Optional[bool] = False  # AI 필터링 적용 여부
     ai_analysis: Optional[str] = ""  # AI 분석 결과
@@ -137,12 +146,38 @@ async def extract_keywords(request: KeywordRequest):
         # 응답 형식에 맞게 변환 (상위 키워드만)
         top_keywords_dict = dict(list(result["keywords"].items())[:request.top_keywords])
         
+        # 뉴스 기사 정보 변환
+        top_news_articles = []
+        if "top_news_articles" in result and result["top_news_articles"]:
+            for article in result["top_news_articles"]:
+                # nan 값 처리
+                url = article.get("url", "URL 없음")
+                if url is None or (isinstance(url, float) and str(url).lower() == 'nan'):
+                    url = "URL 없음"
+                
+                title = article.get("title", "제목 없음")
+                if title is None or (isinstance(title, float) and str(title).lower() == 'nan'):
+                    title = "제목 없음"
+                
+                date = article.get("date", "날짜 없음")
+                if date is None or (isinstance(date, float) and str(date).lower() == 'nan'):
+                    date = "날짜 없음"
+                
+                top_news_articles.append(NewsArticle(
+                    title=str(title),
+                    date=str(date),
+                    url=str(url),
+                    matched_keywords_count=article.get("matched_keywords_count", 0),
+                    matched_keywords=article.get("matched_keywords", [])
+                ))
+        
         response = KeywordResponse(
             company_name=result["company_name"],
             period=result["period"],
             total_news_count=result["total_news_count"],
             keywords=top_keywords_dict,
             top_keywords=result["top_keywords"],
+            top_news_articles=top_news_articles,
             message=result["message"],
             ai_filtered=result.get("ai_filtered", False),
             ai_analysis=result.get("ai_analysis", ""),

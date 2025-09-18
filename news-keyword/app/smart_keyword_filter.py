@@ -206,8 +206,8 @@ class SmartKeywordFilter:
             selected_keywords = [keyword.strip() for keyword in ai_response.split(',')]
             selected_keywords = [k for k in selected_keywords if k]  # 빈 문자열 제거
             
-            logger.info(f"AI가 선택한 키워드: {selected_keywords}")
-            logger.info(f"원본 키워드: {list(original_keywords.keys())}")
+            logger.info(f"AI가 선택한 키워드 개수: {len(selected_keywords)}개")
+            logger.info(f"원본 키워드 개수: {len(original_keywords)}개")
             
             # 원본 키워드 딕셔너리에서 선택된 키워드들의 빈도수를 가져옴
             filtered_dict = {}
@@ -240,9 +240,9 @@ class SmartKeywordFilter:
             
             logger.info(f"AI 응답 파싱 완료: {len(selected_keywords)}개 선택 → {len(filtered_dict)}개 매칭")
             
-            # 매칭된 키워드들 로그 출력
+            # 매칭된 키워드들 로그 출력 (간소화)
             if filtered_dict:
-                logger.info(f"매칭된 키워드: {list(filtered_dict.keys())}")
+                logger.info(f"매칭된 키워드 개수: {len(filtered_dict)}개")
             
             return filtered_dict
             
