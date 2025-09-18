@@ -1,4 +1,4 @@
-import type { Term } from "../../types/StockDetail";
+import type { Term } from "../../types/StockInfos";
 
 interface TimeTermProps {
   terms: Term[];

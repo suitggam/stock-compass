@@ -1,9 +1,10 @@
 import { CalendarDays } from "lucide-react";
-import type { StockDetail } from "../../types/StockDetail";
+import type { StockInfos } from "../../types/StockInfos";
 
-interface ChartHeaderProps extends StockDetail {
+interface ChartHeaderProps extends StockInfos {
   termText: string;
   pastPrice: number;
+  rate: number;
 }
 
 function ChartHeader({
@@ -21,9 +22,9 @@ function ChartHeader({
 
   // 가격 색상
   const priceColor =
-    rate > 0 ? "text-red-400" : rate < 0 ? "text-green-400" : "text-slate-300";
+    rate > 0 ? "text-green-400" : rate < 0 ? "text-red-400" : "text-slate-300";
 
-  const arrow = rate > 0 ? "▼" : rate < 0 ? "▲" : "-";
+  const arrow = rate > 0 ? "▲" : rate < 0 ? "▼" : "-";
 
   return (
     <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white px-6 py-5 rounded-2xl shadow-lg border border-slate-700">
@@ -55,7 +56,7 @@ function ChartHeader({
           {arrow} {Math.abs(rate).toFixed(2)} %
         </span>
         <span className="text-sm text-slate-400">
-          ({termText} 전 대비: {pastPrice.toLocaleString()} 원)
+          ({termText} 전 가격: {pastPrice.toLocaleString()} 원)
         </span>
       </div>
     </div>

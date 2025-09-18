@@ -1,15 +1,17 @@
 package com.stock.survive;
 
+import com.stock.survive.dto.StockInfosDto;
 import com.stock.survive.entity.StockInfos;
 import com.stock.survive.repository.StockInfosRepository;
+import com.stock.survive.service.StockInfosService;
 import jakarta.transaction.Transactional;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+
 import java.util.List;
-import java.util.Optional;
 
 @SpringBootTest
 @Log4j2
@@ -17,6 +19,9 @@ public class StockInfosTest {
 
     @Autowired
     StockInfosRepository stockInfosRepository;
+
+    @Autowired
+    StockInfosService stockInfosService;
 
     @Test
     public void repoTest() {
@@ -29,17 +34,20 @@ public class StockInfosTest {
     public void getTest() {
         List<StockInfos> list = stockInfosRepository.findAll();
         for (StockInfos stockInfos : list) {
-            log.info(stockInfos.getStockItem().getCompanyName()+", "+stockInfos.getStockItem().getTicker()+", "+stockInfos.getVolume()+", "+stockInfos.getMarketCap());
+            log.info(stockInfos.getStockItem().getCompanyName() + ", " + stockInfos.getStockItem().getTicker() + ", " + stockInfos.getVolume() + ", " + stockInfos.getMarketCap());
         }
     }
 
     @Test
     @Transactional
-    public void getOneTest() {
-        Long id = 1L;
-        Optional<StockInfos> list = stockInfosRepository.findById(id);
-        StockInfos stockInfos=list.orElseThrow();
-            log.info(stockInfos.getStockItem().getCompanyName()+", "+stockInfos.getStockItem().getTicker()+", "+stockInfos.getVolume()+", "+stockInfos.getMarketCap());
+    public void getStockTest() {
+        String ticker = "005930";
+        List<StockInfosDto> list = stockInfosService.getStock(ticker);
+
+        for (StockInfosDto stockInfosDto : list) {
+            log.info(stockInfosDto.getTicker() + ", " + stockInfosDto.getCompanyName() + ", " + stockInfosDto.getEndPrice()+ ", " +stockInfosDto.getDate());
+
+        }
     }
 
 }

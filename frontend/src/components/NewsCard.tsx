@@ -1,6 +1,6 @@
 // NewsCard.tsx
 import { Link } from "react-router";
-import type { News } from "../types/StockDetail";
+import type { News } from "../types/StockInfos";
 
 interface NewsCardProps {
   news: News;

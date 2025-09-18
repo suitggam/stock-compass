@@ -1,4 +1,4 @@
-import type { Keyword } from "../types/StockDetail";
+import type { Keyword } from "../types/StockInfos";
 
 interface KeywordRankProps {
   keywords: Keyword[];
