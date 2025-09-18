@@ -1,19 +1,21 @@
 // src/components/Layout.tsx
-import { Outlet } from 'react-router'; // (RR v7) v6이면 'react-router-dom'
+import { Outlet } from 'react-router';
 import { useEffect } from 'react';
 import { useAuth } from '../stores/auth';
 import Footer from './Footer';
 import Header from './Header';
 
-function Layout() {
+export default function Layout() {
   const bootstrap = useAuth((s) => s.bootstrap);
 
-  // ① 앱 마운트 시 무조건 1회
+  // 마운트 시 1회
   useEffect(() => {
     void bootstrap();
+    // bootstrap은 zustand 액션이라 보통 안정적인 참조임.
+    // 의존성에 bootstrap만 넣는 게 안전.
   }, [bootstrap]);
 
-  // ② 포커스/가시성 복귀 시 재동기화 (OAuth 복귀 즉시 반영)
+  // 포커스/가시성 복귀 시만
   useEffect(() => {
     const run = () => {
       void bootstrap();
@@ -41,5 +43,3 @@ function Layout() {
     </div>
   );
 }
-
-export default Layout;
