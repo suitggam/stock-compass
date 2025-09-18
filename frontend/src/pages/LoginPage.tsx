@@ -1,6 +1,7 @@
+// import { useAuth } from '@/stores/auth';
 import * as React from 'react';
 import { Link } from 'react-router';
-import { useAuth } from '@/stores/auth';
+import { useAuth } from '../stores/auth';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 

@@ -1,8 +1,8 @@
 // src/pages/MyPage.tsx
 import * as React from 'react';
 import { Link, Navigate } from 'react-router';
-import { useAuth } from '@/stores/auth';
-import useAuthGuard from '@/hooks/useAuthGuard';
+import { useAuth } from '../stores/auth';
+import useAuthGuard from '../hooks/useAuthGuard';
 
 export default function MyPage() {
   useAuthGuard('/');

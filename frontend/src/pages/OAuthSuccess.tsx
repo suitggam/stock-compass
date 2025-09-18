@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-import { useAuth } from '@/stores/auth';
+import { useAuth } from '../stores/auth';
 
 const GUARD_KEY = 'oauth_refresh_guard_ts';
 
