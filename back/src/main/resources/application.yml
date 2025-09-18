@@ -2,8 +2,6 @@ server:
   port: 8080
 
 app:
-  front-redirect: http://localhost:5173
-  front-redirect-after: /login
   # 백엔드
   base-url: ${BACK_BASE_URL:http://localhost:8080}
   # 프론트 origin (CORS/리다이렉트 등에 사용)

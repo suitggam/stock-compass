@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { User } from '@/types/user'; // 또는 '@/types/user'
+import type { User } from '../types/user'; // 또는 '@/types/user'
 
 type State = {
   accessToken: string | null;

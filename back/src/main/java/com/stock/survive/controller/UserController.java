@@ -1,6 +1,7 @@
 package com.stock.survive.controller;
 
 import com.stock.survive.dto.UserSummaryDto;
+import com.stock.survive.entity.OauthIdentity;
 import com.stock.survive.entity.User;
 import com.stock.survive.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -23,15 +24,35 @@ public class UserController {
 
     /** 로그인 유저 정보 */
     @GetMapping("/login-user")
+    @Transactional(Transactional.TxType.SUPPORTS)
     public UserSummaryDto loginUser(Authentication auth) {
         Integer uid = extractUid(auth);
         User u = userRepository.findById(uid)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "USER_NOT_FOUND"));
-        return UserSummaryDto.of(u);
+
+        // ← 컬렉션 이름은 identities
+        String avatarUrl = (u.getIdentities() == null) ? null :
+                u.getIdentities().stream()
+                        .map(OauthIdentity::getProfileImgUrl)
+                        .filter(img -> img != null && !img.isBlank())
+                        .findFirst()
+                        .orElse(null);
+
+        return UserSummaryDto.of(u, avatarUrl);
     }
 
     /** 요청 바디 */
     public record NickReq(@NotBlank String nickname) {}
+
+    /** 닉네임 변경시 이미지 없어지는거 방지 */
+    private String pickAvatarUrl(User u) {
+        return (u.getIdentities() == null) ? null :
+                u.getIdentities().stream()
+                        .map(OauthIdentity::getProfileImgUrl) // ← 이미 맞게 쓰고 계신 getter
+                        .filter(img -> img != null && !img.isBlank())
+                        .findFirst()
+                        .orElse(null);
+    }
 
     /** 닉네임 변경 */
     @PatchMapping("/me")
@@ -54,7 +75,7 @@ public class UserController {
 
         // 2) 동일값이면 바로 반환
         if (nn.equals(u.getNickname())) {
-            return UserSummaryDto.of(u);
+            return UserSummaryDto.of(u, pickAvatarUrl(u));
         }
 
         // 3) 중복 체크
@@ -87,7 +108,7 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "CANNOT_UPDATE_NICKNAME");
         }
 
-        return UserSummaryDto.of(u);
+        return UserSummaryDto.of(u, pickAvatarUrl(u));
     }
 
     @DeleteMapping("/delete")

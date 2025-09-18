@@ -5,4 +5,6 @@ export interface User {
   createdAt: string;
   totalReward: number;
   cash: number;
+
+  avatarUrl?: string;
 }
