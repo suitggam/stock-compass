@@ -124,7 +124,7 @@ export default function HomePage() {
     <div>
       <div className="grid grid-cols-3 gap-4 p-4">
         {displayStocks.map((stock) => (
-          <Link to={stock.ticker}>
+          <Link to={`stock/${stock.ticker}`}>
             <HomeCard
               key={stock.ticker}
               ticker={stock.ticker}

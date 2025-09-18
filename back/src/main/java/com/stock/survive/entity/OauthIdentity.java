@@ -45,7 +45,7 @@ public class OauthIdentity {
     private String profileImgUrl;
 
     @Builder.Default
-    @Column(name="email_verified", nullable = false)
+    @Column(name="email_varified", nullable = false)
     private boolean emailVerified = false;
 
     @Column(name="connected_at", nullable = false)
