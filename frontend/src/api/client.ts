@@ -1,26 +1,13 @@
-// api/client.ts
-// API 래퍼 + 토큰 저장소 (localStorage 유지, 동시 401 처리, 자동 갱신)
+// src/api/client.ts
+// API 래퍼 (동시 401 처리, 자동 갱신) — 토큰은 Zustand(useAuth)에서만 관리
+
+import { useAuth } from '@/stores/auth';
 
 export const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
-// 서버 엔드포인트 (백엔드 설계에 맞춤)
+// 서버 엔드포인트
 const REFRESH_PATH = '/users/auth/refresh';
-const LOGOUT_PATH  = '/users/logout';
-
-// ---- 토큰 저장/조회 (메모리 캐시 + localStorage 동기화) ----
-const mem = { access: null as string | null };
-
-export const token = {
-  get: () => (mem.access ??= localStorage.getItem('access_token')),
-  set: (t: string) => {
-    mem.access = t;
-    localStorage.setItem('access_token', t);
-  },
-  clear: () => {
-    mem.access = null;
-    localStorage.removeItem('access_token');
-  },
-};
+const LOGOUT_PATH = '/users/logout';
 
 // ---- 공통 응답 처리 ----
 async function handle<T>(res: Response): Promise<T> {
@@ -37,7 +24,7 @@ async function handle<T>(res: Response): Promise<T> {
 function buildHeaders(path: string): HeadersInit {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const isRefresh = path.startsWith(REFRESH_PATH);
-  const t = token.get();
+  const t = useAuth.getState().accessToken; // Zustand에서 토큰 읽기
   if (t && !isRefresh) headers.Authorization = `Bearer ${t}`;
   return headers;
 }
@@ -55,18 +42,21 @@ async function refreshOnce(): Promise<boolean> {
           headers: { 'Content-Type': 'application/json' },
         });
         if (!res.ok) {
-          token.clear();
+          useAuth.getState().setAccessToken(null);
+          useAuth.getState().setUser(null);
           return false;
         }
         const data = (await res.json()) as { accessToken?: string };
         if (data?.accessToken) {
-          token.set(data.accessToken);
+          useAuth.getState().setAccessToken(data.accessToken);
           return true;
         }
-        token.clear();
+        useAuth.getState().setAccessToken(null);
+        useAuth.getState().setUser(null);
         return false;
       } catch {
-        token.clear();
+        useAuth.getState().setAccessToken(null);
+        useAuth.getState().setUser(null);
         return false;
       } finally {
         // 다음 갱신을 위해 해제
@@ -102,16 +92,16 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
 
 // ---- 공개 API ----
 export const api = {
-  get:  <T>(path: string) => request<T>(path, { method: 'GET' }),
+  get: <T>(path: string) => request<T>(path, { method: 'GET' }),
   post: <T>(path: string, body?: unknown) =>
-      request<T>(path, { method: 'POST', body: body != null ? JSON.stringify(body) : undefined }),
-  put:  <T>(path: string, body?: unknown) =>
-      request<T>(path, { method: 'PUT', body: body != null ? JSON.stringify(body) : undefined }),
-  patch:<T>(path: string, body?: unknown) =>
-      request<T>(path, { method: 'PATCH', body: body != null ? JSON.stringify(body) : undefined }),
-  del:  <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+    request<T>(path, { method: 'POST', body: body != null ? JSON.stringify(body) : undefined }),
+  put: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: 'PUT', body: body != null ? JSON.stringify(body) : undefined }),
+  patch: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: 'PATCH', body: body != null ? JSON.stringify(body) : undefined }),
+  del: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 
-  /** 서버 로그아웃 호출 + 로컬 토큰 파기 */
+  /** 서버 로그아웃 호출 + 스토어 정리(useAuth.logout 사용 권장) */
   logout: async () => {
     try {
       await fetch(`${API_BASE}${LOGOUT_PATH}`, {
@@ -120,7 +110,8 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
       });
     } finally {
-      token.clear();
+      useAuth.getState().setAccessToken(null);
+      useAuth.getState().setUser(null);
     }
   },
 };

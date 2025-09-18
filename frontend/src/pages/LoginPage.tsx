@@ -1,106 +1,92 @@
-import { useEffect, useState } from 'react';
-import { API_BASE, api, token } from '../api/client';
-import { useNavigate } from 'react-router';
-import NicknameDialog from '../components/NicknameDialog';
+import * as React from 'react';
+import { Link } from 'react-router';
+import { useAuth } from '@/stores/auth';
 
-type User = {
-  userNo: number;
-  nickname: string;
-  socialEmail: string;
-  createdAt: string;
-  totalReward: number;
-  cash: number;
-};
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
 export default function LoginPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [openNickDialog, setOpenNickDialog] = useState(false);
-  const nav = useNavigate();
+  const { user, loading, bootstrap, logout } = useAuth();
 
-  useEffect(() => {
-    (async () => {
-      try {
-        if (!token.get()) {
-          try {
-            const res = await api.post<{ accessToken: string }>('/users/auth/refresh', {});
-            if (res?.accessToken) token.set(res.accessToken);
-          } catch (e) {
-            console.debug('[refresh] skip:', e);
-          }
-        }
-        if (token.get()) {
-          const me = await api.get<User>('/users/login-user');
-          setUser(me);
-          if (!me.nickname || /^user(_|\d|$)/i.test(me.nickname)) setOpenNickDialog(true);
-        } else {
-          setUser(null);
-        }
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+  // 첫 진입/새로고침 시: refresh → me (스토어 내부에서 처리)
+  React.useEffect(() => {
+    // 이미 한 번 불렸더라도 부작용 없음
+    void bootstrap();
+  }, [bootstrap]);
 
-  const goGoogle = () => (window.location.href = `${API_BASE}/users/auth/google`);
-  const goKakao = () => (window.location.href = `${API_BASE}/users/auth/kakao`);
+  const loginGoogle = () => {
+    window.location.href = `${API_BASE}/users/auth/google`;
+  };
 
-  const logout = async () => {
-    try {
-      await api.post<void>('/users/logout', {});
-    } catch (e) {
-      console.debug('[logout] ignored:', e);
-    } finally {
-      token.clear();
-      setUser(null);
-    }
+  const loginKakao = () => {
+    window.location.href = `${API_BASE}/users/auth/kakao`;
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">불러오는 중…</div>;
+    return <div className="min-h-dvh grid place-items-center text-gray-600">불러오는 중…</div>;
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6">
-      <h1 className="text-3xl font-bold">임시로그인페이지</h1>
+    <div className="min-h-dvh flex items-center justify-center bg-gray-50">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-sm">
+        <h1 className="mb-4 text-2xl font-semibold">로그인</h1>
 
-      {!user ? (
-        <div className="flex gap-3">
-          <button onClick={goGoogle} className="px-4 py-2 rounded bg-blue-600 text-white">
-            구글 로그인
-          </button>
-          <button onClick={goKakao} className="px-4 py-2 rounded bg-yellow-400 text-black">
-            카카오 로그인
-          </button>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center gap-4">
-          <div>
-            안녕하세요, <b>{user.nickname}</b> 님!
+        {user ? (
+          <div className="space-y-4">
+            <p className="text-gray-700">
+              안녕하세요, <b>{user.nickname}</b> 님!
+            </p>
+
+            <div className="rounded-lg border p-4 text-sm text-gray-700">
+              <div className="flex items-center justify-between">
+                <span>이메일</span>
+                <span className="font-medium">{user.socialEmail}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <span>보유 캐시</span>
+                <span className="font-medium">{user.cash.toLocaleString()}원</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <span>리워드 합계</span>
+                <span className="font-medium">{user.totalReward.toLocaleString()}P</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Link
+                to="/mypage"
+                className="flex-1 rounded-lg bg-black px-4 py-2 text-center text-white hover:opacity-90"
+              >
+                마이페이지로
+              </Link>
+              <button
+                onClick={() => logout()}
+                className="flex-1 rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
+              >
+                로그아웃
+              </button>
+            </div>
           </div>
-          <div className="flex gap-3">
-            <button onClick={() => nav('/mypage')} className="px-4 py-2 rounded bg-gray-200">
-              마이페이지
+        ) : (
+          <div className="space-y-3">
+            <button
+              onClick={loginGoogle}
+              className="w-full rounded-lg bg-black px-4 py-3 text-white hover:opacity-90"
+            >
+              Google로 로그인
             </button>
             <button
-              onClick={() => setOpenNickDialog(true)}
-              className="px-4 py-2 rounded bg-emerald-200"
+              onClick={loginKakao}
+              className="w-full rounded-lg bg-yellow-300 px-4 py-3 hover:brightness-95"
             >
-              닉네임 변경
+              Kakao로 로그인
             </button>
-            <button onClick={logout} className="px-4 py-2 rounded bg-rose-200">
-              로그아웃
-            </button>
-          </div>
-        </div>
-      )}
 
-      <NicknameDialog
-        open={openNickDialog}
-        initialNickname={user?.nickname}
-        onClose={() => setOpenNickDialog(false)}
-        onSaved={(newNick) => setUser((u) => (u ? { ...u, nickname: newNick } : u))}
-      />
+            <p className="pt-2 text-center text-xs text-gray-500">
+              로그인 후 새로고침해도 자동으로 로그인 상태가 유지됩니다(세션 범위).
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

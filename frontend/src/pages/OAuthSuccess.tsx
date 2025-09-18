@@ -1,19 +1,20 @@
 import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router'; // ✅ dom 아님
-import { api, token } from '../api/client';
+import { useNavigate, useSearchParams } from 'react-router';
+import { useAuth } from '@/stores/auth';
 
 const GUARD_KEY = 'oauth_refresh_guard_ts';
 
 export default function OAuthSuccess() {
   const nav = useNavigate();
+  const [sp] = useSearchParams();
   const ran = useRef(false);
+  const { bootstrap } = useAuth();
 
   useEffect(() => {
     if (ran.current) return;
     ran.current = true;
 
-    token.clear();
-
+    // 중복 진입/빠른 더블 클릭 가드 (옵션)
     const now = Date.now();
     const last = Number(sessionStorage.getItem(GUARD_KEY) || '0');
     if (now - last < 8000) return;
@@ -21,18 +22,18 @@ export default function OAuthSuccess() {
 
     (async () => {
       try {
-        const res = await api.post<{ accessToken: string }>('/api/auth/refresh', {});
-        if (res?.accessToken) {
-          token.set(res.accessToken);
-          nav('/', { replace: true });
-        } else {
-          nav('/oauth/fail?reason=refresh_failed', { replace: true });
-        }
+        // 백엔드가 콜백에서 Refresh(HttpOnly 쿠키)만 심어줬다고 가정:
+        // bootstrap()이 refresh → accessToken → me 조회까지 수행
+        await bootstrap();
+
+        // 성공 시 리다이렉트 목적지 (없으면 '/')
+        const redirect = sp.get('redirect') || '/';
+        nav(redirect, { replace: true });
       } catch {
         nav('/oauth/fail?reason=refresh_failed', { replace: true });
       }
     })();
-  }, [nav]);
+  }, [bootstrap, nav, sp]);
 
-  return <div className="min-h-screen grid place-items-center text-gray-600">로그인 처리중…</div>;
+  return <div className="min-h-dvh grid place-items-center text-gray-600">로그인 처리중…</div>;
 }
