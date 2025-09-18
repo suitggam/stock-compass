@@ -13,14 +13,14 @@ sys.path.insert(0, current_dir)
 
 if __name__ == "__main__":
     print("뉴스 키워드 추출 FastAPI 서버를 시작합니다...")
-    print("API 문서: http://localhost:8000/docs")
-    print("헬스체크: http://localhost:8000/health")
+    print("API 문서: http://localhost:8888/docs")
+    print("헬스체크: http://localhost:8888/health")
     print("Ctrl+C를 눌러 서버를 종료할 수 있습니다.")
     
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
+        port=8888,
         reload=True,  # 개발 모드에서 파일 변경 시 자동 재시작
         log_level="info"
     )
