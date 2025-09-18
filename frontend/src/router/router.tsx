@@ -11,6 +11,9 @@ const MyPage = lazy(() => import("../pages/MyPage"));
 const OAuthFail = lazy(() => import("../pages/OAuthFail"));
 const TendencyGame = lazy(() => import("../pages/TendencyGamePage"));
 const StockDetail = lazy(() => import("../pages/StockInfoPage"));
+const StockDetail = lazy(() => import("../pages/StockDetailPage"));
+const StockTrade = lazy(() => import("../pages/StockTradePage"));
+const PortfolioPage = lazy(() => import("../pages/PortfolioPage"));
 
 const Router = createBrowserRouter([
   {
@@ -70,6 +73,22 @@ const Router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingPage />}>
             <TendencyGame />
+          </Suspense>
+        ),
+      },
+      {
+        path: "portfolio",
+        element: (
+          <Suspense fallback={<LoadingPage />}>
+            <PortfolioPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "stock",
+        element: (
+          <Suspense fallback={<LoadingPage />}>
+            <StockTrade />
           </Suspense>
         ),
       },
