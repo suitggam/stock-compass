@@ -55,7 +55,7 @@ ENV LOG_LEVEL="INFO"
 ENV DEBUG="False"
 
 # 포트 노출
-EXPOSE 8000
+EXPOSE 8888
 
 # 애플리케이션 실행
 CMD ["python", "main.py"]

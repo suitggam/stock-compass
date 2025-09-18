@@ -2,7 +2,7 @@ services:
   keyword-api:
     build: .
     ports:
-      - "8000:8000"
+      - "8888:8888"
     volumes:
       - .:/app:rw  # 개발 시 코드 변경을 위한 마운트
     environment:
@@ -23,7 +23,7 @@ services:
       - .env  # .env 파일에서 환경 변수 로드
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8888/health"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -201,14 +201,14 @@ async def extract_keywords(request: KeywordRequest):
 if __name__ == "__main__":
     import uvicorn
     print("🚀 뉴스 키워드 추출 API 서버를 시작합니다...")
-    print("📊 API 문서: http://localhost:8000/docs")
-    print("💓 헬스체크: http://localhost:8000/health") 
+    print("📊 API 문서: http://localhost:8888/docs")
+    print("💓 헬스체크: http://localhost:8888/health") 
     print("🤖 AI 스마트 필터링 지원")
     print("⏹️  Ctrl+C를 눌러 서버를 종료할 수 있습니다.")
     
     uvicorn.run(
         app, 
         host="0.0.0.0", 
-        port=8000,
+        port=8888,
         log_level="info"
     )
