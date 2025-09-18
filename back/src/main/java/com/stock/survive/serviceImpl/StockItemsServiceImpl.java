@@ -1,4 +1,4 @@
-package com.stock.survive.serviceImp;
+package com.stock.survive.serviceImpl;
 
 import com.stock.survive.dto.PageRequestDto;
 import com.stock.survive.dto.PageResponseDto;
@@ -16,7 +16,7 @@ import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
-public class StockItemsServiceImp implements StockItemsService {
+public class StockItemsServiceImpl implements StockItemsService {
 
     private final StockItemsRepository stockItemsRepository;
 

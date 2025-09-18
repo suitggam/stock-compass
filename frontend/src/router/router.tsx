@@ -10,7 +10,7 @@ const OAuthSuccess = lazy(() => import("../pages/OAuthSuccess"));
 const MyPage = lazy(() => import("../pages/MyPage"));
 const OAuthFail = lazy(() => import("../pages/OAuthFail"));
 const TendencyGame = lazy(() => import("../pages/TendencyGamePage"));
-const StockDetail = lazy(() => import("../pages/StockDetailPage"));
+const StockDetail = lazy(() => import("../pages/StockInfoPage"));
 
 const Router = createBrowserRouter([
   {

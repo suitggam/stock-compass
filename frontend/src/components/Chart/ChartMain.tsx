@@ -6,18 +6,18 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import type { ChartData } from "../../types/StockDetail";
 import type { Payload } from "recharts/types/component/DefaultTooltipContent";
+import type { StockInfos } from "../../types/StockInfos";
 
 interface ChartProps {
-  data: ChartData[];
+  data: StockInfos[];
   term: string;
 }
 
 function ChartMain({ data, term }: ChartProps) {
   type CustomPayload = {
     value: number;
-    dataKey: keyof ChartData;
+    dataKey: keyof StockInfos;
   };
 
   function numberFormat(num: number) {
@@ -72,6 +72,9 @@ function ChartMain({ data, term }: ChartProps) {
       break;
     case "1 년":
       xInterval = 89; // 3개월 단위
+      break;
+    case "3 년":
+      xInterval = 179; // 3개월 단위
       break;
     case "5 년":
       xInterval = 364; // 1년 단위
