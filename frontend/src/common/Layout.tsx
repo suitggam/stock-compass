@@ -1,16 +1,33 @@
-import { Outlet } from 'react-router';
+// src/components/Layout.tsx
+import { Outlet } from 'react-router'; // (RR v7) v6이면 'react-router-dom'
 import { useEffect } from 'react';
 import { useAuth } from '../stores/auth';
 import Footer from './Footer';
 import Header from './Header';
 
 function Layout() {
-  const { loading, bootstrap } = useAuth();
+  const bootstrap = useAuth((s) => s.bootstrap);
 
-  // 앱 진입/리다이렉트 직후 1회: refresh → me
+  // ① 앱 마운트 시 무조건 1회
   useEffect(() => {
-    if (loading) void bootstrap();
-  }, [loading, bootstrap]);
+    void bootstrap();
+  }, [bootstrap]);
+
+  // ② 포커스/가시성 복귀 시 재동기화 (OAuth 복귀 즉시 반영)
+  useEffect(() => {
+    const run = () => {
+      void bootstrap();
+    };
+    const onVis = () => {
+      if (document.visibilityState === 'visible') run();
+    };
+    window.addEventListener('focus', run);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.removeEventListener('focus', run);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [bootstrap]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br bg-slate-800">
