@@ -16,7 +16,7 @@ public class StockItems {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "item_no")
-    private Long itemNo;
+    private Integer itemNo;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_category_no", nullable = false)

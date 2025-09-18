@@ -44,7 +44,7 @@ public class StockItemsTest {
     @Test
     @Transactional
     public void getOneTest() {
-        Long id = 1L;
+        Integer id = 1;
         Optional<StockItems> list = stockItemsRepository.findById(id);
         StockItems items = list.orElseThrow();
         log.info(items.getItemNo()+", "+items.getCategory().getCategoryName()+", "+items.getTicker()+", "+items.getCompanyName());
