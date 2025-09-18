@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface StockRealtimeRepository extends JpaRepository<StockRealtime, Long> {
 
@@ -28,5 +30,7 @@ public interface StockRealtimeRepository extends JpaRepository<StockRealtime, Lo
     ORDER BY si.itemNo ASC
 """)
     Page<StockRealtimeDto> findAllWithLatestInfo(Pageable pageable);
+    
+    Optional<StockRealtime> findByTicker(String ticker);
 
 }

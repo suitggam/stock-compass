@@ -2,11 +2,13 @@ package com.stock.survive.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "stock_realtime")
@@ -27,5 +29,8 @@ public class StockRealtime {
 
     @Column
     private Double rate;
+
+    @Column(name = "item_no")
+    private Integer itemNo;
 
 }

@@ -33,7 +33,7 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br bg-slate-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-[1800px]">
         <Header />
         <div className="pt-5 pb-5">
           <Outlet />
