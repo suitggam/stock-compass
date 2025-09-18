@@ -13,11 +13,11 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-public interface StockItemsRepository extends JpaRepository<StockItems, Long> {
+public interface StockItemsRepository extends JpaRepository<StockItems, Integer> {
 
     @Query(
             value = "SELECT new com.stock.survive.dto.StockEndDayDto(si.ticker, si.companyName, inf.startPrice, inf.endPrice, inf.volume, si.category.categoryName, inf.marketCap) " +
-                    "FROM StockItems si JOIN si.infos inf WHERE inf.date = :targetDate",
+                    "FROM StockItems si JOIN si.infos inf WHERE inf.date = :targetDate  ORDER BY si.itemNo ASC",
             countQuery = "SELECT count(si) FROM StockItems si JOIN si.infos inf WHERE inf.date = :targetDate"
     )
     Page<StockEndDayDto> getEndOfDayData(@Param("targetDate") LocalDate targetDate, Pageable pageable);
