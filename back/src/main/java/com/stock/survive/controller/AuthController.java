@@ -25,19 +25,17 @@ public class AuthController {
     private final UserLinkService linker;
     private final TokenService tokenService;
 
-    @Value("${app.front-redirect:http://localhost:5173}")
-    private String frontBase;
+    // ★ 이제 이것만 사용
+    @Value("${app.front-origin:http://localhost:5173}")
+    private String frontOrigin;
 
-    //일단 테스트용으로 로그인 페이지로 넘어가게 하려고 테스트용
-    @Value("${app.front-redirect-after:/login}")
-    private String frontAfter;
-
-    // ===== 공통: 프론트 리다이렉트 URL 조립 =====
-    private String buildFrontRedirectUrl() {
-        String after = frontAfter.startsWith("/") ? frontAfter : ("/" + frontAfter);
-        return UriComponentsBuilder.fromUriString(frontBase)           
-                .replacePath(null)            
-                .path(after)                    
+    /** 항상 홈(/)로 리다이렉트하는 URL 생성 */
+    private String frontHome() {
+        // origin 기반으로 path=/ 만 보장
+        return UriComponentsBuilder.fromUriString(frontOrigin)
+                .replacePath("/")     // 무조건 홈
+                .replaceQuery(null)
+                .fragment(null)
                 .build()
                 .toUriString();
     }
@@ -59,7 +57,7 @@ public class AuthController {
         var pair = tokenService.issue(user);
         tokenService.setRefreshCookie(res, pair.refresh());
 
-        res.sendRedirect(buildFrontRedirectUrl());
+        res.sendRedirect(frontHome());
     }
 
     // ===== 카카오 =====
@@ -79,7 +77,7 @@ public class AuthController {
         var pair = tokenService.issue(user);
         tokenService.setRefreshCookie(res, pair.refresh());
 
-        res.sendRedirect(buildFrontRedirectUrl());
+        res.sendRedirect(frontHome());
     }
 
     /** Access 재발급: Refresh 쿠키 검증/로테이션 후 새 Access 반환 */
@@ -96,4 +94,3 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 }
-

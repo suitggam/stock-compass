@@ -2,14 +2,17 @@ package com.stock.survive.dto;
 
 import com.stock.survive.entity.User;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.format.DateTimeFormatter;
 
-@Getter
+// dto/UserSummaryDto.java
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
 public class UserSummaryDto {
     private Integer userNo;
     private String socialEmail;
@@ -19,16 +22,27 @@ public class UserSummaryDto {
     private Integer cash;
     private String createdAt;
 
+    // ★ 추가
+    private String avatarUrl;
+
     public static UserSummaryDto of(User u) {
         return new UserSummaryDto(
-                u.getId(),
-                u.getSocialEmail(),
-                u.getNickname(),
-                u.isCancel(),
-                u.getTotalReward(),
-                u.getCash(),
-                u.getCreatedAt() != null ? u.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null
+                u.getId(), u.getSocialEmail(), u.getNickname(), u.isCancel(),
+                u.getTotalReward(), u.getCash(),
+                u.getCreatedAt() != null ? u.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null,
+                null // avatarUrl 기본값
+        );
+    }
+
+    // ★ 필요하면 아바타까지 세팅하는 오버로드
+    public static UserSummaryDto of(User u, String avatarUrl) {
+        return new UserSummaryDto(
+                u.getId(), u.getSocialEmail(), u.getNickname(), u.isCancel(),
+                u.getTotalReward(), u.getCash(),
+                u.getCreatedAt() != null ? u.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null,
+                avatarUrl
         );
     }
 }
+
 

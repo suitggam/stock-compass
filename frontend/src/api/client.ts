@@ -1,7 +1,7 @@
 // src/api/client.ts
 // API 래퍼 (동시 401 처리, 자동 갱신) — 토큰은 Zustand(useAuth)에서만 관리
 
-import { useAuth } from '@/stores/auth';
+import { useAuth } from '../stores/auth';
 
 export const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
