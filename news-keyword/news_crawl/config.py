@@ -5,7 +5,7 @@ LOGIN_EMAIL = "jack0810@kookmin.ac.kr"
 LOGIN_PASSWORD = "0810jack!"
 
 # 검색 설정
-DEFAULT_SEARCH_PERIOD_DAYS = 30  # 기본 검색 기간 (일)
+DEFAULT_SEARCH_PERIOD_DAYS = 0  # 기본 검색 기간 (일)
 
 # 웹 요소 대기 시간 (초)
 WAIT_TIMEOUT = 20
@@ -28,3 +28,4 @@ DOWNLOAD_WAIT_TIME = 10  # 엑셀 다운로드 완료 대기 시간 (초)
 LOG_LEVEL = "INFO"
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 LOG_FILE = "bigkinds_automation.log"
+

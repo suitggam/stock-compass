@@ -21,49 +21,24 @@ def main():
         days = int(os.environ.get('SEARCH_PERIOD_DAYS', DEFAULT_SEARCH_PERIOD_DAYS))
         
         # 검색 기간 설정
-        end_date = datetime.now()
+        end_date = datetime.now() - timedelta(days=1)
         start_date = end_date - timedelta(days=days)
         
         start_date_str = start_date.strftime('%Y-%m-%d')
         end_date_str = end_date.strftime('%Y-%m-%d')
         
-        # print(f"🔍 검색 기간: {start_date_str} ~ {end_date_str}")
-        # print(f"📅 최근 {days}일간의 뉴스를 검색합니다")
+        print(f"🔍 검색 기간: {start_date_str} ~ {end_date_str}")
+        print(f"📅 최근 {days}일간의 뉴스를 검색합니다")
         print("🚀 자동화를 시작합니다...")
         print()
         
         # 자동화 실행
         automation = BigKindsAutomation(LOGIN_EMAIL, LOGIN_PASSWORD)
 
-        # 순차 실행 (run_automation 메서드 없이 직접 호출)
-        flow_ok = True
-        try:
-            if not automation.setup_driver():
-                flow_ok = False
-            else:
-                automation.driver.get("https://www.bigkinds.or.kr/")
-                # 로그인
-                if flow_ok and not automation.login():
-                    flow_ok = False
-                # 분석 페이지 이동
-                if flow_ok and not automation.navigate_to_news_analysis():
-                    flow_ok = False
-                # 기간 1일
-                if flow_ok and not automation.set_period_one_day():
-                    flow_ok = False
-                # 통합 분류 경제 적용
-                if flow_ok and not automation.select_economy_and_apply():
-                    flow_ok = False
-                # 분석 결과 및 시각화 → 엑셀 다운로드
-                if flow_ok and not automation.open_analysis_and_download_excel():
-                    flow_ok = False
-        finally:
-            try:
-                automation.close()
-            except Exception:
-                pass
+        # 순차 실행 (run_automation 메서드 사용)
+        success = automation.run_automation(start_date_str, end_date_str)
 
-        if flow_ok:
+        if success:
             print("\n" + "=" * 60)
             print("✅ 자동화가 성공적으로 완료되었습니다!")
             print("📁 다운로드된 엑셀 파일을 확인해주세요:")
