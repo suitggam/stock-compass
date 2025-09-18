@@ -1,5 +1,8 @@
 import time
 import os
+import glob
+import pandas as pd
+import boto3
 from datetime import datetime, timedelta
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -1212,6 +1215,24 @@ class BigKindsAutomation:
                 self.logger.error("분석 결과 및 엑셀 다운로드 실패")
                 return False
             
+            # 8. 엑셀 파일을 CSV로 변환
+            self.logger.info("엑셀 파일을 CSV로 변환 중...")
+            csv_files = self.convert_excel_to_csv()
+            if csv_files:
+                self.logger.info(f"CSV 변환 완료: {len(csv_files)}개 파일 생성")
+                for csv_file in csv_files:
+                    self.logger.info(f"  - {csv_file}")
+                
+                # 9. CSV 파일을 S3에 업로드
+                self.logger.info("CSV 파일을 S3에 업로드 중...")
+                s3_url = self.upload_csv_to_s3()
+                if s3_url:
+                    self.logger.info(f"S3 업로드 완료: {s3_url}")
+                else:
+                    self.logger.warning("S3 업로드 실패")
+            else:
+                self.logger.warning("CSV 변환 실패")
+            
             self.logger.info("자동화 완료")
             return True
             
@@ -1223,6 +1244,173 @@ class BigKindsAutomation:
                 self.close()
             except:
                 pass
+
+    def convert_excel_to_csv(self, download_dir="./downloads"):
+        """다운로드된 엑셀 파일을 CSV로 변환"""
+        try:
+            # 다운로드 디렉토리 생성
+            os.makedirs(download_dir, exist_ok=True)
+            
+            # 엑셀 파일 찾기
+            excel_files = glob.glob(os.path.join(download_dir, "*.xlsx"))
+            if not excel_files:
+                self.logger.warning("다운로드된 엑셀 파일을 찾을 수 없습니다.")
+                return None
+            
+            # 가장 최근 파일 선택
+            latest_excel = max(excel_files, key=os.path.getctime)
+            self.logger.info(f"엑셀 파일 발견: {latest_excel}")
+            
+            # 엑셀 파일 읽기
+            try:
+                # 모든 시트 읽기
+                excel_data = pd.read_excel(latest_excel, sheet_name=None)
+                
+                csv_files = []
+                
+                # CSV 파일명 생성
+                base_name = os.path.splitext(os.path.basename(latest_excel))[0]
+                
+                # 단일 시트인 경우
+                if len(excel_data) == 1:
+                    sheet_name = list(excel_data.keys())[0]
+                    df = excel_data[sheet_name]
+                    csv_filename = f"{base_name}.csv"
+                    csv_path = os.path.join(download_dir, csv_filename)
+                    df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+                    csv_files.append(csv_path)
+                    self.logger.info(f"CSV 파일 생성: {csv_path}")
+                else:
+                    # 다중 시트인 경우 각 시트별로 저장
+                    for sheet_name, df in excel_data.items():
+                        csv_filename = f"{base_name}_{sheet_name}.csv"
+                        csv_path = os.path.join(download_dir, csv_filename)
+                        df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+                        csv_files.append(csv_path)
+                        self.logger.info(f"CSV 파일 생성: {csv_path}")
+                
+                return csv_files
+                
+            except Exception as e:
+                self.logger.error(f"엑셀 파일 읽기 실패: {e}")
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"CSV 변환 중 오류: {e}")
+            return None
+
+    def get_latest_downloaded_file(self, download_dir="./downloads", file_extension=".xlsx"):
+        """다운로드 디렉토리에서 가장 최근 파일 반환"""
+        try:
+            os.makedirs(download_dir, exist_ok=True)
+            
+            # 지정된 확장자의 파일들 찾기
+            pattern = os.path.join(download_dir, f"*{file_extension}")
+            files = glob.glob(pattern)
+            
+            if not files:
+                return None
+            
+            # 가장 최근 파일 반환
+            latest_file = max(files, key=os.path.getctime)
+            return latest_file
+            
+        except Exception as e:
+            self.logger.error(f"최근 파일 찾기 실패: {e}")
+            return None
+
+    def convert_filename_format(self, original_filename):
+        """파일명을 새로운 형식으로 변환"""
+        try:
+            # NewsResult_15600305-2025091720250917.xlsx -> NewsResult_20250917-20250917.csv
+            if original_filename.startswith('NewsResult_'):
+                # 파일 확장자 제거
+                name_without_ext = os.path.splitext(original_filename)[0]
+                
+                # NewsResult_15600305-2025091720250917에서 날짜 부분 추출
+                # 2025091720250917에서 20250917 부분만 추출
+                parts = name_without_ext.split('-')
+                if len(parts) >= 2:
+                    date_part = parts[1]  # 2025091720250917
+                    if len(date_part) >= 8:
+                        date_only = date_part[:8]  # 20250917
+                        new_filename = f"NewsResult_{date_only}-{date_only}.csv"
+                        return new_filename
+            
+            # 변환 실패시 원본 파일명 사용
+            return original_filename
+            
+        except Exception as e:
+            self.logger.warning(f"파일명 변환 실패: {e}, 원본 파일명 사용")
+            return original_filename
+
+    def upload_to_s3(self, file_path, s3_key=None):
+        """파일을 S3에 업로드"""
+        try:
+            from config import S3_BUCKET_NAME, S3_REGION, S3_PREFIX
+            
+            # S3 클라이언트 생성
+            s3_client = boto3.client(
+                's3',
+                region_name=S3_REGION,
+                aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+                aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
+                aws_session_token=os.environ.get('AWS_SESSION_TOKEN')  # 임시 자격 증명 사용시
+            )
+            
+            # S3 키 생성
+            if s3_key is None:
+                original_filename = os.path.basename(file_path)
+                new_filename = self.convert_filename_format(original_filename)
+                s3_key = f"{S3_PREFIX}{new_filename}"
+            
+            # 파일 업로드
+            self.logger.info(f"S3 업로드 시작: {file_path} -> s3://{S3_BUCKET_NAME}/{s3_key}")
+            
+            s3_client.upload_file(
+                file_path,
+                S3_BUCKET_NAME,
+                s3_key,
+                ExtraArgs={
+                    'ContentType': 'text/csv' if file_path.endswith('.csv') else 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                }
+            )
+            
+            s3_url = f"s3://{S3_BUCKET_NAME}/{s3_key}"
+            self.logger.info(f"S3 업로드 완료: {s3_url}")
+            
+            return s3_url
+            
+        except Exception as e:
+            self.logger.error(f"S3 업로드 실패: {e}")
+            return None
+
+    def upload_csv_to_s3(self, download_dir="./downloads"):
+        """CSV 파일을 S3에 업로드"""
+        try:
+            # CSV 파일 찾기
+            csv_files = glob.glob(os.path.join(download_dir, "*.csv"))
+            if not csv_files:
+                self.logger.warning("업로드할 CSV 파일을 찾을 수 없습니다.")
+                return None
+            
+            # 가장 최근 CSV 파일 선택
+            latest_csv = max(csv_files, key=os.path.getctime)
+            self.logger.info(f"CSV 파일 발견: {latest_csv}")
+            
+            # S3에 업로드
+            s3_url = self.upload_to_s3(latest_csv)
+            
+            if s3_url:
+                self.logger.info(f"CSV 파일 S3 업로드 성공: {s3_url}")
+                return s3_url
+            else:
+                self.logger.error("CSV 파일 S3 업로드 실패")
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"CSV S3 업로드 중 오류: {e}")
+            return None
 
     def close(self):
         """브라우저 종료"""

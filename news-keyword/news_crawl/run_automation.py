@@ -95,7 +95,12 @@ def main():
         
         if success:
             print("\n✅ 자동화가 성공적으로 완료되었습니다!")
-            print("다운로드된 엑셀 파일을 확인해주세요.")
+            print("📁 다운로드된 파일들을 확인해주세요:")
+            print("   - 엑셀 파일: ./downloads/*.xlsx")
+            print("   - CSV 파일: ./downloads/*.csv")
+            print("☁️  S3 업로드:")
+            print("   - CSV 파일이 S3에 자동 업로드되었습니다")
+            print("   - 로그에서 S3 URL을 확인하세요")
         else:
             print("\n❌ 자동화 실행 중 오류가 발생했습니다.")
             print("로그 파일(bigkinds_automation.log)을 확인해주세요.")

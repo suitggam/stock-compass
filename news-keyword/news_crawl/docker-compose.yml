@@ -22,6 +22,12 @@ services:
       - CHROMEDRIVER_PATH=/usr/bin/chromedriver
       - DOCKER_ENV=true
       - SEARCH_PERIOD_DAYS=0
+      # AWS 자격 증명 (영구 자격 증명 사용)
+      - AWS_ACCESS_KEY_ID=AKIASUXKGFEYEOSHALWI
+      - AWS_SECRET_ACCESS_KEY=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
+      - AWS_DEFAULT_REGION=ap-northeast-2
+      - S3_BUCKET=cheesecrust-spark-data-bucket
+      - S3_PREFIX=outputs/data
     # 헤드리스 모드로 실행 (GUI 없이)
     command: python run_automation_docker.py
     # 컨테이너가 종료된 후에도 로그 확인 가능

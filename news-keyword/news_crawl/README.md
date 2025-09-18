@@ -12,6 +12,8 @@ BIG KINDS 웹사이트에서 뉴스 검색 분석을 자동화하는 Python 프�
 - 경제 카테고리 자동 선택
 - 분석 결과 및 시각화 페이지 자동 이동
 - 엑셀 파일 자동 다운로드
+- **🆕 CSV 파일 자동 변환**
+- **🆕 S3 클라우드 자동 업로드**
 
 ## 설치 방법
 
@@ -26,6 +28,28 @@ pip install -r requirements.txt
 ### 3. Chrome/Chromium 브라우저 설치
 - **로컬 실행**: Chrome 브라우저가 설치되어 있어야 합니다
 - **Docker 실행**: Chromium이 자동으로 설치됩니다
+
+### 4. AWS S3 설정 (S3 업로드 기능 사용시)
+S3 업로드 기능을 사용하려면 AWS 자격 증명을 설정해야 합니다.
+
+#### 환경 변수 설정
+```bash
+# Windows (PowerShell)
+$env:AWS_ACCESS_KEY_ID="your_access_key_id"
+$env:AWS_SECRET_ACCESS_KEY="your_secret_access_key"
+$env:AWS_DEFAULT_REGION="ap-northeast-2"
+
+# Linux/Mac
+export AWS_ACCESS_KEY_ID="your_access_key_id"
+export AWS_SECRET_ACCESS_KEY="your_secret_access_key"
+export AWS_DEFAULT_REGION="ap-northeast-2"
+```
+
+#### Docker 환경에서 사용
+```bash
+# 환경 변수와 함께 실행
+AWS_ACCESS_KEY_ID=your_key AWS_SECRET_ACCESS_KEY=your_secret docker-compose up
+```
 
 ## 사용 방법
 

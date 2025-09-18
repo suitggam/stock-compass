@@ -41,9 +41,14 @@ def main():
         if success:
             print("\n" + "=" * 60)
             print("✅ 자동화가 성공적으로 완료되었습니다!")
-            print("📁 다운로드된 엑셀 파일을 확인해주세요:")
+            print("📁 다운로드된 파일들을 확인해주세요:")
+            print("   - 엑셀 파일: ./downloads/*.xlsx")
+            print("   - CSV 파일: ./downloads/*.csv")
             print("   - Docker 볼륨: ./downloads/")
             print("   - 컨테이너 내부: /app/downloads/")
+            print("☁️  S3 업로드:")
+            print("   - CSV 파일이 S3에 자동 업로드되었습니다")
+            print("   - 로그에서 S3 URL을 확인하세요")
             print("=" * 60)
         else:
             print("\n" + "=" * 60)
