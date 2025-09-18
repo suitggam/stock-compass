@@ -44,16 +44,11 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/users/auth/**",   // 카카오/구글 + refresh
-                                "/users/logout",
-                                "/error",
-                                "/actuator/health",
-                                "/api/stock/**"
-
-                        ).permitAll()
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyRequest().authenticated()
+                    .requestMatchers("/users/auth/**", "/users/logout", "/error", "/actuator/health", "/api/stock/**").permitAll()
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                    .requestMatchers(HttpMethod.DELETE, "/users/me").authenticated()
+                    .requestMatchers(HttpMethod.GET, "/users/me").authenticated()
+                    .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e
                         .accessDeniedHandler(accessDeniedHandler)

@@ -111,7 +111,7 @@ public class UserController {
         return UserSummaryDto.of(u, pickAvatarUrl(u));
     }
 
-    @DeleteMapping("/delete")
+    @DeleteMapping("/me")
     @Transactional
     public ResponseEntity<Void> deleteMe(Authentication auth) {
         Integer uid = extractUid(auth);

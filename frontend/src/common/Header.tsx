@@ -1,118 +1,217 @@
+// src/components/Header.tsx
 import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../stores/auth';
 import logoImg from '../assets/logo.webp';
 
 function getInitials(name: string) {
-  // 한글/영문 혼용도 무난하게 앞 2글자
-  const trimmed = (name || '').trim();
-  if (!trimmed) return '?';
-  // 공백 분리 후 첫 글자 조합
-  const parts = trimmed.split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return trimmed.slice(0, 2).toUpperCase();
+  const t = (name || '').trim();
+  if (!t) return '?';
+  const parts = t.split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return t.slice(0, 2).toUpperCase();
 }
 
 export default function Header() {
   const [search, setSearch] = useState('');
+  const [openAll, setOpenAll] = useState(false); // xs: 전체 패널
+  const [openNav, setOpenNav] = useState(false); // sm~lg: 세 친구 패널
   const navigate = useNavigate();
-  const { user, logout } = useAuth(); // 🔸 로그인 상태/유저 정보/로그아웃
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearch(value);
-    // console.log('검색어 : ', value);
-  };
+  const user = useAuth((s) => s.user);
+  const logout = useAuth((s) => s.logout);
 
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value);
   const handleSearch = () => {
-    if (search.trim()) {
-      navigate(`/search?query=${encodeURIComponent(search)}`);
-    } else {
-      alert('검색어를 입력해주세요');
-    }
+    if (!search.trim()) return alert('검색어를 입력해주세요');
+    navigate(`/search?query=${encodeURIComponent(search)}`);
+    setOpenAll(false);
+    setOpenNav(false);
   };
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') handleSearch();
   };
 
-  const goLogin = () => navigate('/login');
-  const goMyPage = () => navigate('/mypage');
+  const goLogin = () => {
+    navigate('/login');
+    setOpenAll(false);
+    setOpenNav(false);
+  };
+  const goMy = () => {
+    navigate('/mypage');
+    setOpenAll(false);
+    setOpenNav(false);
+  };
 
-  return (
-    <nav className="bg-slate-800 text-white flex justify-between items-center px-6 py-4">
-      {/* 왼쪽: 로고 + 메뉴 */}
-      <div className="flex items-center space-x-6">
-        <Link to="/">
-          <img src={logoImg} alt="로고이미지" className="h-8 w-auto" />
-        </Link>
-        <Link to="/game" className="text-slate-300 hover:text-white font-bold transition-colors">
-          투자 성향 파악 게임
-        </Link>
-        <Link to="/stock" className="text-slate-300 hover:text-white font-bold transition-colors">
-          모의 투자
-        </Link>
-        <Link to="/ranking" className="text-slate-300 hover:text-white font-bold transition-colors">
-          모의 투자 랭킹
-        </Link>
-      </div>
+  const NavLinks = ({ onClick }: { onClick: () => void }) => (
+    <>
+      <Link
+        to="/game"
+        className="px-2 py-2 text-slate-300 hover:text-white font-bold flex-none shrink-0 whitespace-nowrap"
+        onClick={onClick}
+      >
+        투자 성향 파악 게임
+      </Link>
+      <Link
+        to="/stock"
+        className="px-2 py-2 text-slate-300 hover:text-white font-bold flex-none shrink-0 whitespace-nowrap"
+        onClick={onClick}
+      >
+        모의 투자
+      </Link>
+      <Link
+        to="/ranking"
+        className="px-2 py-2 text-slate-300 hover:text-white font-bold flex-none shrink-0 whitespace-nowrap"
+        onClick={onClick}
+      >
+        모의 투자 랭킹
+      </Link>
+    </>
+  );
 
-      {/* 오른쪽: 검색 + 유저영역 */}
-      <div className="flex items-center space-x-4">
-        <input
-          className="w-72 px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-          placeholder="기업명 또는 종목코드로 검색"
-          value={search}
-          onChange={handleChange}
-          onKeyDown={handleKeyPress}
-        />
-        <button
-          onClick={handleSearch}
-          className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all font-bold shadow-lg"
-        >
-          검색
-        </button>
-
-        {/* 🔸 로그인 상태에 따라 분기 */}
-        {!user ? (
-          <button
-            onClick={goLogin}
-            className="px-6 py-3 border border-slate-600 text-slate-300 rounded-xl hover:border-slate-500 hover:text-white transition-colors font-bold"
-          >
-            로그인
-          </button>
+  const AuthArea = () =>
+    !user ? (
+      <button
+        onClick={goLogin}
+        className="flex-none shrink-0 h-10 px-4 border border-slate-600 text-slate-300 rounded-xl hover:border-slate-500 hover:text-white font-bold whitespace-nowrap"
+      >
+        로그인
+      </button>
+    ) : (
+      <div className="flex items-center gap-3">
+        {user.avatarUrl ? (
+          <img
+            onClick={goMy}
+            src={user.avatarUrl}
+            alt="프로필"
+            className="h-10 w-10 rounded-full object-cover border border-slate-600 cursor-pointer flex-none shrink-0"
+            referrerPolicy="no-referrer"
+          />
         ) : (
-          <div className="flex items-center gap-3">
-            {/* 아바타 */}
-            {user.avatarUrl ? (
-              <img
-                onClick={goMyPage}
-                src={user.avatarUrl}
-                alt="프로필"
-                className="h-10 w-10 rounded-full object-cover border border-slate-600"
-                referrerPolicy="no-referrer" // 구글 이미지 등 CORS 이슈 완화
-              />
-            ) : (
-              <div className="h-10 w-10 rounded-full bg-amber-500/90 text-slate-900 flex items-center justify-center font-extrabold">
-                {getInitials(user.nickname)}
-              </div>
-            )}
-
-            {/* 닉네임 */}
-            <span className="hidden sm:inline text-slate-200 font-medium">{user.nickname}</span>
-
-            {/* 로그아웃 */}
-            <button
-              onClick={() => logout()}
-              className="px-4 py-2 text-sm rounded-lg border border-slate-600 hover:bg-slate-700/60 transition-colors"
-            >
-              로그아웃
-            </button>
+          <div
+            onClick={goMy}
+            className="h-10 w-10 rounded-full bg-amber-500/90 text-slate-900 flex items-center justify-center font-extrabold cursor-pointer flex-none shrink-0"
+            title="마이페이지"
+          >
+            {getInitials(user.nickname)}
           </div>
         )}
+        <button
+          onClick={() => logout()}
+          className="flex-none shrink-0 h-10 px-3 text-sm rounded-lg border border-slate-600 hover:bg-slate-700/60 whitespace-nowrap"
+        >
+          로그아웃
+        </button>
       </div>
-    </nav>
+    );
+
+  return (
+    <header className="bg-slate-800 text-white">
+      {/* Top bar */}
+      <nav className="relative mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+        {/* 좌측: 로고 + 네비게이션(반응형) */}
+        <div className="relative flex items-center gap-3 min-w-0">
+          <Link
+            to="/"
+            onClick={() => {
+              setOpenAll(false);
+              setOpenNav(false);
+            }}
+          >
+            <img src={logoImg} alt="로고이미지" className="h-8 w-auto" />
+          </Link>
+
+          {/* lg↑: 세 친구 가로 노출(랩핑 방지) */}
+          <div className="hidden lg:flex items-center gap-4 min-w-0 flex-nowrap">
+            <NavLinks onClick={() => {}} />
+          </div>
+
+          {/* sm〜lg: 세 친구만 드롭다운 */}
+          <div className="hidden sm:block lg:hidden">
+            <button
+              onClick={() => setOpenNav((v) => !v)}
+              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-700/50"
+              aria-label="메뉴"
+            >
+              <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+                {openNav ? <path d="M6 18L18 6M6 6l12 12" /> : <path d="M3 6h18M3 12h18M3 18h18" />}
+              </svg>
+              <span className="text-sm text-slate-300">메뉴</span>
+            </button>
+
+            <div
+              className={`absolute z-40 mt-2 left-0 w-60 overflow-hidden rounded-xl bg-slate-900/95 ring-1 ring-white/10 shadow-xl transition-[max-height,opacity] duration-300 ${
+                openNav ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
+              }`}
+            >
+              <div className="flex flex-col px-3 py-2">
+                <NavLinks onClick={() => setOpenNav(false)} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 우측: 검색 + 인증영역 (sm↑에서만 노출)
+            → 랩핑/수축 방지: flex-nowrap + min-w-0, 각 버튼은 flex-none */}
+        <div className="hidden sm:flex items-center gap-3 min-w-0 flex-nowrap">
+          <input
+            className="min-w-[9rem] md:min-w-[14rem] w-[14rem] md:w-[18rem] flex-auto px-4 h-10 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+            placeholder="기업명 또는 종목코드로 검색"
+            value={search}
+            onChange={handleChange}
+            onKeyDown={handleKey}
+          />
+          <button
+            onClick={handleSearch}
+            className="flex-none shrink-0 h-10 px-4 md:px-5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 rounded-xl hover:from-amber-600 hover:to-amber-700 font-bold whitespace-nowrap"
+          >
+            검색
+          </button>
+          <AuthArea />
+        </div>
+
+        {/* xs: 전체 패널 버튼 */}
+        <button
+          aria-label="전체 메뉴"
+          className="sm:hidden inline-flex items-center justify-center rounded-lg p-2 hover:bg-slate-700/50"
+          onClick={() => setOpenAll((v) => !v)}
+        >
+          <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+            {openAll ? <path d="M6 18L18 6M6 6l12 12" /> : <path d="M3 6h18M3 12h18M3 18h18" />}
+          </svg>
+        </button>
+      </nav>
+
+      {/* xs: 전체 패널 (세 친구 + 검색 + 인증영역) */}
+      <div
+        className={`sm:hidden overflow-hidden transition-[max-height] duration-300 ${
+          openAll ? 'max-h-[520px]' : 'max-h-0'
+        }`}
+      >
+        <div className="px-4 pb-4 space-y-4">
+          <div className="flex flex-col gap-1">
+            <NavLinks onClick={() => setOpenAll(false)} />
+          </div>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <input
+                className="flex-1 px-4 h-10 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                placeholder="기업명 또는 종목코드로 검색"
+                value={search}
+                onChange={handleChange}
+                onKeyDown={handleKey}
+              />
+              <button
+                onClick={handleSearch}
+                className="flex-none h-10 px-4 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 rounded-xl hover:from-amber-600 hover:to-amber-700 font-bold"
+              >
+                검색
+              </button>
+            </div>
+            <AuthArea />
+          </div>
+        </div>
+      </div>
+    </header>
   );
 }
