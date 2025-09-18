@@ -27,9 +27,9 @@ def get_user_input():
         return get_default_dates()
     
     # 기본 기간 제안
-    end_date = datetime.now()
+    end_date = datetime.now() - timedelta(days=1)
     start_date = end_date - timedelta(days=DEFAULT_SEARCH_PERIOD_DAYS)
-    
+    print(f"종료일자: {end_date.strftime('%Y-%m-%d')}")
     print(f"기본 검색 기간: {start_date.strftime('%Y-%m-%d')} ~ {end_date.strftime('%Y-%m-%d')}")
     print(f"(최근 {DEFAULT_SEARCH_PERIOD_DAYS}일)")
     
@@ -75,7 +75,7 @@ def get_user_input():
 
 def get_default_dates():
     """기본 날짜 반환"""
-    end_date = datetime.now()
+    end_date = datetime.now() - timedelta(days=1)
     start_date = end_date - timedelta(days=DEFAULT_SEARCH_PERIOD_DAYS)
     return start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')
 

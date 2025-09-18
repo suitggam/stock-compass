@@ -10,6 +10,7 @@ services:
       dockerfile: Dockerfile.chromium
     container_name: bigkinds-news-crawler
     volumes:
+      - ./:/app
       # 다운로드된 파일을 호스트와 공유
       - ./downloads:/app/downloads
       # 로그 파일을 호스트와 공유
@@ -20,7 +21,7 @@ services:
       - CHROME_BIN=/usr/bin/chromium
       - CHROMEDRIVER_PATH=/usr/bin/chromedriver
       - DOCKER_ENV=true
-      - SEARCH_PERIOD_DAYS=30
+      - SEARCH_PERIOD_DAYS=0
     # 헤드리스 모드로 실행 (GUI 없이)
     command: python run_automation_docker.py
     # 컨테이너가 종료된 후에도 로그 확인 가능

@@ -132,8 +132,7 @@ class BigKindsAutomation:
             login_methods = [
                 self._try_direct_login_button,
                 self._try_user_icon_hover,
-                self._try_navigation_menu,
-                self._try_footer_login
+                self._try_navigation_menu
             ]
             
             for method in login_methods:
@@ -263,31 +262,6 @@ class BigKindsAutomation:
             return False
         except Exception as e:
             self.logger.warning(f"네비게이션 메뉴 방법 실패: {e}")
-            return False
-    
-    def _try_footer_login(self):
-        """푸터에서 로그인 찾기"""
-        try:
-            # 푸터에서 로그인 찾기
-            footer_login_selectors = [
-                "//footer//a[contains(text(), '로그인')]",
-                "//div[contains(@class, 'footer')]//a[contains(text(), '로그인')]"
-            ]
-            
-            for selector in footer_login_selectors:
-                try:
-                    login_btn = self.driver.find_element(By.XPATH, selector)
-                    if login_btn.is_displayed() and login_btn.is_enabled():
-                        self.logger.info(f"푸터에서 로그인 버튼 찾음: {selector}")
-                        login_btn.click()
-                        time.sleep(3)
-                        return self._complete_login_form()
-                except:
-                    continue
-            
-            return False
-        except Exception as e:
-            self.logger.warning(f"푸터 로그인 방법 실패: {e}")
             return False
     
     def _complete_login_form(self):
@@ -472,6 +446,138 @@ class BigKindsAutomation:
                 pass
             return False
     
+    def set_custom_period(self, start_date, end_date):
+        """분석 페이지에서 사용자 지정 기간 설정"""
+        try:
+            self.logger.info(f"사용자 지정 기간 설정: {start_date} ~ {end_date}")
+            time.sleep(1)
+
+            # 기간 탭/버튼 클릭 (텍스트 포함 다양한 경우 대응)
+            period_triggers = [
+                "//button[contains(text(), '기간')]",
+                "//a[contains(text(), '기간')]",
+                "//*[contains(@class, 'date') and (self::button or self::a)]",
+                "//div[contains(@class, 'date')]//button",
+            ]
+            period_btn = None
+            for xp in period_triggers:
+                try:
+                    el = self.driver.find_element(By.XPATH, xp)
+                    if el.is_displayed() and el.is_enabled():
+                        period_btn = el
+                        break
+                except:
+                    continue
+            if not period_btn:
+                self.logger.warning("기간 버튼을 못찾음. 직접 날짜 입력 시도")
+            else:
+                try:
+                    self.driver.execute_script("arguments[0].click();", period_btn)
+                except:
+                    try:
+                        period_btn.click()
+                    except Exception as e:
+                        self.logger.warning(f"기간 버튼 클릭 실패: {e}")
+            time.sleep(1)
+
+            # 시작 날짜 입력
+            start_date_input = None
+            start_date_selectors = [
+                "//input[@id='search-begin-date']",
+                "//input[contains(@class, 'input-dateFrom')]",
+                "//input[contains(@placeholder, 'YYYY-MM-DD')]",
+                "//input[contains(@title, '달력보기')]",
+                "//input[@type='text' and contains(@class, 'date')]"
+            ]
+            
+            for xp in start_date_selectors:
+                try:
+                    el = self.driver.find_element(By.XPATH, xp)
+                    if el.is_displayed() and el.is_enabled():
+                        start_date_input = el
+                        break
+                except:
+                    continue
+                    
+            if not start_date_input:
+                self.logger.error("시작 날짜 입력 필드를 찾을 수 없습니다")
+                return False
+
+            # 시작 날짜 입력
+            try:
+                self.driver.execute_script("arguments[0].value = '';", start_date_input)
+                start_date_input.clear()
+                start_date_input.send_keys(start_date)
+                self.logger.info(f"시작 날짜 입력: {start_date}")
+            except Exception as e:
+                self.logger.error(f"시작 날짜 입력 실패: {e}")
+                return False
+
+            time.sleep(0.5)
+
+            # 종료 날짜 입력
+            end_date_input = None
+            end_date_selectors = [
+                "//input[@id='search-end-date']",
+                "//input[contains(@class, 'input-dateTo')]",
+                "//input[contains(@placeholder, 'YYYY-MM-DD') and not(contains(@class, 'input-dateFrom'))]",
+                "//input[@type='text' and contains(@class, 'date') and not(contains(@class, 'input-dateFrom'))]"
+            ]
+            
+            for xp in end_date_selectors:
+                try:
+                    el = self.driver.find_element(By.XPATH, xp)
+                    if el.is_displayed() and el.is_enabled():
+                        end_date_input = el
+                        break
+                except:
+                    continue
+                    
+            if not end_date_input:
+                self.logger.error("종료 날짜 입력 필드를 찾을 수 없습니다")
+                return False
+
+            # 종료 날짜 입력
+            try:
+                self.driver.execute_script("arguments[0].value = '';", end_date_input)
+                end_date_input.clear()
+                end_date_input.send_keys(end_date)
+                self.logger.info(f"종료 날짜 입력: {end_date}")
+            except Exception as e:
+                self.logger.error(f"종료 날짜 입력 실패: {e}")
+                return False
+
+            time.sleep(0.5)
+
+            # 적용/확인 버튼이 따로 있는 UI 대응
+            apply_candidates = [
+                "//button[contains(text(),'적용')]",
+                "//button[contains(text(),'확인')]",
+                "//a[contains(text(),'적용')]",
+                "//a[contains(text(),'확인')]",
+                "//button[contains(text(),'검색')]",
+                "//a[contains(text(),'검색')]",
+            ]
+            for xp in apply_candidates:
+                try:
+                    btn = self.driver.find_element(By.XPATH, xp)
+                    if btn.is_displayed() and btn.is_enabled():
+                        try:
+                            self.driver.execute_script("arguments[0].click();", btn)
+                        except:
+                            btn.click()
+                        self.logger.info("기간 적용 버튼 클릭 완료")
+                        break
+                except:
+                    continue
+
+            time.sleep(1)
+            self.logger.info("사용자 지정 기간 설정 완료")
+            return True
+        except Exception as e:
+            self.logger.error(f"사용자 지정 기간 설정 실패: {e}")
+            return False
+
     def set_period_one_day(self):
         """분석 페이지에서 기간 → 1일 선택"""
         try:
@@ -1001,117 +1107,124 @@ class BigKindsAutomation:
                     dl_btn.click()
 
             self.logger.info("엑셀 다운로드 클릭 완료")
-            # 다운로드 완료 대기
+            # 다운로드 완료 대기 (시간 증가)
             try:
-                self._wait_for_download(timeout=30)
+                self.logger.info("다운로드 완료 대기 시작...")
+                self._wait_for_download(timeout=60)  # 30초 → 60초로 증가
+                self.logger.info("다운로드 완료 확인됨")
             except Exception as e:
                 self.logger.warning(f"다운로드 완료 대기 중 경고: {e}")
+                # 다운로드 실패해도 파일이 있을 수 있으므로 확인
+                try:
+                    files = [f for f in os.listdir(self.download_dir) if f.endswith('.xlsx')]
+                    if files:
+                        latest_file = max(files, key=lambda x: os.path.getmtime(os.path.join(self.download_dir, x)))
+                        self.logger.info(f"다운로드된 파일 발견: {latest_file}")
+                    else:
+                        self.logger.error("다운로드된 파일을 찾을 수 없습니다")
+                except Exception as check_e:
+                    self.logger.error(f"파일 확인 중 오류: {check_e}")
             return True
         except Exception as e:
             self.logger.error(f"분석 탭/엑셀 다운로드 실패: {e}")
             return False
 
-    def _wait_for_download(self, timeout=30):
+    def _wait_for_download(self, timeout=60):
         """다운로드 디렉토리에 파일 생성/완료를 기다림"""
         start = time.time()
         last_size = -1
         stable_count = 0
+        self.logger.info(f"다운로드 대기 시작 (타임아웃: {timeout}초)")
+        
         while time.time() - start < timeout:
             try:
                 files = [f for f in os.listdir(self.download_dir) if not f.endswith('.crdownload')]
                 # 진행중인 파일도 추적
                 partials = [f for f in os.listdir(self.download_dir) if f.endswith('.crdownload')]
+                
                 if files:
                     # 파일 크기 안정화 체크
-                    path = os.path.join(self.download_dir, sorted(files, key=lambda x: os.path.getmtime(os.path.join(self.download_dir, x)), reverse=True)[0])
+                    latest_file = sorted(files, key=lambda x: os.path.getmtime(os.path.join(self.download_dir, x)), reverse=True)[0]
+                    path = os.path.join(self.download_dir, latest_file)
                     size = os.path.getsize(path)
+                    
+                    self.logger.info(f"파일 발견: {latest_file} (크기: {size} bytes)")
+                    
                     if size == last_size:
                         stable_count += 1
+                        self.logger.info(f"파일 크기 안정화 중... ({stable_count}/3)")
                         if stable_count >= 3 and not partials:
                             self.logger.info(f"다운로드 완료 확인: {path}")
                             return True
                     else:
                         last_size = size
                         stable_count = 0
-                elif not partials:
-                    # 파일이 아직 안생김
-                    pass
-            except Exception:
-                pass
-            time.sleep(1)
+                        self.logger.info(f"파일 크기 변경: {size} bytes")
+                elif partials:
+                    self.logger.info(f"다운로드 진행 중: {len(partials)}개 파일")
+                else:
+                    self.logger.info("다운로드 파일 대기 중...")
+                    
+            except Exception as e:
+                self.logger.warning(f"파일 확인 중 오류: {e}")
+                
+            time.sleep(2)  # 1초 → 2초로 증가
+            
+        self.logger.error(f"다운로드 타임아웃 ({timeout}초 초과)")
         raise TimeoutError("다운로드 완료를 확인하지 못했습니다")
     
+    def run_automation(self, start_date, end_date):
+        """전체 자동화 플로우 실행"""
+        try:
+            self.logger.info(f"자동화 시작: {start_date} ~ {end_date}")
+            
+            # 1. 드라이버 설정
+            if not self.setup_driver():
+                self.logger.error("드라이버 설정 실패")
+                return False
+            
+            # 2. BIG KINDS 접속
+            self.driver.get("https://www.bigkinds.or.kr/")
+            time.sleep(3)
+            
+            # 3. 로그인
+            if not self.login():
+                self.logger.error("로그인 실패")
+                return False
+            
+            # 4. 뉴스 검색 분석 탭으로 이동
+            if not self.navigate_to_news_analysis():
+                self.logger.error("뉴스 검색 분석 탭 이동 실패")
+                return False
+            
+            # 5. 사용자 지정 기간 설정
+            if not self.set_custom_period(start_date, end_date):
+                self.logger.error("사용자 지정 기간 설정 실패")
+                return False
+            
+            # 6. 통합 분류에서 '경제' 선택 및 적용
+            if not self.select_economy_and_apply():
+                self.logger.error("통합 분류에서 '경제' 선택 및 적용 실패")
+                return False
+            
+            # 7. 분석 결과 및 시각화 → 엑셀 다운로드
+            if not self.open_analysis_and_download_excel():
+                self.logger.error("분석 결과 및 엑셀 다운로드 실패")
+                return False
+            
+            self.logger.info("자동화 완료")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"자동화 실행 중 오류: {e}")
+            return False
+        finally:
+            try:
+                self.close()
+            except:
+                pass
+
     def close(self):
         """브라우저 종료"""
         if self.driver:
             self.driver.quit()
-
-def main():
-    """메인 실행 함수"""
-    # 로그인 정보
-    email = "jack0810@kookmin.ac.kr"
-    password = "0810jack!"
-    
-    print("🐳 BIG KINDS 로그인 및 탭 이동 테스트")
-    print("=" * 50)
-    
-    # 자동화 실행
-    automation = BigKindsAutomation(email, password)
-    
-    try:
-        # 1. 드라이버 설정
-        print("🔧 드라이버 설정 중...")
-        if not automation.setup_driver():
-            print("❌ 드라이버 설정 실패")
-            return
-        
-        print("✅ 드라이버 설정 완료")
-        
-        # 2. BIG KINDS 접속
-        print("🌐 BIG KINDS 웹사이트에 접속 중...")
-        automation.driver.get("https://www.bigkinds.or.kr/")
-        time.sleep(3)
-        
-        print(f"   - 현재 URL: {automation.driver.current_url}")
-        
-        # 3. 로그인
-        print("🔐 로그인 시도 중...")
-        if not automation.login():
-            print("❌ 로그인 실패")
-            return
-        
-        print("✅ 로그인 성공!")
-        
-        # 4. 뉴스 검색 분석 탭으로 이동
-        print("📊 뉴스 검색 분석 탭으로 이동 중...")
-        if not automation.navigate_to_news_analysis():
-            print("❌ 뉴스 검색 분석 탭 이동 실패")
-            return
-        
-        print("✅ 뉴스 검색 분석 탭 이동 성공!")
-        
-        # 5. 기간 1일 선택
-        print("📅 기간 1일 선택 중...")
-        if not automation.set_period_one_day():
-            print("❌ 기간 1일 선택 실패")
-            return
-        print("✅ 기간 1일 선택 완료!")
-
-        # 6. 통합 분류에서 '경제' 선택 및 적용
-        print("📚 통합 분류에서 '경제' 선택 및 적용 중...")
-        if not automation.select_economy_and_apply():
-            print("❌ 통합 분류에서 '경제' 선택 및 적용 실패")
-            return
-        print("✅ 통합 분류에서 '경제' 선택 및 적용 완료!")
-        
-        print("\n🎉 모든 테스트가 성공적으로 완료되었습니다!")
-        
-    except KeyboardInterrupt:
-        print("\n⏹️ 사용자에 의해 중단되었습니다.")
-    except Exception as e:
-        print(f"❌ 예상치 못한 오류가 발생했습니다: {e}")
-    finally:
-        automation.close()
-
-if __name__ == "__main__":
-    main()
