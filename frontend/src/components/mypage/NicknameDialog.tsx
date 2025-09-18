@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../api/client';
+import { api } from '../../api/client';
 
 type Props = {
   open: boolean;
@@ -8,11 +8,7 @@ type Props = {
   onSaved: (newNickname: string) => void;
 };
 
-// 백엔드: PATCH /users/me  (body: { nickname })
-// 응답: UserSummaryDto(여기선 nickname만 사용)
 type UserSummary = { nickname: string; [k: string]: unknown };
-
-// axios류 에러에서 메시지 뽑기 (any 금지)
 type ApiError = { response?: { data?: { message?: string; error?: string } } };
 const extractMsg = (err: unknown) => {
   if (typeof err === 'object' && err !== null) {
@@ -57,7 +53,6 @@ const NicknameDialog: React.FC<Props> = ({ open, initialNickname, onClose, onSav
     try {
       setSaving(true);
       const body = { nickname: nick.trim() };
-      // 백엔드 스펙: PATCH /users/me -> UserSummaryDto
       const res = await api.patch<UserSummary>('/users/me', body);
       onSaved(res.nickname ?? body.nickname);
       onClose();
@@ -74,32 +69,39 @@ const NicknameDialog: React.FC<Props> = ({ open, initialNickname, onClose, onSav
   const canSubmit = !saving && !error && nick.trim().length >= 2 && nick.trim().length <= 30;
 
   return (
-    <div className="fixed inset-0 bg-black/40 grid place-items-center z-50">
-      <form onSubmit={onSubmit} className="w-[420px] rounded-2xl bg-white p-6 shadow-xl">
-        <h2 className="text-xl font-bold mb-3">닉네임 설정</h2>
-        <p className="text-sm text-gray-600 mb-4">서비스에서 사용할 닉네임을 정해주세요.</p>
+    <div className="fixed inset-0 bg-black/50 grid place-items-center z-50">
+      <form
+        onSubmit={onSubmit}
+        className="w-[420px] rounded-2xl bg-white p-6 shadow-2xl border border-black/10"
+      >
+        <h2 className="text-xl font-bold mb-3 text-neutral-900">닉네임 설정</h2>
+        <p className="text-sm text-neutral-600 mb-4">서비스에서 사용할 닉네임을 정해주세요.</p>
 
         <input
           autoFocus
           value={nick}
           onChange={(e) => setNick(e.target.value)}
-          className="w-full border rounded-lg px-3 py-2 mb-2"
+          className="w-full border border-neutral-200 rounded-lg px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-amber-400/60"
           placeholder="예) 테토보이즈리더"
         />
 
         {!error && nick && (
-          <div className="text-sm text-green-600 mb-2">사용 가능한 닉네임입니다.</div>
+          <div className="text-sm text-amber-600 mb-2">사용 가능한 닉네임입니다.</div>
         )}
         {error && <div className="text-sm text-red-600 mb-2">{error}</div>}
 
         <div className="flex justify-end gap-2 mt-2">
-          <button type="button" onClick={onClose} className="px-3 py-2 rounded-lg border">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3 py-2 rounded-lg border border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+          >
             취소
           </button>
           <button
             type="submit"
             disabled={!canSubmit}
-            className="px-4 py-2 rounded-lg bg-indigo-600 text-white disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-black disabled:opacity-50"
           >
             {saving ? '저장 중…' : '저장'}
           </button>
