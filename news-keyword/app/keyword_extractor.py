@@ -4,6 +4,7 @@ import logging
 import pandas as pd
 import re
 import glob
+import boto3
 from datetime import datetime, timedelta
 from collections import Counter
 from pyspark.sql import SparkSession
@@ -20,6 +21,20 @@ class KeywordExtractor:
         self.spark = None
         self.csv_file_path = None
         self.smart_filter = SmartKeywordFilter()
+        
+        # S3 설정
+        self.s3_bucket = os.getenv('S3_BUCKET', 'cheesecrust-spark-data-bucket')
+        self.s3_prefix = os.getenv('S3_PREFIX', 'outputs/data/')
+        self.s3_region = os.getenv('AWS_DEFAULT_REGION', 'ap-northeast-2')
+        
+        # S3 클라이언트 초기화
+        self.s3_client = boto3.client(
+            's3',
+            region_name=self.s3_region,
+            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+            aws_session_token=os.getenv('AWS_SESSION_TOKEN')
+        )
         
     def initialize_spark(self):
         """SparkSession 초기화 (Java 11과 PySpark 3.3.0 호환성 최적화)"""
@@ -61,6 +76,12 @@ class KeywordExtractor:
                     .config("spark.driver.bindAddress", "0.0.0.0") \
                     .config("spark.ui.enabled", "false") \
                     .config("spark.ui.showConsoleProgress", "false") \
+                    .config("spark.hadoop.fs.s3a.access.key", os.getenv('AWS_ACCESS_KEY_ID', '')) \
+                    .config("spark.hadoop.fs.s3a.secret.key", os.getenv('AWS_SECRET_ACCESS_KEY', '')) \
+                    .config("spark.hadoop.fs.s3a.session.token", os.getenv('AWS_SESSION_TOKEN', '')) \
+                    .config("spark.hadoop.fs.s3a.endpoint", f"s3.{self.s3_region}.amazonaws.com") \
+                    .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
+                    .config("spark.hadoop.fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.auth.TemporaryAWSCredentialsProvider") \
                     .getOrCreate()
                 
                 # 로그 레벨 설정 (너무 많은 로그 방지)
@@ -79,59 +100,63 @@ class KeywordExtractor:
     
     def find_csv_files(self, start_date: str, end_date: str) -> List[str]:
         """
-        날짜 범위에 해당하는 CSV 파일들을 찾습니다.
-        spark/data 디렉토리에서 해당 기간의 모든 CSV 파일을 반환합니다.
+        날짜 범위에 해당하는 CSV 파일들을 S3에서 찾습니다.
+        S3 버킷에서 해당 기간의 모든 CSV 파일을 반환합니다.
         """
-        
-        # 데이터 디렉토리 경로
-        data_dir = "../spark/data"
-        if not os.path.exists(data_dir):
-            data_dir = "spark/data"  # Docker 환경에서의 경로
-        if not os.path.exists(data_dir):
-            raise FileNotFoundError(f"데이터 디렉토리를 찾을 수 없습니다: {data_dir}")
         
         # 입력 날짜를 datetime 객체로 변환
         start_dt = datetime.strptime(start_date, "%Y%m%d")
         end_dt = datetime.strptime(end_date, "%Y%m%d")
         
-        # CSV 파일 패턴 목록
-        patterns = [
-            f"{data_dir}/NewsResult_*.csv",
-            f"{data_dir}/NewsResult_*__sheet.csv"
-        ]
-        
         matching_files = []
         
-        for pattern in patterns:
-            csv_files = glob.glob(pattern)
+        try:
+            # S3에서 객체 목록 가져오기
+            paginator = self.s3_client.get_paginator('list_objects_v2')
+            page_iterator = paginator.paginate(
+                Bucket=self.s3_bucket,
+                Prefix=self.s3_prefix
+            )
             
-            for csv_file in csv_files:
-                # 파일명에서 날짜 범위 추출
-                filename = os.path.basename(csv_file)
-                try:
-                    # NewsResult_YYYYMMDD-YYYYMMDD.csv 또는 NewsResult_YYYYMMDD-YYYYMMDD__sheet.csv
-                    date_part = filename.replace("NewsResult_", "").replace(".csv", "").replace("__sheet", "")
-                    
-                    if "-" in date_part:
-                        file_start_str, file_end_str = date_part.split("-")
-                        file_start_dt = datetime.strptime(file_start_str, "%Y%m%d")
-                        file_end_dt = datetime.strptime(file_end_str, "%Y%m%d")
+            for page in page_iterator:
+                if 'Contents' in page:
+                    for obj in page['Contents']:
+                        key = obj['Key']
                         
-                        # 날짜 범위가 겹치는지 확인
-                        if (file_start_dt <= end_dt and file_end_dt >= start_dt):
-                            matching_files.append(csv_file)
-                            logger.info(f"매칭된 파일: {filename} ({file_start_str}-{file_end_str})")
+                        # CSV 파일만 필터링
+                        if key.endswith('.csv'):
+                            filename = os.path.basename(key)
                             
-                except ValueError as e:
-                    # 날짜 파싱 실패 시 건너뛰기
-                    logger.debug(f"날짜 파싱 실패, 파일 건너뛰기: {filename}")
-                    continue
+                            try:
+                                # NewsResult_YYYYMMDD-YYYYMMDD.csv 형식에서 날짜 추출
+                                if filename.startswith('NewsResult_'):
+                                    date_part = filename.replace("NewsResult_", "").replace(".csv", "")
+                                    
+                                    if "-" in date_part:
+                                        file_start_str, file_end_str = date_part.split("-")
+                                        file_start_dt = datetime.strptime(file_start_str, "%Y%m%d")
+                                        file_end_dt = datetime.strptime(file_end_str, "%Y%m%d")
+                                        
+                                        # 날짜 범위가 겹치는지 확인
+                                        if (file_start_dt <= end_dt and file_end_dt >= start_dt):
+                                            s3_path = f"s3a://{self.s3_bucket}/{key}"
+                                            matching_files.append(s3_path)
+                                            logger.info(f"매칭된 S3 파일: {filename} ({file_start_str}-{file_end_str})")
+                                            
+                            except ValueError as e:
+                                # 날짜 파싱 실패 시 건너뛰기
+                                logger.debug(f"날짜 파싱 실패, 파일 건너뛰기: {filename}")
+                                continue
+                                
+        except Exception as e:
+            logger.error(f"S3에서 파일 목록을 가져오는 중 오류 발생: {e}")
+            raise FileNotFoundError(f"S3에서 파일을 찾을 수 없습니다: {e}")
         
         if not matching_files:
-            raise FileNotFoundError(f"날짜 범위 {start_date}-{end_date}에 해당하는 CSV 파일을 찾을 수 없습니다.")
+            raise FileNotFoundError(f"날짜 범위 {start_date}-{end_date}에 해당하는 CSV 파일을 S3에서 찾을 수 없습니다.")
         
         matching_files.sort()  # 파일명 순으로 정렬
-        logger.info(f"총 {len(matching_files)}개의 CSV 파일을 찾았습니다.")
+        logger.info(f"총 {len(matching_files)}개의 CSV 파일을 S3에서 찾았습니다.")
         
         return matching_files
     
@@ -140,7 +165,7 @@ class KeywordExtractor:
         pandas를 사용한 키워드 추출 (백업 방법)
         여러 CSV 파일을 읽어서 통합 처리
         """
-        logger.info("pandas를 사용하여 키워드 추출을 시도합니다.")
+        logger.info("🐼 Pandas 엔진으로 키워드 추출을 시작합니다.")
         
         # CSV 파일들 경로 찾기
         csv_files = self.find_csv_files(start_date, end_date)
@@ -226,7 +251,7 @@ class KeywordExtractor:
                     "total_news_count": total_count,
                     "keywords": keywords_dict,
                     "top_keywords": top_keywords_list,
-                    "message": f"pandas로 성공적으로 키워드를 추출했습니다. 총 {len(keywords_dict)}개 키워드 발견 (파일 {len(csv_files)}개 처리)"
+                    "message": f"🐼 Pandas 엔진으로 성공적으로 키워드를 추출했습니다. 총 {len(keywords_dict)}개 키워드 발견 (파일 {len(csv_files)}개 처리)"
                 }
             else:
                 return {
@@ -312,7 +337,7 @@ class KeywordExtractor:
                 result['message'] = f"규칙 기반 필터링 완료: {len(base_result['keywords'])}개 → {len(filtered_keywords)}개 키워드 (주가 관련성 기준)"
             
             logger.info(f"AI 필터링 성공: {len(base_result['keywords'])}개 → {len(filtered_keywords)}개")
-            logger.info(f"필터링된 주요 키워드: {filtered_top_keywords[:5]}")
+            logger.info(f"필터링된 주요 키워드 개수: {len(filtered_top_keywords)}개")
             return result
             
         except Exception as e:
@@ -323,23 +348,73 @@ class KeywordExtractor:
             base_result['message'] += " (AI 필터링 실패로 원본 키워드 반환)"
             return base_result
 
+    def get_total_file_size(self, csv_files: List[str]) -> int:
+        """S3에서 파일들의 총 크기를 계산합니다 (바이트 단위)"""
+        total_size = 0
+        try:
+            for csv_path in csv_files:
+                # s3a://bucket/path/file.csv -> bucket/path/file.csv
+                s3_key = csv_path.replace(f"s3a://{self.s3_bucket}/", "")
+                
+                response = self.s3_client.head_object(
+                    Bucket=self.s3_bucket,
+                    Key=s3_key
+                )
+                file_size = response['ContentLength']
+                total_size += file_size
+                logger.info(f"파일 크기: {os.path.basename(csv_path)} - {file_size / (1024**3):.2f} GB")
+                
+        except Exception as e:
+            logger.warning(f"파일 크기 계산 실패: {e}")
+            return 0
+            
+        return total_size
+
     def extract_keywords_from_csv(self, company_name: str, start_date: str, end_date: str, top_keywords: int) -> Dict:
         """
         CSV 파일에서 특정 기업의 키워드를 추출합니다.
-        PySpark를 먼저 시도하고, 실패 시 pandas로 폴백합니다.
+        파일 크기에 따라 Spark 또는 Pandas를 자동 선택합니다.
+        """
+        try:
+            # CSV 파일들 경로 찾기
+            csv_files = self.find_csv_files(start_date, end_date)
+            
+            # 파일 크기 계산
+            total_size = self.get_total_file_size(csv_files)
+            total_size_gb = total_size / (1024**3)
+            
+            logger.info(f"총 파일 크기: {total_size_gb:.2f} GB")
+            
+            # 15GB 이상이면 Spark 사용
+            if total_size_gb >= 15.0:
+                logger.info("🚀 엔진 선택: PySpark (파일 크기 15GB 이상)")
+                return self.extract_keywords_with_spark(company_name, start_date, end_date, top_keywords)
+            else:
+                logger.info("🐼 엔진 선택: Pandas (파일 크기 15GB 미만)")
+                return self.extract_keywords_with_pandas(company_name, start_date, end_date, top_keywords)
+                
+        except Exception as e:
+            logger.error(f"키워드 추출 중 오류 발생: {e}")
+            # 최후의 수단으로 pandas 사용
+            logger.info("⚠️ 오류 발생으로 Pandas 엔진으로 폴백합니다.")
+            return self.extract_keywords_with_pandas(company_name, start_date, end_date, top_keywords)
+
+    def extract_keywords_with_spark(self, company_name: str, start_date: str, end_date: str, top_keywords: int) -> Dict:
+        """
+        PySpark를 사용한 키워드 추출 (대용량 데이터용)
         """
         try:
             # SparkSession 초기화 시도
             self.initialize_spark()
             
             if self.spark is None:
-                logger.warning("PySpark 초기화 실패, pandas로 폴백합니다.")
+                logger.warning("⚠️ PySpark 초기화 실패, Pandas 엔진으로 폴백합니다.")
                 return self.extract_keywords_with_pandas(company_name, start_date, end_date, top_keywords)
             
             # CSV 파일들 경로 찾기
             csv_files = self.find_csv_files(start_date, end_date)
             
-            logger.info(f"PySpark로 CSV 파일들 읽기 시작: {len(csv_files)}개 파일")
+            logger.info(f"🚀 PySpark 엔진으로 CSV 파일들 읽기 시작: {len(csv_files)}개 파일")
             
             # 모든 CSV 파일 읽기 및 병합
             dataframes = []
@@ -429,7 +504,7 @@ class KeywordExtractor:
                     # 상위 키워드 추출 (실제 개수만큼)
                     top_keywords_list = list(keywords_dict.keys())[:top_keywords]
                     
-                    logger.info(f"PySpark로 키워드 추출 완료: {len(keywords_dict)}개 키워드")
+                    logger.info(f"🚀 PySpark 엔진으로 키워드 추출 완료: {len(keywords_dict)}개 키워드")
                     
                     return {
                         "company_name": company_name,
