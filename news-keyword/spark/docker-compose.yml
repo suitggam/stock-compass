@@ -213,6 +213,16 @@ services:
       - spark-network
     restart: unless-stopped
 
+  # Pushgateway for batch job monitoring (news_crawl)
+  pushgateway:
+    image: prom/pushgateway:latest
+    container_name: pushgateway
+    ports:
+      - "9092:9091"
+    networks:
+      - spark-network
+    restart: unless-stopped
+
 volumes:
   prometheus_data:
   grafana_data:
