@@ -257,7 +257,8 @@ class SparkMetricsCollector:
         logger.info(f"메트릭 수집 스레드 시작 (간격: {interval}초)")
 
 # 전역 메트릭 수집기 인스턴스
-collector = SparkMetricsCollector()
+master_url = os.getenv('SPARK_MASTER_URL', 'http://spark-master:8000')
+collector = SparkMetricsCollector(master_url=master_url)
 
 @app.route('/metrics')
 def metrics():
