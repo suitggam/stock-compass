@@ -1,15 +1,10 @@
 // src/hooks/useAuthGuard.ts
-<<<<<<< Updated upstream
+
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../stores/auth';
-=======
-import { useEffect } from "react";
-import { useNavigate } from "react-router";
-import { useAuth } from "../stores/auth";
->>>>>>> Stashed changes
 
-export default function useAuthGuard(redirectTo: string = "/") {
+export default function useAuthGuard(redirectTo: string = '/') {
   const nav = useNavigate();
   const { accessToken, loading, bootstrap } = useAuth();
 
