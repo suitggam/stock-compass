@@ -3,9 +3,9 @@ server:
 
 app:
   # 백엔드
-  base-url: http://j13a301.p.ssafy.io:8080
+  base-url: ${BACK_BASE_URL:http://localhost:8080}
   # 프론트 origin (CORS/리다이렉트 등에 사용)
-  front-origin: http://j13a301.p.ssafy.io/
+  front-origin: ${FRONT_ORIGIN:http://localhost:5173}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:${app.front-origin}}
 
