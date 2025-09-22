@@ -1,6 +1,7 @@
 package com.stock.survive.dto;
 
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,5 +17,6 @@ public class StockInfosDto {
     private String ticker;
     private String companyName;
     private Integer endPrice;
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date;
 }

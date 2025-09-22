@@ -1,3 +1,4 @@
+// src/components/Chart/ChartMain.tsx
 import {
   LineChart,
   Line,
@@ -15,15 +16,18 @@ interface ChartProps {
 }
 
 function ChartMain({ data, term }: ChartProps) {
-  type CustomPayload = {
-    value: number;
-    dataKey: keyof StockInfos;
-  };
-
+  // 숫자 포맷
   function numberFormat(num: number) {
     return num.toLocaleString();
   }
 
+  // chart용 데이터: dateString 추가
+  const chartData = data.map((d) => ({
+    ...d,
+    dateString: d.date, // yyyy-MM-dd 문자열 그대로 사용
+  }));
+
+  // Custom Tooltip
   const CustomTooltip = ({
     active,
     payload,
@@ -34,7 +38,7 @@ function ChartMain({ data, term }: ChartProps) {
     label?: string;
   }) => {
     if (active && payload && payload.length > 0) {
-      const p = payload[0] as CustomPayload;
+      const p = payload[0];
       return (
         <div className="bg-slate-800 text-white p-3 rounded-lg shadow-lg border border-slate-600">
           <p className="text-base">
@@ -43,7 +47,7 @@ function ChartMain({ data, term }: ChartProps) {
           <p className="text-base">
             종가:{" "}
             <span className="font-bold text-amber-300">
-              {numberFormat(p.value)}
+              {numberFormat(p.value ?? 0)} {/* undefined 처리 */}
             </span>
           </p>
         </div>
@@ -52,35 +56,59 @@ function ChartMain({ data, term }: ChartProps) {
     return null;
   };
 
-  const latestDate = data.length
-    ? new Date(data[data.length - 1].date)
-    : new Date();
-  const filteredData = data.filter((d) => new Date(d.date) <= latestDate);
+  if (!chartData || chartData.length === 0) return null;
 
-  // 기간별 X축 interval 설정
+  // 최신 데이터 찾기 (문자열 비교)
+  const latestData = chartData.reduce((prev, curr) => {
+    return curr.dateString > prev.dateString ? curr : prev;
+  });
+
+  const latestDateString = latestData.dateString;
+
+  // 날짜 순 정렬
+  const sortedData = [...chartData].sort((a, b) =>
+    a.dateString > b.dateString ? 1 : -1
+  );
+
+  // 최신 날짜까지 필터
+  const filteredData = sortedData.filter(
+    (d) => d.dateString <= latestDateString
+  );
+
+  // X축 interval 설정
   let xInterval: number | "preserveStartEnd" = 0;
-  switch (term) {
-    case "1주":
-      xInterval = 0; // 하루 단위
-      break;
-    case "1개월":
-      xInterval = 6; // 1주 단위
-      break;
-    case "3개월":
-    case "6개월":
-      xInterval = 29; // 1개월 단위
-      break;
-    case "1 년":
-      xInterval = 89; // 3개월 단위
-      break;
-    case "3 년":
-      xInterval = 179; // 3개월 단위
-      break;
-    case "5 년":
-      xInterval = 364; // 1년 단위
-      break;
-    default:
-      xInterval = 0;
+  if (term === "사용자 지정") {
+    const len = filteredData.length;
+    if (len <= 7) xInterval = 0;
+    else if (len <= 30) xInterval = 6;
+    else if (len <= 180) xInterval = 29;
+    else if (len <= 365) xInterval = 89;
+    else if (len <= 365 * 3) xInterval = 179;
+    else if (len <= 365 * 5) xInterval = 364;
+    else xInterval = Math.floor(len / 4);
+  } else {
+    switch (term) {
+      case "1주":
+        xInterval = 0;
+        break;
+      case "1개월":
+        xInterval = 6;
+        break;
+      case "6개월":
+        xInterval = 29;
+        break;
+      case "1 년":
+        xInterval = 89;
+        break;
+      case "3 년":
+        xInterval = 179;
+        break;
+      case "5 년":
+        xInterval = 364;
+        break;
+      default:
+        xInterval = 0;
+    }
   }
 
   return (
@@ -89,24 +117,12 @@ function ChartMain({ data, term }: ChartProps) {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={filteredData}>
             <XAxis
-              dataKey="date"
+              dataKey="dateString"
               stroke="#cbd5e1"
               interval={xInterval}
-              tickFormatter={(date, index) => {
-                const d = new Date(date);
-                const yyyy = d.getFullYear();
-                const mm = String(d.getMonth() + 1).padStart(2, "0");
-                const dd = String(d.getDate()).padStart(2, "0");
-                if (index === filteredData.length - 1) return "";
-                return `${yyyy}-${mm}-${dd}`;
-              }}
               tick={{ fontSize: 12 }}
             />
-
-            <YAxis
-              stroke="#cbd5e1"
-              width={60} // 기본보다 넉넉하게 확보
-            />
+            <YAxis stroke="#cbd5e1" width={60} />
             <Tooltip content={<CustomTooltip />} />
             <Line
               type="monotone"
