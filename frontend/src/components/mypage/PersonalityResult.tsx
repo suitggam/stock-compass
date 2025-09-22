@@ -1,5 +1,3 @@
-import * as React from 'react';
-
 type BarProps = {
   left: string;
   right: string;
@@ -9,7 +7,14 @@ type BarProps = {
   gradientClass: string;
 };
 
-function ResultBar({ left, right, leftPct, leftLabel, rightLabel, gradientClass }: BarProps) {
+function ResultBar({
+  left,
+  right,
+  leftPct,
+  leftLabel,
+  rightLabel,
+  gradientClass,
+}: BarProps) {
   return (
     <div className="h-24">
       <div className="flex justify-between items-center text-neutral-900 font-semibold">

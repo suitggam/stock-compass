@@ -142,7 +142,7 @@ services:
     ports:
       - "9090:9090"
     environment:
-      - SPARK_MASTER_URL=http://spark-master:8080
+      - SPARK_MASTER_URL=http://spark-master:8000
       - PYTHONPATH=/opt/spark/python:/opt/spark/python/lib/py4j-0.10.9.7-src.zip
     volumes:
       - ./monitoring:/opt/spark/monitoring

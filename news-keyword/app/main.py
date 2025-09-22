@@ -38,8 +38,8 @@ class KeywordResponse(BaseModel):
     company_name: str
     period: str
     total_news_count: int
+    daily_news_count: Optional[Dict[str, int]] = {}  # 날짜별 뉴스 개수 {"20210811": 15, "20210812": 23, ...}
     keywords: Dict[str, int]  # {"키워드": 빈도수, ...}
-    top_keywords: List[str]
     top_news_articles: Optional[List[NewsArticle]] = []  # 상위 키워드가 많이 포함된 뉴스 기사들
     message: str
     ai_filtered: Optional[bool] = False  # AI 필터링 적용 여부
@@ -90,7 +90,7 @@ async def health_check():
     """헬스체크 엔드포인트"""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
-@app.post("/extract-keywords", response_model=KeywordResponse)
+@app.post("/extract-keywords/ticker", response_model=KeywordResponse)
 async def extract_keywords(request: KeywordRequest):
     """
     기업의 키워드를 추출하는 메인 엔드포인트 (AI 필터링 지원)
@@ -175,8 +175,8 @@ async def extract_keywords(request: KeywordRequest):
             company_name=result["company_name"],
             period=result["period"],
             total_news_count=result["total_news_count"],
+            daily_news_count=result.get("daily_news_count", {}),
             keywords=top_keywords_dict,
-            top_keywords=result["top_keywords"],
             top_news_articles=top_news_articles,
             message=result["message"],
             ai_filtered=result.get("ai_filtered", False),
@@ -185,7 +185,14 @@ async def extract_keywords(request: KeywordRequest):
             filtered_keyword_count=result.get("filtered_keyword_count", 0)
         )
         
-        logger.info(f"키워드 추출 완료: {result['total_news_count']}개 뉴스에서 {len(result['keywords'])}개 키워드 추출")
+        # 날짜별 뉴스 개수 로그 출력
+        daily_count = result.get("daily_news_count", {})
+        if daily_count:
+            daily_summary = ", ".join([f"{date}: {count}개" for date, count in daily_count.items()])
+            logger.info(f"키워드 추출 완료: '{request.company_name}' 관련 뉴스 {result['total_news_count']}개에서 {len(result['keywords'])}개 키워드 추출")
+            logger.info(f"날짜별 뉴스 개수: {daily_summary}")
+        else:
+            logger.info(f"키워드 추출 완료: '{request.company_name}' 관련 뉴스 {result['total_news_count']}개에서 {len(result['keywords'])}개 키워드 추출")
         return response
         
     except FileNotFoundError as e:
