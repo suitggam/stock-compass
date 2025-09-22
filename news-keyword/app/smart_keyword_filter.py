@@ -33,7 +33,7 @@ class SmartKeywordFilter:
             # OpenAI 클라이언트 초기화 (버전 호환성 고려)
             self.client = OpenAI(
                 api_key=self.api_key,
-                # proxies 파라미터 제거 (구버전 호환성)
+                timeout=30.0,  # 타임아웃 설정
             )
             logger.info("OpenAI 클라이언트 초기화 완료")
         except Exception as e:
