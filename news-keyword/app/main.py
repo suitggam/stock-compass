@@ -90,7 +90,7 @@ async def health_check():
     """헬스체크 엔드포인트"""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
-@app.post("/extract-keywords", response_model=KeywordResponse)
+@app.post("/extract-keywords/ticker", response_model=KeywordResponse)
 async def extract_keywords(request: KeywordRequest):
     """
     기업의 키워드를 추출하는 메인 엔드포인트 (AI 필터링 지원)
