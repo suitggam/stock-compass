@@ -1,4 +1,3 @@
-// src/components/Header.tsx
 import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../stores/auth';

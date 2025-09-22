@@ -3,16 +3,16 @@ package com.stock.survive.dto;
 import com.stock.survive.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.format.DateTimeFormatter;
 
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
-public class UserSummaryDto {
+public class MyPageDto {
     private Integer userNo;
     private String socialEmail;
     private String nickname;
@@ -21,7 +21,6 @@ public class UserSummaryDto {
     private Integer cash;
     private String createdAt;
 
-    // ★ 추가
     private String avatarUrl;
 
     public static UserSummaryDto of(User u) {
@@ -32,16 +31,11 @@ public class UserSummaryDto {
                 null // avatarUrl 기본값
         );
     }
+    //관심종목
 
-    // ★ 필요하면 아바타까지 세팅하는 오버로드
-    public static UserSummaryDto of(User u, String avatarUrl) {
-        return new UserSummaryDto(
-                u.getId(), u.getSocialEmail(), u.getNickname(), u.isCancel(),
-                u.getTotalReward(), u.getCash(),
-                u.getCreatedAt() != null ? u.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null,
-                avatarUrl
-        );
-    }
+    //게임 결과
+
+    //모의투자 기록
+
+
 }
-
-
