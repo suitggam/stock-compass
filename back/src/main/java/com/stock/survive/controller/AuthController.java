@@ -1,9 +1,9 @@
 package com.stock.survive.controller;
 
-import com.stock.survive.service.GoogleOAuthService;
-import com.stock.survive.service.KakaoOAuthService;
-import com.stock.survive.service.TokenService;
-import com.stock.survive.service.UserLinkService;
+import com.stock.survive.serviceImpl.GoogleOAuthServiceImpl;
+import com.stock.survive.serviceImpl.KakaoOAuthServiceImpl;
+import com.stock.survive.serviceImpl.TokenServiceImpl;
+import com.stock.survive.serviceImpl.UserLinkServiceImpl;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -20,10 +20,10 @@ import java.util.Map;
 @RequestMapping("/users")
 public class AuthController {
 
-    private final KakaoOAuthService kakao;
-    private final GoogleOAuthService google;
-    private final UserLinkService linker;
-    private final TokenService tokenService;
+    private final KakaoOAuthServiceImpl kakao;
+    private final GoogleOAuthServiceImpl google;
+    private final UserLinkServiceImpl linker;
+    private final TokenServiceImpl tokenServiceImpl;
 
     // ★ 이제 이것만 사용
     @Value("${app.front-origin:http://localhost:5173}")
@@ -54,8 +54,8 @@ public class AuthController {
         var info = google.exchangeAndFetchUser(code);
         var user = linker.linkOrCreateByProvider(info);
 
-        var pair = tokenService.issue(user);
-        tokenService.setRefreshCookie(res, pair.refresh());
+        var pair = tokenServiceImpl.issue(user);
+        tokenServiceImpl.setRefreshCookie(res, pair.refresh());
 
         res.sendRedirect(frontHome());
     }
@@ -74,8 +74,8 @@ public class AuthController {
         var info = kakao.exchangeAndFetchUser(code);
         var user = linker.linkOrCreateByProvider(info);
 
-        var pair = tokenService.issue(user);
-        tokenService.setRefreshCookie(res, pair.refresh());
+        var pair = tokenServiceImpl.issue(user);
+        tokenServiceImpl.setRefreshCookie(res, pair.refresh());
 
         res.sendRedirect(frontHome());
     }
@@ -83,14 +83,14 @@ public class AuthController {
     /** Access 재발급: Refresh 쿠키 검증/로테이션 후 새 Access 반환 */
     @PostMapping("/auth/refresh")
     public Map<String, String> refresh(HttpServletRequest req, HttpServletResponse res) {
-        String newAccess = tokenService.refreshFromCookie(req, res);
+        String newAccess = tokenServiceImpl.refreshFromCookie(req, res);
         return Map.of("accessToken", newAccess);
     }
 
     /** 로그아웃: Refresh 폐기(서버/쿠키) */
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletRequest req, HttpServletResponse res) {
-        tokenService.revokeFromCookie(req, res);
+        tokenServiceImpl.revokeFromCookie(req, res);
         return ResponseEntity.noContent().build();
     }
 }
