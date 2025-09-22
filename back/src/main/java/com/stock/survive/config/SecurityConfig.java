@@ -45,6 +45,9 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/users/auth/**", "/users/logout", "/error", "/actuator/health", "/api/stock/**").permitAll()
+                    // Tendency Game endpoints (public access)
+                    .requestMatchers("/api/games/tendency/**").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/games").permitAll()
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .requestMatchers(HttpMethod.DELETE, "/users/me").authenticated()
                     .requestMatchers(HttpMethod.GET, "/users/me").authenticated()
