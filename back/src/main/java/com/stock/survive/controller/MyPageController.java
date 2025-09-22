@@ -22,7 +22,7 @@ public class MyPageController {
         return myPageQueryService.getMyPage(extractUid(auth));
     }
 
-    // 메인/리스트 별표(★) 표시에 최적 (선택)
+    // 메인/리스트 별표(★) 표시에 최적
     @GetMapping("/me/favorite-ids")
     public Set<Integer> favoriteIds(Authentication auth) {
         return myPageQueryService.getFavoriteIdSet(extractUid(auth));

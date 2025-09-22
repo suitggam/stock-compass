@@ -13,7 +13,12 @@ function getInitials(name: string) {
   return trimmed.slice(0, 2).toUpperCase();
 }
 
-export default function ProfileCard() {
+type Props = {
+  favoriteCount?: number; // 관심 종목 개수
+  gameCount?: number; // 추후 필요시 사용
+};
+
+export default function ProfileCard({ favoriteCount = 0, gameCount = 0 }: Props) {
   const user = useAuth((s) => s.user);
   const setUser = useAuth((s) => s.setUser);
   const accessToken = useAuth((s) => s.accessToken);
@@ -29,7 +34,7 @@ export default function ProfileCard() {
     const ok = window.confirm('정말로 회원탈퇴 하시겠어요? 이 작업은 되돌릴 수 없습니다.');
     if (!ok) return;
     try {
-      await fetch(`${API_BASE}/users/me`, {
+      await fetch(`${API_BASE}/api/users/me`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {
@@ -52,7 +57,7 @@ export default function ProfileCard() {
 
       {/* ── 상단(아바타/이름/가입일) */}
       <div>
-        {/* ✅ 헤더와 동일한 아바타 로직 (크게, 링/섀도 강화) */}
+        {/* 아바타 */}
         <div className="relative flex justify-center">
           {user.avatarUrl ? (
             <img
@@ -101,19 +106,22 @@ export default function ProfileCard() {
 
       {/* ── 하단(요약 3칸 + 탈퇴 버튼) : 카드 바닥에 고정 */}
       <div className="mt-6 flex flex-col gap-5 mt-auto">
-        {/* 항상: 모바일 1열 → sm부터 2열, 세 번째는 아래줄 전체 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* 1 */}
+          {/* 관심 종목 */}
           <div className="rounded-xl p-4 text-center bg-amber-400/10 border border-amber-500/20">
-            <div className="text-amber-600 text-2xl font-bold">6</div>
+            <div className="text-amber-600 text-2xl font-bold">
+              {favoriteCount.toLocaleString()}
+            </div>
             <div className="text-neutral-500 text-xs">관심 종목</div>
           </div>
-          {/* 2 */}
+
+          {/* 게임 횟수 (추후 데이터 붙이면 교체) */}
           <div className="rounded-xl p-4 text-center bg-amber-400/10 border border-amber-500/20">
-            <div className="text-amber-600 text-2xl font-bold">11</div>
+            <div className="text-amber-600 text-2xl font-bold">{gameCount.toLocaleString()}</div>
             <div className="text-neutral-500 text-xs">게임 횟수</div>
           </div>
-          {/* 3 : 아래 한 줄 전체폭 */}
+
+          {/* 잔고 */}
           <div className="rounded-xl p-4 text-center bg-amber-400/10 border border-amber-500/20 sm:col-span-2">
             <div className="text-amber-600 text-2xl font-bold">{user.cash.toLocaleString()}원</div>
             <div className="text-neutral-500 text-xs">나의 잔고</div>

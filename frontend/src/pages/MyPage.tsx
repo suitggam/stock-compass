@@ -26,7 +26,10 @@ export default function MyPage() {
       try {
         const res = await fetch(`${API_BASE}/api/mypage/me`, {
           credentials: 'include',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
         });
         if (res.ok) setData(await res.json());
       } finally {
@@ -39,11 +42,14 @@ export default function MyPage() {
     return <div className="min-h-dvh grid place-items-center text-neutral-300">불러오는 중…</div>;
   if (!authUser) return <Navigate to="/" replace />;
 
+  const favoriteCount = data?.favorites?.length ?? 0;
+
   return (
     <div className="min-h-dvh bg-slate-800 py-8">
       <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-5 space-y-6">
+        {/* 상단 2열 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <ProfileCard /* 필요하다면 data를 내려서 아바타/잔고/가입일 등 사용 */ />
+          <ProfileCard favoriteCount={favoriteCount} />
           <PersonalityResult data={data?.personality ?? null} />
         </div>
 

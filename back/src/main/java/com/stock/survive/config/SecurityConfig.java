@@ -44,7 +44,12 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/users/auth/**", "/api/users/logout", "/error", "/api/actuator/health", "/api/actuator/info", "/api/stock/**" ,"/extract-keywords/**").permitAll()
+                    .requestMatchers("/api/users/auth/**",
+                                     "/api/users/logout", 
+                                     "/error",
+                                     "/api/actuator/health", "/api/actuator/info",
+                                     "/api/stock/**" ,"/extract-keywords/**",
+                                     "/api/mypage/**").permitAll()
                     .requestMatchers(HttpMethod.DELETE, "/api/users/me").authenticated()
                     .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
                     .anyRequest().authenticated()
