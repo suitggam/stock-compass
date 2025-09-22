@@ -1,19 +1,19 @@
 // src/components/Header.tsx
-import { useState, type ChangeEvent } from "react";
-import { Link, useNavigate } from "react-router";
-import { useAuth } from "../stores/auth";
-import logoImg from "../assets/logo.webp";
+import { useState, type ChangeEvent } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { useAuth } from '../stores/auth';
+import logoImg from '../assets/logo.webp';
 
 function getInitials(name: string) {
-  const t = (name || "").trim();
-  if (!t) return "?";
+  const t = (name || '').trim();
+  if (!t) return '?';
   const parts = t.split(/\s+/);
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   return t.slice(0, 2).toUpperCase();
 }
 
 export default function Header() {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [openAll, setOpenAll] = useState(false); // xs: 전체 패널
   const [openNav, setOpenNav] = useState(false); // sm~lg: 세 친구 패널
   const navigate = useNavigate();
@@ -21,13 +21,12 @@ export default function Header() {
   const user = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
-    setSearch(e.target.value);
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value);
   const handleSearch = () => {
     const trimmed = search.trim();
     if (!trimmed) {
       // 검색어 없으면 홈페이지로 이동
-      navigate("/");
+      navigate('/');
     } else {
       // 검색어가 있으면 검색 페이지로 이동
       navigate(`/search?query=${encodeURIComponent(trimmed)}`);
@@ -37,16 +36,16 @@ export default function Header() {
   };
 
   const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") handleSearch();
+    if (e.key === 'Enter') handleSearch();
   };
 
   const goLogin = () => {
-    navigate("/login");
+    navigate('/login');
     setOpenAll(false);
     setOpenNav(false);
   };
   const goMy = () => {
-    navigate("/mypage");
+    navigate('/mypage');
     setOpenAll(false);
     setOpenNav(false);
   };
@@ -141,27 +140,15 @@ export default function Header() {
               className="inline-flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-700/50"
               aria-label="메뉴"
             >
-              <svg
-                width="22"
-                height="22"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                {openNav ? (
-                  <path d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path d="M3 6h18M3 12h18M3 18h18" />
-                )}
+              <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+                {openNav ? <path d="M6 18L18 6M6 6l12 12" /> : <path d="M3 6h18M3 12h18M3 18h18" />}
               </svg>
               <span className="text-sm text-slate-300">메뉴</span>
             </button>
 
             <div
               className={`absolute z-40 mt-2 left-0 w-60 overflow-hidden rounded-xl bg-slate-900/95 ring-1 ring-white/10 shadow-xl transition-[max-height,opacity] duration-300 ${
-                openNav
-                  ? "max-h-80 opacity-100"
-                  : "max-h-0 opacity-0 pointer-events-none"
+                openNav ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
               }`}
             >
               <div className="flex flex-col px-3 py-2">
@@ -196,18 +183,8 @@ export default function Header() {
           className="sm:hidden inline-flex items-center justify-center rounded-lg p-2 hover:bg-slate-700/50"
           onClick={() => setOpenAll((v) => !v)}
         >
-          <svg
-            width="24"
-            height="24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            {openAll ? (
-              <path d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path d="M3 6h18M3 12h18M3 18h18" />
-            )}
+          <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+            {openAll ? <path d="M6 18L18 6M6 6l12 12" /> : <path d="M3 6h18M3 12h18M3 18h18" />}
           </svg>
         </button>
       </nav>
@@ -215,7 +192,7 @@ export default function Header() {
       {/* xs: 전체 패널 (세 친구 + 검색 + 인증영역) */}
       <div
         className={`sm:hidden overflow-hidden transition-[max-height] duration-300 ${
-          openAll ? "max-h-[520px]" : "max-h-0"
+          openAll ? 'max-h-[520px]' : 'max-h-0'
         }`}
       >
         <div className="px-4 pb-4 space-y-4">

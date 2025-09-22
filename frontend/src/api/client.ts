@@ -6,8 +6,8 @@ import { useAuth } from '../stores/auth';
 export const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
 // 서버 엔드포인트
-const REFRESH_PATH = '/users/auth/refresh';
-const LOGOUT_PATH = '/users/logout';
+const REFRESH_PATH = '/api/users/auth/refresh';
+const LOGOUT_PATH = '/api/users/logout';
 
 // ---- 공통 응답 처리 ----
 async function handle<T>(res: Response): Promise<T> {

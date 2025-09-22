@@ -14,11 +14,11 @@ export default function LoginPage() {
   }, [bootstrap]);
 
   const loginGoogle = () => {
-    window.location.href = `${API_BASE}/users/auth/google`;
+    window.location.href = `${API_BASE}/api/users/auth/google`;
   };
 
   const loginKakao = () => {
-    window.location.href = `${API_BASE}/users/auth/kakao`;
+    window.location.href = `${API_BASE}/api/users/auth/kakao`;
   };
 
   if (loading) {

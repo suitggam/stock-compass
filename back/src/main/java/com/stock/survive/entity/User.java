@@ -6,10 +6,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Entity
 @Builder
@@ -71,5 +73,21 @@ public class User {
         this.nickname = nickname;
     }
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "favorite_stocks",
+            joinColumns = @JoinColumn(name = "user_no"),
+            inverseJoinColumns = @JoinColumn(name = "item_no"),
+            uniqueConstraints = @UniqueConstraint(
+                    name = "uq_fav_user_item",
+                    columnNames = {"user_no","item_no"}
+            )
+    )
+    private Set<StockItems> favorites = new HashSet<>();
+
+    @PreRemove
+    private void preRemove() {
+        favorites.clear(); // 조인 테이블 행 정리시 사용
+    }
 
 }

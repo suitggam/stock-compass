@@ -44,14 +44,9 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-<<<<<<< Updated upstream
-                    .requestMatchers("/users/auth/**", "/users/logout", "/error", "/api/actuator/health", "/api/actuator/info", "/api/stock/**").permitAll()
-=======
-                    .requestMatchers("/users/auth/**", "/users/logout", "/error", "/actuator/health", "/api/stock/**","/extract-keywords/**").permitAll()
->>>>>>> Stashed changes
-                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                    .requestMatchers(HttpMethod.DELETE, "/users/me").authenticated()
-                    .requestMatchers(HttpMethod.GET, "/users/me").authenticated()
+                    .requestMatchers("/api/users/auth/**", "/api/users/logout", "/error", "/api/actuator/health", "/api/actuator/info", "/api/stock/**" ,"/extract-keywords/**").permitAll()
+                    .requestMatchers(HttpMethod.DELETE, "/api/users/me").authenticated()
+                    .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
                     .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e
