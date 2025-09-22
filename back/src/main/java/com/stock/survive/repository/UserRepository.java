@@ -29,7 +29,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     // 메인에서 사용할 것 가볍게
     @Query("select f.itemNo from User u join u.favorites f where u.id = :userId")
-    List<Short> findFavoriteItemIds(@org.springframework.data.repository.query.Param("userId") Integer userId);
+    List<Integer> findFavoriteItemIds(@org.springframework.data.repository.query.Param("userId") Integer userId);
 
 
 }
