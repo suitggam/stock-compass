@@ -1,4 +1,4 @@
-﻿package com.stock.survive.controller;
+package com.stock.survive.controller.tendency;
 
 import com.stock.survive.dto.tendency.StockInfoResponse;
 import com.stock.survive.entity.StockInfos;

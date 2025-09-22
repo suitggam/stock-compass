@@ -1,4 +1,4 @@
-﻿package com.stock.survive.dto.tendency;
+package com.stock.survive.dto.tendency;
 
 import java.time.LocalDate;
 import java.util.List;

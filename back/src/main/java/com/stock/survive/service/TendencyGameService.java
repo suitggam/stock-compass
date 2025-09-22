@@ -1,4 +1,4 @@
-﻿package com.stock.survive.service;
+package com.stock.survive.service;
 
 import com.stock.survive.dto.tendency.TendencyGameFinishRequest;
 import com.stock.survive.dto.tendency.TendencyGameOrderRequest;

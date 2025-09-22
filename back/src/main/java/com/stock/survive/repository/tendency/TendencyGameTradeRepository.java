@@ -1,4 +1,4 @@
-﻿package com.stock.survive.repository.tendency;
+package com.stock.survive.repository.tendency;
 
 import com.stock.survive.entity.tendency.TendencyGameSession;
 import com.stock.survive.entity.tendency.TendencyGameTrade;

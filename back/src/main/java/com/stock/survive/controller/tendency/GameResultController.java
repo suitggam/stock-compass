@@ -1,4 +1,4 @@
-﻿package com.stock.survive.controller;
+package com.stock.survive.controller.tendency;
 
 import com.stock.survive.dto.tendency.TendencyGameFinishRequest;
 import com.stock.survive.dto.tendency.TendencyGameResultResponse;
