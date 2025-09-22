@@ -83,6 +83,7 @@ public class User {
                     columnNames = {"user_no","item_no"}
             )
     )
+    @Builder.Default
     private Set<StockItems> favorites = new HashSet<>();
 
     @PreRemove

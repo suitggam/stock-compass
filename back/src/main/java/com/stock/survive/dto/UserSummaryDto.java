@@ -21,7 +21,6 @@ public class UserSummaryDto {
     private Integer cash;
     private String createdAt;
 
-    // ★ 추가
     private String avatarUrl;
 
     public static UserSummaryDto of(User u) {
