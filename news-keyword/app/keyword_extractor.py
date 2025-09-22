@@ -211,7 +211,6 @@ class KeywordExtractor:
                 # 원본 키워드의 상위 키워드만 반환
                 original_top = list(base_result['keywords'].items())[:top_keywords]
                 base_result['keywords'] = dict(original_top)
-                base_result['top_keywords'] = [k for k, v in original_top]
                 base_result['ai_filtered'] = False
                 base_result['ai_analysis'] = "AI 필터링에서 유효한 키워드를 찾지 못했습니다."
                 base_result['original_keyword_count'] = len(base_result['keywords'])
@@ -231,7 +230,6 @@ class KeywordExtractor:
             # 결과 업데이트
             result = base_result.copy()
             result['keywords'] = filtered_keywords
-            result['top_keywords'] = filtered_top_keywords
             result['ai_analysis'] = analysis
             result['ai_filtered'] = True
             result['original_keyword_count'] = len(base_result['keywords'])
@@ -249,7 +247,6 @@ class KeywordExtractor:
                 result['message'] = f"규칙 기반 필터링 완료: {len(base_result['keywords'])}개 → {len(filtered_keywords)}개 키워드 (주가 관련성 기준)"
             
             logger.info(f"AI 필터링 성공: {len(base_result['keywords'])}개 → {len(filtered_keywords)}개")
-            logger.info(f"필터링된 주요 키워드 개수: {len(filtered_top_keywords)}개")
             return result
             
         except Exception as e:

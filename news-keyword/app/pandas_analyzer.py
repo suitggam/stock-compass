@@ -53,20 +53,32 @@ class PandasAnalyzer:
         if '기관' in df.columns:
             # 기관 컬럼에 NaN이 아니고 회사명이 포함된 행 필터링
             mask = df['기관'].notna() & df['기관'].str.contains(company_name, na=False, regex=False)
-            filtered_df = df[mask]
-            total_count = len(filtered_df)
+            company_filtered_df = df[mask]
+            company_count = len(company_filtered_df)
             
-            logger.info(f"'{company_name}' 관련 뉴스: {total_count}개")
+            logger.info(f"'{company_name}' 관련 뉴스: {company_count}개 (기관 필터링 후)")
+            
+            # 날짜 필터링 적용
+            date_filtered_df = self.apply_date_filter(company_filtered_df, start_date, end_date)
+            total_count = len(date_filtered_df)
+            
+            logger.info(f"날짜 필터링 후 뉴스: {total_count}개 ({start_date}-{end_date})")
+            
+            # 최종 필터링된 데이터프레임 사용
+            filtered_df = date_filtered_df
             
             if total_count == 0:
                 return {
                     "company_name": company_name,
                     "period": f"{start_date}-{end_date}",
                     "total_news_count": 0,
+                    "daily_news_count": {},
                     "keywords": {},
-                    "top_keywords": [],
                     "message": f"'{company_name}'와 관련된 뉴스를 찾을 수 없습니다."
                 }
+            
+            # 날짜별 뉴스 개수 계산
+            daily_news_count = self.calculate_daily_news_count(filtered_df, start_date, end_date)
             
             # 키워드 추출 (기존 키워드 컬럼 사용)
             if '키워드' in df.columns:
@@ -85,18 +97,16 @@ class PandasAnalyzer:
                 # 빈도순으로 정렬하여 딕셔너리 생성
                 keywords_dict = dict(keyword_counter.most_common())
                 
-                # 상위 키워드 추출
-                top_keywords_list = list(keywords_dict.keys())[:top_keywords]
-                
                 # 상위 키워드가 많이 포함된 뉴스 기사들 추출
+                top_keywords_list = list(keywords_dict.keys())[:top_keywords]
                 top_news_articles = self.extract_top_news_articles(filtered_df, top_keywords_list)
                 
                 return {
                     "company_name": company_name,
                     "period": f"{start_date}-{end_date}",
                     "total_news_count": total_count,
+                    "daily_news_count": daily_news_count,
                     "keywords": keywords_dict,
-                    "top_keywords": top_keywords_list,
                     "top_news_articles": top_news_articles,
                     "message": f"🐼 Pandas 엔진으로 성공적으로 키워드를 추출했습니다. 총 {len(keywords_dict)}개 키워드 발견 (파일 {len(csv_files)}개 처리)"
                 }
@@ -105,12 +115,196 @@ class PandasAnalyzer:
                     "company_name": company_name,
                     "period": f"{start_date}-{end_date}",
                     "total_news_count": total_count,
+                    "daily_news_count": daily_news_count,
                     "keywords": {},
-                    "top_keywords": [],
                     "message": "키워드 컬럼을 찾을 수 없습니다."
                 }
         else:
             raise ValueError("기관 컬럼을 찾을 수 없습니다.")
+    
+    def apply_date_filter(self, df, start_date: str, end_date: str) -> pd.DataFrame:
+        """
+        날짜 컬럼을 사용하여 설정된 기간 내의 데이터만 필터링합니다.
+        
+        Args:
+            df: 필터링할 데이터프레임
+            start_date: 시작 날짜 (YYYYMMDD)
+            end_date: 종료 날짜 (YYYYMMDD)
+            
+        Returns:
+            pd.DataFrame: 날짜 필터링된 데이터프레임
+        """
+        try:
+            from datetime import datetime
+            
+            # 날짜 관련 컬럼 찾기
+            date_column = None
+            for col in ['일자', '날짜', 'date', 'Date', 'DATE']:
+                if col in df.columns:
+                    date_column = col
+                    break
+            
+            if date_column is None:
+                logger.warning("날짜 관련 컬럼을 찾을 수 없습니다. 날짜 필터링을 건너뜁니다.")
+                return df
+            
+            logger.info(f"날짜 필터링에 사용할 컬럼: {date_column}")
+            
+            # 날짜 범위를 datetime 객체로 변환
+            start_dt = datetime.strptime(start_date, "%Y%m%d")
+            end_dt = datetime.strptime(end_date, "%Y%m%d")
+            
+            # 날짜 컬럼의 값들을 파싱하여 필터링
+            def parse_date(date_str):
+                """다양한 날짜 형식을 파싱합니다."""
+                if pd.isna(date_str):
+                    return None
+                
+                date_str = str(date_str).strip()
+                
+                # 다양한 날짜 형식 시도
+                date_formats = [
+                    "%Y%m%d",      # 20210811
+                    "%Y-%m-%d",   # 2021-08-11
+                    "%Y/%m/%d",   # 2021/08/11
+                    "%Y.%m.%d",   # 2021.08.11
+                    "%Y-%m-%d %H:%M:%S",  # 2021-08-11 10:30:00
+                    "%Y/%m/%d %H:%M:%S",  # 2021/08/11 10:30:00
+                ]
+                
+                for fmt in date_formats:
+                    try:
+                        return datetime.strptime(date_str, fmt)
+                    except ValueError:
+                        continue
+                
+                # 파싱 실패 시 None 반환
+                return None
+            
+            # 날짜 파싱 및 필터링
+            df_copy = df.copy()
+            df_copy['parsed_date'] = df_copy[date_column].apply(parse_date)
+            
+            # 유효한 날짜만 필터링
+            valid_dates_mask = df_copy['parsed_date'].notna()
+            df_with_dates = df_copy[valid_dates_mask]
+            
+            logger.info(f"유효한 날짜가 있는 뉴스: {len(df_with_dates)}개")
+            
+            if len(df_with_dates) == 0:
+                logger.warning("유효한 날짜가 있는 뉴스가 없습니다.")
+                return df.iloc[0:0]  # 빈 데이터프레임 반환
+            
+            # 날짜 범위 필터링
+            date_range_mask = (
+                (df_with_dates['parsed_date'] >= start_dt) & 
+                (df_with_dates['parsed_date'] <= end_dt)
+            )
+            
+            filtered_df = df_with_dates[date_range_mask]
+            
+            # 원본 컬럼만 유지 (parsed_date 컬럼 제거)
+            result_df = filtered_df.drop('parsed_date', axis=1)
+            
+            logger.info(f"날짜 범위 필터링 완료: {len(result_df)}개 뉴스")
+            
+            # 샘플 날짜 값 로그 출력
+            if len(result_df) > 0:
+                sample_dates = result_df[date_column].head(3).tolist()
+                logger.info(f"필터링된 샘플 날짜: {sample_dates}")
+            
+            return result_df
+            
+        except Exception as e:
+            logger.error(f"날짜 필터링 중 오류 발생: {e}")
+            logger.info("날짜 필터링을 건너뛰고 원본 데이터를 반환합니다.")
+            return df
+    
+    def calculate_daily_news_count(self, filtered_df, start_date: str, end_date: str) -> Dict[str, int]:
+        """
+        날짜별 뉴스 개수를 계산합니다.
+        
+        Args:
+            filtered_df: 필터링된 데이터프레임
+            start_date: 시작 날짜 (YYYYMMDD)
+            end_date: 종료 날짜 (YYYYMMDD)
+            
+        Returns:
+            Dict[str, int]: 날짜별 뉴스 개수 {"20210811": 15, "20210812": 23, ...}
+        """
+        try:
+            from datetime import datetime, timedelta
+            
+            # 사용 가능한 컬럼 확인
+            logger.info(f"사용 가능한 컬럼: {list(filtered_df.columns)}")
+            
+            # 날짜 관련 컬럼 찾기
+            date_column = None
+            for col in ['일자', '날짜', 'date', 'Date', 'DATE']:
+                if col in filtered_df.columns:
+                    date_column = col
+                    break
+            
+            if date_column is None:
+                logger.warning("날짜 관련 컬럼을 찾을 수 없습니다. 빈 딕셔너리를 반환합니다.")
+                return {}
+            
+            logger.info(f"날짜 컬럼 사용: {date_column}")
+            
+            # 날짜 범위 생성
+            start_dt = datetime.strptime(start_date, "%Y%m%d")
+            end_dt = datetime.strptime(end_date, "%Y%m%d")
+            
+            daily_count = {}
+            current_date = start_dt
+            
+            # 각 날짜별로 뉴스 개수 계산
+            while current_date <= end_dt:
+                date_str = current_date.strftime("%Y%m%d")
+                
+                # 해당 날짜의 뉴스 개수 계산
+                try:
+                    # 다양한 날짜 형식 지원
+                    date_patterns = [
+                        date_str,  # 20210811
+                        f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}",  # 2021-08-11
+                        f"{date_str[:4]}/{date_str[4:6]}/{date_str[6:8]}",  # 2021/08/11
+                        f"{date_str[:4]}.{date_str[4:6]}.{date_str[6:8]}",  # 2021.08.11
+                    ]
+                    
+                    # 각 패턴에 대해 매칭 시도
+                    count = 0
+                    for pattern in date_patterns:
+                        date_mask = filtered_df[date_column].astype(str).str.contains(pattern, na=False)
+                        pattern_count = date_mask.sum()
+                        if pattern_count > 0:
+                            count = pattern_count
+                            logger.debug(f"{date_str} ({pattern}): {count}개 뉴스 발견")
+                            break
+                    
+                    # 디버깅을 위한 로그
+                    if count == 0:
+                        # 샘플 날짜 값 확인
+                        sample_dates = filtered_df[date_column].dropna().head(3).tolist()
+                        logger.debug(f"{date_str} 매칭 실패. 샘플 날짜 값: {sample_dates}")
+                    
+                except Exception as e:
+                    logger.warning(f"날짜 {date_str} 계산 중 오류: {e}")
+                    count = 0
+                
+                daily_count[date_str] = int(count)
+                current_date += timedelta(days=1)
+            
+            # 총합 검증
+            total_daily_count = sum(daily_count.values())
+            logger.info(f"날짜별 뉴스 개수 계산 완료: {len(daily_count)}일, 총합: {total_daily_count}개")
+            logger.info(f"daily_news_count 합계: {total_daily_count}, total_news_count: {len(filtered_df)}")
+            
+            return daily_count
+            
+        except Exception as e:
+            logger.warning(f"날짜별 뉴스 개수 계산 중 오류: {e}")
+            return {}
     
     def extract_top_news_articles(self, filtered_df, top_keywords_list, max_articles=10):
         """
