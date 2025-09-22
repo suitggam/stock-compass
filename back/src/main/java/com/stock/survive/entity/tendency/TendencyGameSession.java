@@ -1,4 +1,4 @@
-﻿package com.stock.survive.entity.tendency;
+package com.stock.survive.entity.tendency;
 
 import com.stock.survive.entity.User;
 import jakarta.persistence.CascadeType;

@@ -1,4 +1,4 @@
-package com.stock.survive.serviceImp;
+package com.stock.survive.serviceImpl;
 
 import com.stock.survive.dto.HoldingDto;
 import com.stock.survive.dto.PortfolioSummaryDto;

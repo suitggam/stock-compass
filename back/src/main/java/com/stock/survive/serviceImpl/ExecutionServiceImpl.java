@@ -1,4 +1,4 @@
-package com.stock.survive.serviceImp;
+package com.stock.survive.serviceImpl;
 
 import com.stock.survive.entity.AccountHistory;
 import com.stock.survive.entity.TradeHistory;

@@ -1,4 +1,4 @@
-﻿package com.stock.survive.dto.tendency;
+package com.stock.survive.dto.tendency;
 
 import com.stock.survive.entity.tendency.TendencyGameTradeType;
 

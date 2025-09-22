@@ -1,4 +1,4 @@
-﻿package com.stock.survive.entity.tendency;
+package com.stock.survive.entity.tendency;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
