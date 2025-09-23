@@ -51,9 +51,9 @@ export default function ProfileCard({ favoriteCount = 0, gameCount = 0 }: Props)
 
   return (
     // 카드 높이가 커져도 하단이 비지 않게 flex-col + mt-auto 앵커
-    <section className="h-full flex flex-col w-full bg-white/85 backdrop-blur-xl rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.16)] p-6 border border-black/5 relative overflow-visible">
+    <section className="h-full flex flex-col w-full bg-slate-700 backdrop-blur-xl rounded-2xl shadow-lg border border-slate-600 p-6 relative overflow-visible">
       {/* 상단 액센트 바 */}
-      <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-black via-neutral-800 to-amber-500" />
+      <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-amber-500 to-amber-600" />
 
       {/* ── 상단(아바타/이름/가입일) */}
       <div>
@@ -63,23 +63,21 @@ export default function ProfileCard({ favoriteCount = 0, gameCount = 0 }: Props)
             <img
               src={user.avatarUrl}
               alt="프로필"
-              className="w-24 h-24 rounded-full object-cover shadow-[0_12px_30px_rgba(0,0,0,0.35)] ring-4 ring-amber-400/20"
+              className="w-24 h-24 rounded-full object-cover shadow-lg ring-4 ring-amber-500/30"
               referrerPolicy="no-referrer"
             />
           ) : (
-            <div className="w-24 h-24 rounded-full bg-amber-500/90 text-slate-900 flex items-center justify-center font-extrabold text-3xl shadow-[0_12px_30px_rgba(0,0,0,0.35)] ring-4 ring-amber-400/20 select-none">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white flex items-center justify-center font-extrabold text-3xl shadow-lg ring-4 ring-amber-400/30 select-none">
               {getInitials(user.nickname)}
             </div>
           )}
         </div>
 
         <div className="mt-5 flex items-center justify-center gap-2 flex-wrap">
-          <h2 className="text-2xl font-extrabold text-neutral-900 tracking-tight">
-            {user.nickname}
-          </h2>
+          <h2 className="text-2xl font-extrabold text-white tracking-tight">{user.nickname}</h2>
           <button
             onClick={() => setOpenNick(true)}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-200 text-sm text-neutral-700 hover:bg-neutral-50"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-slate-500 bg-slate-600 text-sm text-slate-200 hover:bg-slate-500 hover:border-amber-400 transition-all"
             title="닉네임 변경"
             aria-label="닉네임 변경"
           >
@@ -99,7 +97,7 @@ export default function ProfileCard({ favoriteCount = 0, gameCount = 0 }: Props)
           </button>
         </div>
 
-        <p className="mt-1 text-center text-neutral-500 text-sm">
+        <p className="mt-1 text-center text-slate-400 text-sm">
           • 가입일: {new Date(user.createdAt).toLocaleDateString()}
         </p>
       </div>
@@ -108,30 +106,30 @@ export default function ProfileCard({ favoriteCount = 0, gameCount = 0 }: Props)
       <div className="mt-6 flex flex-col gap-5 mt-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* 관심 종목 */}
-          <div className="rounded-xl p-4 text-center bg-amber-400/10 border border-amber-500/20">
-            <div className="text-amber-600 text-2xl font-bold">
+          <div className="rounded-xl p-4 text-center bg-slate-600 border border-slate-500 hover:border-amber-400 transition-all">
+            <div className="text-amber-400 text-2xl font-bold">
               {favoriteCount.toLocaleString()}
             </div>
-            <div className="text-neutral-500 text-xs">관심 종목</div>
+            <div className="text-slate-300 text-xs">관심 종목</div>
           </div>
 
           {/* 게임 횟수 (추후 데이터 붙이면 교체) */}
-          <div className="rounded-xl p-4 text-center bg-amber-400/10 border border-amber-500/20">
-            <div className="text-amber-600 text-2xl font-bold">{gameCount.toLocaleString()}</div>
-            <div className="text-neutral-500 text-xs">게임 횟수</div>
+          <div className="rounded-xl p-4 text-center bg-slate-600 border border-slate-500 hover:border-amber-400 transition-all">
+            <div className="text-amber-400 text-2xl font-bold">{gameCount.toLocaleString()}</div>
+            <div className="text-slate-300 text-xs">게임 횟수</div>
           </div>
 
           {/* 잔고 */}
-          <div className="rounded-xl p-4 text-center bg-amber-400/10 border border-amber-500/20 sm:col-span-2">
-            <div className="text-amber-600 text-2xl font-bold">{user.cash.toLocaleString()}원</div>
-            <div className="text-neutral-500 text-xs">나의 잔고</div>
+          <div className="rounded-xl p-4 text-center bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-400/50 sm:col-span-2">
+            <div className="text-amber-300 text-2xl font-bold">{user.cash.toLocaleString()}원</div>
+            <div className="text-slate-300 text-xs">나의 잔고</div>
           </div>
         </div>
 
         <div className="flex justify-end">
           <button
             onClick={onDeleteAccount}
-            className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400/50"
+            className="px-4 py-2 rounded-lg bg-red-600/80 text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400/50 transition-all"
           >
             회원탈퇴
           </button>

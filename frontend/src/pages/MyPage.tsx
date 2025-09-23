@@ -39,22 +39,41 @@ export default function MyPage() {
   }, [token]);
 
   if (loading || pending)
-    return <div className="min-h-dvh grid place-items-center text-neutral-300">불러오는 중…</div>;
+    return (
+      <div className="min-h-dvh bg-slate-800 grid place-items-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500 mb-4"></div>
+          <div className="text-amber-100 font-medium">불러오는 중…</div>
+        </div>
+      </div>
+    );
+
   if (!authUser) return <Navigate to="/" replace />;
 
   const favoriteCount = data?.favorites?.length ?? 0;
 
   return (
-    <div className="min-h-dvh bg-slate-800 py-8">
-      <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-5 space-y-6">
-        {/* 상단 2열 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <ProfileCard favoriteCount={favoriteCount} />
-          <PersonalityResult data={data?.personality ?? null} />
-        </div>
+    <div className="min-h-dvh bg-slate-800">
+      {/* 헤더 그라디언트 배경 */}
+      <div className="bg-gradient-to-r from-amber-500 to-amber-600 h-24 relative">
+        <div className="absolute inset-0 bg-black/10"></div>
+      </div>
 
-        <Watchlist items={data?.favorites ?? []} />
-        <MockInvestmentHistory items={data?.mockInvestHistory ?? []} />
+      {/* 메인 콘텐츠 */}
+      <div className="relative -mt-12 pb-8">
+        <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-5 space-y-6">
+          {/* 상단 2열 - 카드들이 헤더와 겹치게 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 relative z-10">
+            <ProfileCard favoriteCount={favoriteCount} />
+            <PersonalityResult data={data?.personality ?? null} />
+          </div>
+
+          {/* 하단 섹션들 */}
+          <div className="space-y-6">
+            <Watchlist items={data?.favorites ?? []} />
+            <MockInvestmentHistory items={data?.mockInvestHistory ?? []} />
+          </div>
+        </div>
       </div>
     </div>
   );
