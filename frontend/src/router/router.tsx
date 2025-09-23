@@ -11,9 +11,9 @@ const MyPage = lazy(() => import('../pages/MyPage'));
 const OAuthFail = lazy(() => import('../pages/OAuthFail'));
 const TendencyGame = lazy(() => import('../pages/TendencyGamePage'));
 const StockDetail = lazy(() => import('../pages/StockInfoPage'));
-const StockDetail = lazy(() => import('../pages/StockDetailPage'));
 const StockTrade = lazy(() => import('../pages/StockTradePage'));
 const PortfolioPage = lazy(() => import('../pages/PortfolioPage'));
+const Search = lazy(() => import('../pages/SearchPage'));
 
 const Router = createBrowserRouter([
   {
