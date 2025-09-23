@@ -14,4 +14,6 @@ import java.util.List;
 @Transactional
 public interface StockItemsService {
     PageResponseDto<StockEndDayDto> getEndDayData(PageRequestDto pageRequestDto, LocalDate targetDate);
+
+    LocalDate getLatestDataDate();
 }
