@@ -16,10 +16,10 @@ warnings.filterwarnings('ignore')
 
 # MySQL 연결 설정
 DB_CONFIG = {
-    'host': '',
-    'user': '',
-    'password': '',
-    'database': '',
+    'host': 'localhost',
+    'user': 'root',
+    'password': 'ssafy',
+    'database': 'survive_stock',
     'charset': 'utf8mb4'
 }
 
@@ -49,20 +49,24 @@ class StockDataSystem:
             logging.error(f"MySQL 연결 실패: {e}")
             return False
 
-    def create_table(self):
+    def create_table(self, drop_if_exists=False):
         try:
             with self.engine.connect() as conn:
+                if drop_if_exists:
+                    conn.execute(text("DROP TABLE IF EXISTS stock_infos"))
+                    conn.commit()
+                    logging.info("🗑️ 기존 stock_infos 테이블 삭제 완료")
                 create_table_query = """
 CREATE TABLE IF NOT EXISTS stock_infos (
-    info_no INT AUTO_INCREMENT PRIMARY KEY,
-    item_no TINYINT UNSIGNED NOT NULL,
+    info_no BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    item_no BIGINT UNSIGNED NOT NULL,
     date DATE NOT NULL,
-    start_price INT NOT NULL,
-    end_price INT NOT NULL,
-    high_price INT NOT NULL,
-    low_price INT NOT NULL,
-    volume INT NOT NULL,
-    market_cap BIGINT,
+    start_price BIGINT NOT NULL,
+    end_price BIGINT NOT NULL,
+    high_price BIGINT NOT NULL,
+    low_price BIGINT NOT NULL,
+    volume BIGINT NOT NULL,
+    market_cap BIGINT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY unique_item_date (item_no, date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -74,25 +78,6 @@ CREATE TABLE IF NOT EXISTS stock_infos (
         except Exception as e:
             logging.error(f"테이블 생성 실패: {e}")
             return False
-
-    def is_trading_day(self, date):
-        if date.weekday() >= 5:  # 주말 체크
-            return False
-        holidays_2025 = [
-            '2025-01-01', '2025-01-28', '2025-01-29', '2025-01-30',
-            '2025-03-01', '2025-05-05', '2025-06-06', '2025-08-15',
-            '2025-10-03', '2025-10-09', '2025-12-25'
-        ]
-        return date.strftime('%Y-%m-%d') not in holidays_2025
-
-    def get_last_trading_day(self):
-        today = datetime.now()
-        check_date = today - timedelta(days=1)
-        for _ in range(10):
-            if self.is_trading_day(check_date):
-                return check_date
-            check_date -= timedelta(days=1)
-        return today - timedelta(days=1)
 
     def check_data_exists(self, date_str):
         try:
@@ -111,8 +96,7 @@ CREATE TABLE IF NOT EXISTS stock_infos (
             market_cap_df = stock.get_market_cap(start_date_str, end_date_str, ticker)
             df_copy = df.copy()
             if not market_cap_df.empty:
-                market_cap_df['market_cap'] = (market_cap_df['시가총액'] / 100000000).astype(int)
-                df_copy = df_copy.join(market_cap_df[['market_cap']], how='left')
+                df_copy['market_cap'] = (market_cap_df['시가총액'] / 100000000).astype(int)
             else:
                 df_copy['market_cap'] = None
             return df_copy
@@ -146,14 +130,15 @@ CREATE TABLE IF NOT EXISTS stock_infos (
                 '거래량': 'volume'
             }, inplace=True)
 
+            # 모든 컬럼 BIGINT/정수형으로 변환
+            for col in ['start_price','end_price','high_price','low_price','volume','market_cap']:
+                df_copy[col] = df_copy[col].fillna(0).astype(int)
+
             columns_order = [
                 'item_no', 'date',
                 'start_price', 'high_price', 'low_price', 'end_price', 'volume',
                 'market_cap', 'created_at'
             ]
-            for col in columns_order:
-                if col not in df_copy.columns:
-                    df_copy[col] = None
             df_copy = df_copy[columns_order]
 
             df_copy.to_sql(
@@ -173,14 +158,7 @@ CREATE TABLE IF NOT EXISTS stock_infos (
 
     def collect_historical_data(self, years=5):
         logging.info(f"🏗️ {years}년치 히스토리컬 데이터 수집 시작")
-        try:
-            with self.engine.connect() as conn:
-                conn.execute(text("DROP TABLE IF EXISTS stock_infos"))
-                conn.commit()
-            self.create_table()
-        except Exception as e:
-            logging.error(f"테이블 초기화 실패: {e}")
-            return False
+        self.create_table(drop_if_exists=True)
 
         end_date = datetime.now()
         start_date = end_date - timedelta(days=years * 365)
@@ -221,11 +199,11 @@ CREATE TABLE IF NOT EXISTS stock_infos (
 
     def update_daily_data(self):
         logging.info("📅 일일 데이터 업데이트 시작")
-        last_trading_day = self.get_last_trading_day()
-        target_date_str = last_trading_day.strftime("%Y%m%d")
-        target_date_sql = last_trading_day.strftime("%Y-%m-%d")
+        target_date = datetime.now() - timedelta(days=1)
+        target_date_str = target_date.strftime("%Y%m%d")
+        target_date_sql = target_date.strftime("%Y-%m-%d")
 
-        logging.info(f"수집 대상: {target_date_str} ({last_trading_day.strftime('%A')})")
+        logging.info(f"수집 대상: {target_date_str} ({target_date.strftime('%A')})")
         if self.check_data_exists(target_date_sql):
             logging.info(f"{target_date_sql} 데이터가 이미 존재합니다.")
             return True
@@ -248,7 +226,7 @@ CREATE TABLE IF NOT EXISTS stock_infos (
                     market_cap = int(market_cap_df.iloc[0]['시가총액'] / 100000000)
                     df['market_cap'] = market_cap
                 else:
-                    df['market_cap'] = None
+                    df['market_cap'] = 0
                 if self.save_stock_infos(ticker, company_name, df):
                     success_count += 1
                 else:
@@ -307,7 +285,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 # 사용 예제:
 # python stock_data_system.py init       # 5년치 초기 데이터 수집
