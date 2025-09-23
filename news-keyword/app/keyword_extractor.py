@@ -295,7 +295,7 @@ class KeywordExtractor:
             logger.info(f"총 파일 크기: {total_size_gb:.2f} GB")
             
             # 15GB 이상이면 Spark 사용
-            if total_size_gb >= 15.0:
+            if total_size_gb >= 10.0:
                 logger.info("🚀 엔진 선택: PySpark (파일 크기 15GB 이상)")
                 # Spark 초기화 시도
                 try:
