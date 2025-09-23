@@ -21,7 +21,7 @@ public class FavoriteCommandServiceImpl implements FavoriteCommandService {
     private final StockItemsRepository stockItemsRepository;
 
     @Override
-    public boolean toggleFavorite(Integer userId, Integer itemNo) {
+    public boolean toggleFavorite(Long userId, Long itemNo) {
         User u = userRepository.findWithFavoritesById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "USER_NOT_FOUND"));
 

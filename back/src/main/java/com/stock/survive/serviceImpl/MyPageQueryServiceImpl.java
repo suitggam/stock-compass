@@ -23,7 +23,7 @@ public class MyPageQueryServiceImpl implements MyPageQueryService {
     private final UserRepository userRepository;
 
     @Override
-    public MyPageDto getMyPage(Integer userId) {
+    public MyPageDto getMyPage(Long userId) {
         User u = userRepository.findWithFavoritesById(userId)
                 .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "USER_NOT_FOUND"));
 
@@ -37,7 +37,7 @@ public class MyPageQueryServiceImpl implements MyPageQueryService {
     }
 
     @Override
-    public Set<Integer> getFavoriteIdSet(Integer userId) {
+    public Set<Long> getFavoriteIdSet(Long userId) {
         return new HashSet<>(userRepository.findFavoriteItemIds(userId));
     }
 

@@ -36,13 +36,13 @@ public class UserCommandController {
         return ResponseEntity.noContent().build();
     }
 
-    private Integer extractUid(Authentication auth) {
+    private Long extractUid(Authentication auth) {
         if (auth == null || !auth.isAuthenticated())
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED");
         Object p = auth.getPrincipal();
-        if (p instanceof Integer i) return i;
-        if (p instanceof Number n) return n.intValue();
-        try { return Integer.valueOf(String.valueOf(p)); } catch (Exception ignored) {}
+        if (p instanceof Long i) return i;
+        if (p instanceof Number n) return (long) n.intValue();
+        try { return Long.valueOf(String.valueOf(p)); } catch (Exception ignored) {}
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "INVALID_PRINCIPAL");
     }
 }

@@ -93,7 +93,7 @@ public class TokenServiceImpl implements TokenService {
         String raw = readRefreshCookie(req);
         if (raw == null) throw new ResponseStatusException(UNAUTHORIZED, "NO_REFRESH_COOKIE");
 
-        Integer userNo = refreshStore.verify(raw);
+        Long userNo = refreshStore.verify(raw);
         if (userNo == null) throw new ResponseStatusException(UNAUTHORIZED, "INVALID_REFRESH");
 
         // 로테이션

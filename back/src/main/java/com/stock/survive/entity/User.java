@@ -23,7 +23,7 @@ public class User {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_no")
-    private Integer id;
+    private Long id;
 
     @Column(name = "social_email", length = 254, nullable = false, unique = true)
     private String socialEmail;
