@@ -64,6 +64,9 @@ class KeywordExtractor:
                 os.environ['PYSPARK_PYTHON'] = '/usr/bin/python'
                 os.environ['PYSPARK_DRIVER_PYTHON'] = '/usr/bin/python'
                 
+                print(f"AWS_ACCESS_KEY_ID: {os.getenv('AWS_ACCESS_KEY_ID', 'NOT_SET')}")
+                print(f"AWS_SECRET_ACCESS_KEY: {'SET' if os.getenv('AWS_SECRET_ACCESS_KEY') else 'NOT_SET'}")
+                
                 self.spark = SparkSession.builder \
                     .appName("NewsKeywordAPI") \
                     .master("local[*]") \
@@ -82,12 +85,13 @@ class KeywordExtractor:
                     .config("spark.driver.bindAddress", "0.0.0.0") \
                     .config("spark.ui.enabled", "false") \
                     .config("spark.ui.showConsoleProgress", "false") \
-                    .config("spark.hadoop.fs.s3a.access.key", os.getenv('AWS_ACCESS_KEY_ID', '')) \
-                    .config("spark.hadoop.fs.s3a.secret.key", os.getenv('AWS_SECRET_ACCESS_KEY', '')) \
-                    .config("spark.hadoop.fs.s3a.session.token", os.getenv('AWS_SESSION_TOKEN', '')) \
+                    .config("spark.jars.packages", 
+                            "org.apache.hadoop:hadoop-aws:3.3.4,"
+                            "com.amazonaws:aws-java-sdk-bundle:1.12.262") \
+                    .config("spark.hadoop.fs.s3a.access.key", os.getenv('AWS_ACCESS_KEY_ID')) \
+                    .config("spark.hadoop.fs.s3a.secret.key", os.getenv('AWS_SECRET_ACCESS_KEY')) \
                     .config("spark.hadoop.fs.s3a.endpoint", f"s3.{self.s3_region}.amazonaws.com") \
                     .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
-                    .config("spark.hadoop.fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.auth.TemporaryAWSCredentialsProvider") \
                     .getOrCreate()
                 
                 # 로그 레벨 설정 (너무 많은 로그 방지)
