@@ -44,14 +44,26 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/users/auth/**",
-                                     "/api/users/logout", 
-                                     "/error",
-                                     "/actuator/**",
-                                     "/api/stock/**" ,"/extract-keywords/**",
-                                     "/api/mypage/**").permitAll()
+                    .requestMatchers(
+                    "/oauth2/**",
+                        "/login/oauth2/**",
+                        "/users/auth/**",
+                        "/api/users/auth/**"
+                    ).permitAll()
+
+                    // 기존 열어둔 것들
+                    .requestMatchers(
+                        "/api/users/logout",
+                        "/error",
+                        "/actuator/**",
+                        "/api/stock/**",
+                        "/extract-keywords/**",
+                        "/api/mypage/**"
+                    ).permitAll()
+
+                    // 보호할 엔드포인트
                     .requestMatchers(HttpMethod.DELETE, "/api/users/me").authenticated()
-                    .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
+                    .requestMatchers(HttpMethod.GET,    "/api/users/me").authenticated()
                     .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e
