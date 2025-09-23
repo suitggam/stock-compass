@@ -32,7 +32,7 @@ public class JWTCheckFilter extends OncePerRequestFilter {
     private static final List<String> WHITELIST_PREFIXES = List.of(
             "/api/users/auth/",
             "/error",
-            "/actuator/health",
+            "/actuator/",
             "/favicon.ico"
     );
 
