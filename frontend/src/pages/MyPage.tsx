@@ -54,16 +54,11 @@ export default function MyPage() {
 
   return (
     <div className="min-h-dvh bg-slate-800">
-      {/* 헤더 그라디언트 배경 */}
-      <div className="bg-gradient-to-r from-amber-500 to-amber-600 h-24 relative">
-        <div className="absolute inset-0 bg-black/10"></div>
-      </div>
-
       {/* 메인 콘텐츠 */}
-      <div className="relative -mt-12 pb-8">
+      <div className="py-8">
         <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-5 space-y-6">
-          {/* 상단 2열 - 카드들이 헤더와 겹치게 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 relative z-10">
+          {/* 상단 2열 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <ProfileCard favoriteCount={favoriteCount} />
             <PersonalityResult data={data?.personality ?? null} />
           </div>
