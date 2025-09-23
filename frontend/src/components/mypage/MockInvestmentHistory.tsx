@@ -1,4 +1,3 @@
-// src/components/mypage/MockInvestmentHistory.tsx
 import type { MyPageData } from '../../types/MyPageData';
 
 type Props = {
@@ -15,55 +14,56 @@ export default function MockInvestmentHistory({ items = [] }: Props) {
   const rank = 0; // TODO: 백엔드 제공되면 표시
 
   return (
-    <section className="w-full bg-white/80 backdrop-blur-xl rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.16)] p-6 border border-black/5 relative">
-      <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-black via-neutral-800 to-amber-500" />
+    <section className="w-full bg-slate-700 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-slate-600 relative">
       <div className="flex items-center gap-2 mb-5">
-        <div className="text-xs font-bold text-white/80">🎮</div>
-        <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-900">모의 투자 히스토리</h3>
+        <h3 className="text-xl sm:text-2xl font-extrabold text-white">모의 투자 히스토리</h3>
       </div>
 
       {/* KPI */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="rounded-2xl p-5 text-center bg-amber-400/10 border border-amber-500/20">
-          <div className="text-amber-600 text-xl sm:text-2xl font-bold">{totalGames}</div>
-          <div className="text-neutral-500 text-xs">총 게임</div>
+        <div className="rounded-2xl p-5 text-center bg-slate-600 border border-slate-500 hover:border-amber-400 transition-all">
+          <div className="text-amber-400 text-xl sm:text-2xl font-bold">{totalGames}</div>
+          <div className="text-slate-300 text-xs">총 게임</div>
         </div>
-        <div className="rounded-2xl p-5 text-center bg-amber-400/10 border border-amber-500/20">
-          <div className="text-amber-600 text-xl sm:text-2xl font-bold">
+        <div className="rounded-2xl p-5 text-center bg-slate-600 border border-slate-500 hover:border-amber-400 transition-all">
+          <div className="text-amber-400 text-xl sm:text-2xl font-bold">
             {lastTotal.toLocaleString()}원
           </div>
-          <div className="text-neutral-500 text-xs">보유 자산(임시)</div>
+          <div className="text-slate-300 text-xs">보유 자산(임시)</div>
         </div>
-        <div className="rounded-2xl p-5 text-center bg-amber-400/10 border border-amber-500/20">
-          <div className="text-amber-600 text-xl sm:text-2xl font-bold">{totalReturnPct}%</div>
-          <div className="text-neutral-500 text-xs">총 수익률(임시)</div>
+        <div className="rounded-2xl p-5 text-center bg-slate-600 border border-slate-500 hover:border-amber-400 transition-all">
+          <div className="text-amber-400 text-xl sm:text-2xl font-bold">{totalReturnPct}%</div>
+          <div className="text-slate-300 text-xs">총 수익률(임시)</div>
         </div>
-        <div className="rounded-2xl p-5 text-center bg-amber-400/10 border border-amber-500/20">
-          <div className="text-amber-600 text-xl sm:text-2xl font-bold">{rank || '-'}</div>
-          <div className="text-neutral-500 text-xs">현재 자산 등수(임시)</div>
+        <div className="rounded-2xl p-5 text-center bg-slate-600 border border-slate-500 hover:border-amber-400 transition-all">
+          <div className="text-amber-400 text-xl sm:text-2xl font-bold">{rank || '-'}</div>
+          <div className="text-slate-300 text-xs">현재 자산 등수(임시)</div>
         </div>
       </div>
 
       {/* 리스트 */}
       {empty ? (
-        <p className="text-sm text-neutral-500">내역이 없습니다.</p>
+        <div className="text-center py-8">
+          <div className="text-slate-400 mb-4">투자 내역이 없습니다.</div>
+          <button className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 transition-all">
+            모의투자 시작하기
+          </button>
+        </div>
       ) : (
         <div className="flex flex-col gap-3.5">
           {items.map((it) => (
             <div
               key={it.id}
-              className="p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-neutral-50/70 border border-neutral-200/70"
+              className="p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-600 border border-slate-500 hover:bg-slate-500 hover:border-amber-400 transition-all"
             >
               <div className="min-w-0">
-                <div className="text-neutral-900 text-[15px] font-semibold truncate">
-                  🎮 {it.symbol}
-                </div>
-                <div className="text-neutral-500 text-sm">
+                <div className="text-white text-[15px] font-semibold truncate">🎮 {it.symbol}</div>
+                <div className="text-slate-400 text-sm">
                   {new Date(it.tradedAt).toLocaleString()}
                 </div>
               </div>
               <div className="flex items-center gap-3 sm:gap-6">
-                <div className="px-4 py-2 rounded-[10px] text-sm font-bold text-center bg-neutral-100 text-neutral-700">
+                <div className="px-4 py-2 rounded-[10px] text-sm font-bold text-center bg-slate-500 text-amber-300 border border-slate-400">
                   {it.quantity}주 · {it.price.toLocaleString()}원
                 </div>
               </div>
