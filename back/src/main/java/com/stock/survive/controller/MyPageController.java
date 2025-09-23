@@ -1,7 +1,7 @@
 package com.stock.survive.controller;
 
 import com.stock.survive.dto.MyPageDto;
-import com.stock.survive.service.MyPageQueryService;
+import com.stock.survive.service.MyPageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -15,17 +15,17 @@ import java.util.Set;
 @RequestMapping("/api/mypage")
 public class MyPageController {
 
-    private final MyPageQueryService myPageQueryService;
+    private final MyPageService myPageService;
 
     @GetMapping("/me")
     public MyPageDto me(Authentication auth) {
-        return myPageQueryService.getMyPage(extractUid(auth));
+        return myPageService.getMyPage(extractUid(auth));
     }
 
     // 메인/리스트 별표(★) 표시에 최적
     @GetMapping("/me/favorite-ids")
     public Set<Long> favoriteIds(Authentication auth) {
-        return myPageQueryService.getFavoriteIdSet(extractUid(auth));
+        return myPageService.getFavoriteIdSet(extractUid(auth));
     }
 
     private Long extractUid(Authentication auth) {

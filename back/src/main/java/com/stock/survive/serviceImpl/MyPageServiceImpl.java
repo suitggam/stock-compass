@@ -4,7 +4,7 @@ import com.stock.survive.dto.MyPageDto;
 import com.stock.survive.entity.OauthIdentity;
 import com.stock.survive.entity.User;
 import com.stock.survive.repository.UserRepository;
-import com.stock.survive.service.MyPageQueryService;
+import com.stock.survive.service.MyPageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +18,7 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class MyPageQueryServiceImpl implements MyPageQueryService {
+public class MyPageServiceImpl implements MyPageService {
 
     private final UserRepository userRepository;
 

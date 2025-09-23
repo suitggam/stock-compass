@@ -4,7 +4,7 @@ import com.stock.survive.dto.UserSummaryDto;
 import com.stock.survive.entity.OauthIdentity;
 import com.stock.survive.entity.User;
 import com.stock.survive.repository.UserRepository;
-import com.stock.survive.service.AuthQueryService;
+import com.stock.survive.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,7 +15,7 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class AuthQueryServiceImpl implements AuthQueryService {
+public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
 
