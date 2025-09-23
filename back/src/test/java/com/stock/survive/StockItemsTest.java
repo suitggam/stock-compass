@@ -50,6 +50,14 @@ public class StockItemsTest {
         log.info(items.getItemNo()+", "+items.getCategory().getCategoryName()+", "+items.getTicker()+", "+items.getCompanyName());
     }
 
+    @Test
+    @Transactional
+    public void getInsertTest() {
+
+//        StockItems save = stockItemsRepository.save(new StockItems(100,1,"test","test",1));
+//        log.info(save);
+    }
+
 
 //    @Test
 //    @Transactional

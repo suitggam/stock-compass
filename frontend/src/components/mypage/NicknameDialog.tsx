@@ -53,7 +53,7 @@ const NicknameDialog: React.FC<Props> = ({ open, initialNickname, onClose, onSav
     try {
       setSaving(true);
       const body = { nickname: nick.trim() };
-      const res = await api.patch<UserSummary>('/users/me', body);
+      const res = await api.patch<UserSummary>('/api/users/me', body);
       onSaved(res.nickname ?? body.nickname);
       onClose();
     } catch (err: unknown) {

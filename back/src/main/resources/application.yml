@@ -9,20 +9,17 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:${app.front-origin}}
 
-<<<<<<< Updated upstream
   #쿠키인디 https가 아니라 http라서 secure false 두고 same-site도 none이 아니라 lax
   # 이후 https 로 바꾸려면 true에 none 으로 바꾸면됨
   cookie:
     secure: false
     same-site: Lax
-=======
+
 keywords:
   api:
     url: http://j13a301a.p.ssafy.io:8888
->>>>>>> Stashed changes
 
 spring:
-
   config:
     import: optional:dotenv:file:.env,optional:dotenv:file:./back/.env
 
@@ -44,8 +41,8 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: none # create는 매번 테이블 재생성, update는 기존 데이터 유지하면서 변경 반영
-#    show-sql: true
+      ddl-auto: update # create는 매번 테이블 재생성, update는 기존 데이터 유지하면서 변경 반영
+    show-sql: true
     properties:
       hibernate:
         format_sql: true
@@ -54,12 +51,12 @@ oauth:
   kakao:
     client-id: ${KAKAO_CLIENT_ID}
     client-secret: ${KAKAO_CLIENT_SECRET:}
-    redirect-uri: ${app.base-url}/users/auth/kakao/callback
+    redirect-uri: ${app.base-url}/api/users/auth/kakao/callback
 
   google:
     client-id: ${GOOGLE_CLIENT_ID}
     client-secret: ${GOOGLE_CLIENT_SECRET:}
-    redirect-uri: ${app.base-url}/users/auth/google/callback
+    redirect-uri: ${app.base-url}/api/users/auth/google/callback
 
 jwt:
   secret: ${JWT_SECRET}

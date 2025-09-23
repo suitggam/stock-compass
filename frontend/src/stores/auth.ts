@@ -41,7 +41,7 @@ export const useAuth = create<State & Actions>()(
           try {
             // 1) 토큰 없으면 refresh 시도
             if (!get().accessToken) {
-              const res = await fetch(`${API_BASE}/users/auth/refresh`, {
+              const res = await fetch(`${API_BASE}/api/users/auth/refresh`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
@@ -56,7 +56,7 @@ export const useAuth = create<State & Actions>()(
 
             // 2) 토큰이 있으면 me 조회
             if (get().accessToken) {
-              const meRes = await fetch(`${API_BASE}/users/login-user`, {
+              const meRes = await fetch(`${API_BASE}/api/users/login-user`, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
@@ -84,7 +84,7 @@ export const useAuth = create<State & Actions>()(
 
       logout: async () => {
         try {
-          await fetch(`${API_BASE}/users/logout`, {
+          await fetch(`${API_BASE}/api/users/logout`, {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
