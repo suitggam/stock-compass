@@ -21,3 +21,4 @@ curl -s "${PUSHGATEWAY_ADDR}/metrics" | grep test_
 
 echo ""
 echo "3. 완료!"
+

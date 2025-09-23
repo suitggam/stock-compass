@@ -41,7 +41,7 @@ spark_job_end_time = Gauge('spark_job_end_time_timestamp', 'Spark job end time a
 spark_job_duration_minutes = Gauge('spark_job_duration_minutes', 'Spark job duration in minutes', ['job_id', 'app_name'])
 
 class SparkMetricsCollector:
-    def __init__(self, master_url="http://spark-master:8080"):
+    def __init__(self, master_url="http://spark-master:8000"):
         self.master_url = master_url
         self.session = requests.Session()
         self.session.timeout = 10
@@ -288,7 +288,7 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description="Spark 메트릭 수집기")
-    parser.add_argument("--master-url", default="http://spark-master:8080",
+    parser.add_argument("--master-url", default="http://spark-master:8000",
                        help="Spark Master URL")
     parser.add_argument("--port", type=int, default=9090,
                        help="서버 포트")

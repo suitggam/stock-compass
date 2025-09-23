@@ -24,7 +24,7 @@ public class OauthIdentity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "platform_no")
-    private Integer id;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_no", nullable = false,

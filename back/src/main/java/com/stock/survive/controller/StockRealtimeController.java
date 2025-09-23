@@ -23,7 +23,7 @@ public class StockRealtimeController {
     @GetMapping("/realtime")
     public PageResponseDto<StockRealtimeDto> getStockItems(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "21") int size
     ) {
         PageRequestDto pageRequestDto = PageRequestDto.builder()
                 .page(page)

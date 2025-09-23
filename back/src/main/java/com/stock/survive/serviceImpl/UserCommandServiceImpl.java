@@ -18,7 +18,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     private final UserRepository userRepository;
 
     @Override
-    public UserSummaryDto changeNickname(Integer userId, String raw) {
+    public UserSummaryDto changeNickname(Long userId, String raw) {
         User u = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "USER_NOT_FOUND"));
 
@@ -43,7 +43,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     }
 
     @Override
-    public void deleteMe(Integer userId) {
+    public void deleteMe(Long userId) {
         User u = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "USER_NOT_FOUND"));
         userRepository.delete(u);

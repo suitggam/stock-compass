@@ -22,10 +22,10 @@ public class TradeHistory {
     private Long tradeNo;
 
     @Column(name = "stock_no", nullable = false)
-    private Integer stockNo;
+    private Long stockNo;
 
     @Column(name = "user_no", nullable = false)
-    private Integer userNo;
+    private Long userNo;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

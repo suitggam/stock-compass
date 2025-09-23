@@ -4,7 +4,6 @@ import com.stock.survive.dto.PageRequestDto;
 import com.stock.survive.dto.PageResponseDto;
 import com.stock.survive.dto.StockEndDayDto;
 import com.stock.survive.service.StockItemsService;
-import com.stock.survive.service.StockQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -16,9 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.List;
-import com.stock.survive.dto.StockItemOptionDto;
-import com.stock.survive.dto.StockPricePointDto;
-import com.stock.survive.dto.StockCandlePointDto;
 
 @RestController
 @RequestMapping("/api/stock")
@@ -27,7 +23,6 @@ import com.stock.survive.dto.StockCandlePointDto;
 public class StockItemsController {
 
     private final StockItemsService stockItemsService;
-    private final StockQueryService stockQueryService;
 
     // 장 마감 데이터 조회 (페이지네이션 적용)
     @GetMapping("/endDay")
@@ -45,38 +40,9 @@ public class StockItemsController {
                 .build();
 
         PageResponseDto<StockEndDayDto> response = stockItemsService.getEndDayData(pageRequestDto, targetDate);
-        log.info("targetDate = " + targetDate + ", totalCount = " + response.getTotalCount());
         return ResponseEntity.ok(response);
     }
 
 
-    // 종목 전체 목록 (itemNo/ticker/companyName)
-    @GetMapping("/items")
-    public ResponseEntity<List<StockItemOptionDto>> listItems() {
-        return ResponseEntity.ok(stockQueryService.listItems());
-    }
 
-    // 특정 종목의 기간별 일봉(endPrice) 히스토리
-    @GetMapping("/history")
-    public ResponseEntity<List<StockPricePointDto>> getHistory(
-            @RequestParam Integer itemNo,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
-    ) {
-        LocalDate toDate = (to != null) ? to : LocalDate.now();
-        LocalDate fromDate = (from != null) ? from : toDate.minusYears(5);
-        return ResponseEntity.ok(stockQueryService.getHistory(itemNo, fromDate, toDate));
-    }
-
-    // 캔들(OHLC) + 거래량
-    @GetMapping("/history/candle")
-    public ResponseEntity<List<StockCandlePointDto>> getCandleHistory(
-            @RequestParam Integer itemNo,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
-    ) {
-        LocalDate toDate = (to != null) ? to : LocalDate.now();
-        LocalDate fromDate = (from != null) ? from : toDate.minusYears(5);
-        return ResponseEntity.ok(stockQueryService.getCandleHistory(itemNo, fromDate, toDate));
-    }
 }

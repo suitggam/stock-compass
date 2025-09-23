@@ -12,7 +12,7 @@ import java.util.List;
 @NoArgsConstructor @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL) // null 필드는 응답에서 숨김(선택)
 public class MyPageDto {
-    private Integer userNo;
+    private Long userNo;
     private String socialEmail;
     private String nickname;
     private boolean cancel;
@@ -51,7 +51,7 @@ public class MyPageDto {
     // ── 내부(또는 별도 파일) 서브 DTO들 ────────────────────────────────
     @Getter @Setter @AllArgsConstructor @NoArgsConstructor
     public static class FavoriteItemDto {
-        private Integer itemId;
+        private Long itemId;
         private String name;
         // 필요시 현재가/등락률 등 추가
     }
