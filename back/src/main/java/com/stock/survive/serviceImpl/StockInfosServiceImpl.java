@@ -53,9 +53,12 @@ public class StockInfosServiceImpl implements StockInfosService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 ticker: " + ticker));
 
         // 2️⃣ 프론트에서 받은 값 활용 (없으면 기본값)
-        String startDate = requestDto.getStartDate() != null ? requestDto.getStartDate()
+        String startDate = requestDto.getStartDate() != null
+                ? requestDto.getStartDate().replace("-", "")
                 : LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String endDate = requestDto.getEndDate() != null ? requestDto.getEndDate() : startDate;
+        String endDate = requestDto.getEndDate() != null
+                ? requestDto.getEndDate().replace("-", "")
+                : startDate;
         int topKeywords = requestDto.getTopKeywords() != null ? requestDto.getTopKeywords() : 10;
         boolean useAiFilter = requestDto.isUseAiFilter();
 
