@@ -1,5 +1,6 @@
 package com.stock.survive.controller;
 
+import com.stock.survive.service.AuthService;
 import com.stock.survive.serviceImpl.GoogleOAuthServiceImpl;
 import com.stock.survive.serviceImpl.KakaoOAuthServiceImpl;
 import com.stock.survive.serviceImpl.TokenServiceImpl;
@@ -29,7 +30,7 @@ public class AuthController {
     private final TokenServiceImpl tokenServiceImpl;
 
     //그냥 로그인한 유저 관리하는것도
-    private final com.stock.survive.service.AuthQueryService authQueryService;
+    private final AuthService authService;
 
     @Value("${app.front-origin:http://localhost:5173}")
     private String frontOrigin;
@@ -47,7 +48,7 @@ public class AuthController {
 
     @GetMapping("/login-user")
     public com.stock.survive.dto.UserSummaryDto loginUser(Authentication auth) {
-        return authQueryService.me(extractUid(auth));
+        return authService.me(extractUid(auth));
     }
 
     // ===== 구글 =====

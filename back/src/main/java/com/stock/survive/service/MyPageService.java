@@ -3,7 +3,7 @@ package com.stock.survive.service;
 import com.stock.survive.dto.MyPageDto;
 import java.util.Set;
 
-public interface MyPageQueryService {
+public interface MyPageService {
     MyPageDto getMyPage(Long userId);
     Set<Long> getFavoriteIdSet(Long userId);
 }
