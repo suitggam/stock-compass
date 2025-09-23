@@ -47,7 +47,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/users/auth/**",
                                      "/api/users/logout", 
                                      "/error",
-                                     "/api/actuator/health", "/api/actuator/info",
+                                     "/actuator/**",
                                      "/api/stock/**" ,"/extract-keywords/**",
                                      "/api/mypage/**").permitAll()
                     .requestMatchers(HttpMethod.DELETE, "/api/users/me").authenticated()

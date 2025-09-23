@@ -62,3 +62,13 @@ jwt:
   secret: ${JWT_SECRET}
   access-exp-minutes: ${JWT_ACCESS_EXP_MINUTES:60}
   refresh-exp-days: ${JWT_REFRESH_EXP_DAYS:14}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
