@@ -5,6 +5,7 @@ interface ChartHeaderProps extends StockInfos {
   termText: string;
   pastPrice: number;
   rate: number;
+  date: string; // 최신 데이터 날짜
 }
 
 function ChartHeader({
@@ -14,11 +15,14 @@ function ChartHeader({
   rate,
   termText,
   pastPrice,
+  date,
 }: ChartHeaderProps) {
-  const today = new Date();
-  const formattedDate = `${today.getFullYear()}년 ${
-    today.getMonth() + 1
-  }월 ${today.getDate()}일`;
+  // date를 Date 객체로 변환 (문자열일 경우)
+  const stockDate = typeof date === "string" ? new Date(date) : date;
+
+  const formattedDate = `${stockDate.getFullYear()}년 ${
+    stockDate.getMonth() + 1
+  }월 ${stockDate.getDate()}일`;
 
   // 가격 색상
   const priceColor =

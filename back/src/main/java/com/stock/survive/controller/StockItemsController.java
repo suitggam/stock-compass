@@ -34,10 +34,10 @@ public class StockItemsController {
     public ResponseEntity<PageResponseDto<StockEndDayDto>> getEndOfDayData(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "21") int size // ✅ 기본값 20으로 변경
+            @RequestParam(defaultValue = "21") int size
     ) {
-        // date가 없으면 기본적으로 어제 날짜 사용
-        LocalDate targetDate = (date != null) ? date : LocalDate.now().minusDays(1);
+        // date가 null이면 DB에서 가장 최신 날짜 사용
+        LocalDate targetDate = (date != null) ? date : stockItemsService.getLatestDataDate();
 
         PageRequestDto pageRequestDto = PageRequestDto.builder()
                 .page(page)
@@ -45,8 +45,10 @@ public class StockItemsController {
                 .build();
 
         PageResponseDto<StockEndDayDto> response = stockItemsService.getEndDayData(pageRequestDto, targetDate);
+        log.info("targetDate = " + targetDate + ", totalCount = " + response.getTotalCount());
         return ResponseEntity.ok(response);
     }
+
 
     // 종목 전체 목록 (itemNo/ticker/companyName)
     @GetMapping("/items")

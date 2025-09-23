@@ -1,3 +1,4 @@
+// src/pages/StockInfoPage.tsx
 import { useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router";
 import ChartHeader from "../components/Chart/ChartHeader";
@@ -5,98 +6,137 @@ import TimeTerm from "../components/Chart/TimeTerm";
 import KeywordRank from "../components/KeywordRank";
 import NewsCard from "../components/NewsCard";
 import ChartMain from "../components/Chart/ChartMain";
+import DateModal from "./DateModal";
+import ChartNews from "../components/Chart/ChartNews";
 import {
   TermText,
   type Term,
   type News,
   type StockInfos,
-  mockData2,
-  mockData3,
+  type Keyword,
 } from "../types/StockInfos";
-import { getStockInfo } from "../api/StockInfosApi";
+import {
+  extractKeywords,
+  getStockInfo as fetchStockInfo,
+} from "../api/StockInfosApi";
 
 function StockInfoPage() {
   const { ticker } = useParams<{ ticker: string }>();
   const [selectedTerm, setSelectedTerm] = useState<Term>(TermText[0]);
   const [stockData, setStockData] = useState<StockInfos[]>([]);
+  const [customModalOpen, setCustomModalOpen] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
+  const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
+  const [keywords, setKeywords] = useState<Keyword[]>([]);
+  const [news, setNews] = useState<News[]>([]);
 
-  const handleSelect = (term: Term) => setSelectedTerm(term);
+  // 오늘 기준 startDate / endDate 계산
+  const { startDate, endDate } = useMemo(() => {
+    const today = new Date();
+    let start: Date;
+    let end: Date = today;
 
-  // API 호출
-  useEffect(() => {
-    async function fetchData() {
-      const data = await getStockInfo(ticker!);
-      setStockData(data);
+    if (
+      selectedTerm.text === "사용자 지정" &&
+      customStartDate &&
+      customEndDate
+    ) {
+      start = customStartDate;
+      end = customEndDate;
+    } else {
+      start = new Date(today);
+      switch (selectedTerm.text) {
+        case "1주":
+          start.setDate(start.getDate() - 7);
+          break;
+        case "1개월":
+          start.setMonth(start.getMonth() - 1);
+          break;
+        case "3개월":
+          start.setMonth(start.getMonth() - 3);
+          break;
+        case "6개월":
+          start.setMonth(start.getMonth() - 6);
+          break;
+        case "1 년":
+          start.setFullYear(start.getFullYear() - 1);
+          break;
+        case "3 년":
+          start.setFullYear(start.getFullYear() - 3);
+          break;
+        case "5 년":
+          start.setFullYear(start.getFullYear() - 5);
+          break;
+        default:
+          start.setDate(start.getDate() - 7);
+      }
     }
-    fetchData();
+
+    return { startDate: start, endDate: end };
+  }, [selectedTerm, customStartDate, customEndDate]);
+
+  // 주식 데이터 불러오기
+  useEffect(() => {
+    if (!ticker) return;
+    (async () => {
+      const data = await fetchStockInfo(ticker);
+      console.log("백엔드 데이터:", data);
+      setStockData(data); // 문자열 날짜 그대로
+    })();
   }, [ticker]);
 
-  const yesterday = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    return d;
-  }, []);
+  // 최신 데이터 찾기
+  const latestStock = useMemo(() => {
+    if (!stockData.length) return null;
+    return stockData.reduce((prev, curr) =>
+      new Date(curr.date) > new Date(prev.date) ? curr : prev
+    );
+  }, [stockData]);
 
-  const cutoff = useMemo(() => {
-    const c = new Date(yesterday);
-    switch (selectedTerm.text) {
-      case "1개월":
-        c.setMonth(c.getMonth() - 1);
-        break;
-      case "3개월":
-        c.setMonth(c.getMonth() - 3);
-        break;
-      case "6개월":
-        c.setMonth(c.getMonth() - 6);
-        break;
-      case "1 년":
-        c.setFullYear(c.getFullYear() - 1);
-        break;
-      case "3 년":
-        c.setFullYear(c.getFullYear() - 3);
-        break;
-      case "5 년":
-        c.setFullYear(c.getFullYear() - 5);
-        break;
-      default:
-        c.setDate(c.getDate() - 7);
-    }
-    return c;
-  }, [selectedTerm, yesterday]);
+  // 기간 필터링 (Date 객체 기준)
+  const filteredData = useMemo(() => {
+    if (!startDate || !endDate) return [];
+    return stockData
+      .filter((d) => {
+        const dDate = new Date(d.date);
+        return dDate >= startDate && dDate <= endDate;
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [stockData, startDate, endDate]);
 
-  const filteredData = useMemo(
-    () =>
-      stockData.filter(
-        (d) => new Date(d.date) >= cutoff && new Date(d.date) <= yesterday
-      ),
-    [stockData, cutoff, yesterday]
-  );
+  // 키워드/뉴스 가져오기
+  useEffect(() => {
+    if (!latestStock || !startDate || !endDate) return;
+    (async () => {
+      const { keywords, news } = await extractKeywords(
+        latestStock.ticker,
+        latestStock.companyName,
+        startDate.toISOString().slice(0, 10), // yyyy-MM-dd
+        endDate.toISOString().slice(0, 10)
+      );
+      setKeywords(keywords);
+      setNews(news);
+    })();
+  }, [latestStock, startDate, endDate]);
 
-  const latestStock = useMemo(
-    () =>
-      [...stockData].reverse().find((d) => new Date(d.date) <= yesterday) ??
-      null,
-    [stockData, yesterday]
-  );
-
-  const pastStock = useMemo(() => {
-    if (!latestStock) return null;
-    return filteredData.length > 0 ? filteredData[0] : latestStock;
-  }, [filteredData, latestStock]);
-
-  const pastPrice = pastStock?.endPrice ?? 0;
-
-  const changeRate = pastStock
-    ? ((latestStock!.endPrice - pastPrice) / pastPrice) * 10
-    : 0;
-
-  const filteredNews: News[] = useMemo(() => {
-    return mockData2
-      .filter((n) => new Date(n.date) >= cutoff)
+  const filteredNews = useMemo(() => {
+    return news
+      .filter((n) => {
+        const nDate = new Date(n.date);
+        return nDate >= startDate && nDate <= endDate;
+      })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [cutoff]);
+  }, [news, startDate, endDate]);
+
+  const handleSelect = (term: Term) => {
+    setSelectedTerm(term);
+    if (term.text === "사용자 지정") setCustomModalOpen(true);
+  };
 
   if (!latestStock) return <div>Loading...</div>;
+
+  // 과거 가격: 기간 시작일 데이터
+  const pastPrice = filteredData[0]?.endPrice ?? latestStock.endPrice;
 
   return (
     <div className="min-h-screen bg-gradient-to-br py-10 px-6 from-slate-900 via-slate-800 to-slate-900">
@@ -108,7 +148,7 @@ function StockInfoPage() {
                 ticker={latestStock.ticker}
                 companyName={latestStock.companyName}
                 endPrice={latestStock.endPrice}
-                rate={changeRate}
+                rate={((latestStock.endPrice - pastPrice) / pastPrice) * 100}
                 termText={selectedTerm.text}
                 pastPrice={pastPrice}
                 date={latestStock.date}
@@ -121,6 +161,16 @@ function StockInfoPage() {
                   onSelect={handleSelect}
                 />
               </div>
+
+              <DateModal
+                isOpen={customModalOpen}
+                onClose={() => setCustomModalOpen(false)}
+                onConfirm={(start, end) => {
+                  setCustomStartDate(start);
+                  setCustomEndDate(end);
+                }}
+              />
+
               <div className="mt-4">
                 <ChartMain term={selectedTerm.text} data={filteredData} />
               </div>
@@ -132,8 +182,17 @@ function StockInfoPage() {
               <h3 className="text-lg font-bold text-amber-400 mb-4">
                 키워드 랭킹
               </h3>
-              <KeywordRank keywords={mockData3} />
+              <KeywordRank keywords={keywords} />
             </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-2xl shadow-xl p-6 border border-slate-600">
+          <h2 className="font-bold mb-6 text-white text-2xl flex items-center gap-2">
+            뉴스 요약
+          </h2>
+          <div className="grid">
+            <ChartNews />
           </div>
         </div>
 
