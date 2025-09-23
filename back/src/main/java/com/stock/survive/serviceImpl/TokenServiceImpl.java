@@ -38,7 +38,7 @@ public class TokenServiceImpl implements TokenService {
 
     public record Pair(String access, String refresh) {}
 
-    /** 최초 발급 (카카오 콜백에서 사용) */
+    /** 최초 발급 */
     public Pair issue(User u) {
         String access = generateAccess(u);
         String refresh = refreshStore.issue(u.getId(), Duration.ofDays(refreshExpDays));

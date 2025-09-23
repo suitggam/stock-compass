@@ -69,39 +69,61 @@ const NicknameDialog: React.FC<Props> = ({ open, initialNickname, onClose, onSav
   const canSubmit = !saving && !error && nick.trim().length >= 2 && nick.trim().length <= 30;
 
   return (
-    <div className="fixed inset-0 bg-black/50 grid place-items-center z-50">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm grid place-items-center z-50">
       <form
         onSubmit={onSubmit}
-        className="w-[420px] rounded-2xl bg-white p-6 shadow-2xl border border-black/10"
+        className="w-[420px] rounded-2xl bg-slate-700 p-6 shadow-2xl border border-slate-600"
       >
-        <h2 className="text-xl font-bold mb-3 text-neutral-900">닉네임 설정</h2>
-        <p className="text-sm text-neutral-600 mb-4">서비스에서 사용할 닉네임을 정해주세요.</p>
+        <h2 className="text-xl font-bold mb-3 text-white">닉네임 설정</h2>
+        <p className="text-sm text-slate-300 mb-4">서비스에서 사용할 닉네임을 정해주세요.</p>
 
         <input
           autoFocus
           value={nick}
           onChange={(e) => setNick(e.target.value)}
-          className="w-full border border-neutral-200 rounded-lg px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-amber-400/60"
+          className="w-full border border-slate-500 bg-slate-600 text-white rounded-lg px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 placeholder-slate-400"
           placeholder="예) 테토보이즈리더"
         />
 
         {!error && nick && (
-          <div className="text-sm text-amber-600 mb-2">사용 가능한 닉네임입니다.</div>
+          <div className="text-sm text-amber-400 mb-2 flex items-center gap-1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                stroke="currentColor"
+                strokeWidth="2"
+                fill="none"
+              />
+            </svg>
+            사용 가능한 닉네임입니다.
+          </div>
         )}
-        {error && <div className="text-sm text-red-600 mb-2">{error}</div>}
+        {error && (
+          <div className="text-sm text-red-400 mb-2 flex items-center gap-1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                stroke="currentColor"
+                strokeWidth="2"
+                fill="none"
+              />
+            </svg>
+            {error}
+          </div>
+        )}
 
-        <div className="flex justify-end gap-2 mt-2">
+        <div className="flex justify-end gap-2 mt-4">
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-2 rounded-lg border border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+            className="px-4 py-2 rounded-lg border border-slate-500 bg-slate-600 text-slate-200 hover:bg-slate-500 transition-all"
           >
             취소
           </button>
           <button
             type="submit"
             disabled={!canSubmit}
-            className="px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-black disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {saving ? '저장 중…' : '저장'}
           </button>
