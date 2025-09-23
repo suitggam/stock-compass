@@ -20,7 +20,7 @@ public class AuthQueryServiceImpl implements AuthQueryService {
     private final UserRepository userRepository;
 
     @Override
-    public UserSummaryDto me(Integer userId) {
+    public UserSummaryDto me(Long userId) {
         User u = userRepository.findWithIdentitiesById(userId)
                 .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "USER_NOT_FOUND"));
         String avatar = pickAvatarUrl(u);

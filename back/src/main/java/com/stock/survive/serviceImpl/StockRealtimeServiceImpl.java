@@ -4,7 +4,6 @@ import com.stock.survive.dto.PageRequestDto;
 import com.stock.survive.dto.PageResponseDto;
 import com.stock.survive.dto.StockRealtimeDto;
 import com.stock.survive.entity.StockRealtime;
-import com.stock.survive.event.StockPriceChangeEvent;
 import com.stock.survive.repository.StockRealtimeRepository;
 import com.stock.survive.service.StockRealtimeService;
 import lombok.RequiredArgsConstructor;
@@ -44,49 +43,6 @@ public class StockRealtimeServiceImpl implements StockRealtimeService {
                 .build();
     }
 
-    @Override
-    @Transactional
-    public void updateStockPrice(String ticker, Integer newPrice) {
-        Optional<StockRealtime> stockOptional = stockRealtimeRepository.findByTicker(ticker);
 
-        if (stockOptional.isPresent()) {
-            StockRealtime stock = stockOptional.get();
-            Integer oldPrice = stock.getPrice();
 
-            // 주가 업데이트
-            stock = StockRealtime.builder()
-                    .realtimeNo(stock.getRealtimeNo())
-                    .ticker(stock.getTicker())
-                    .companyName(stock.getCompanyName())
-                    .price(newPrice)
-                    .rate(calculateRate(oldPrice, newPrice))
-                    .itemNo(stock.getItemNo())
-                    .build();
-
-            stockRealtimeRepository.save(stock);
-
-            // 주가 변경 이벤트 발행
-            if (!newPrice.equals(oldPrice)) {
-                StockPriceChangeEvent event = new StockPriceChangeEvent(this, ticker, oldPrice, newPrice, stock.getItemNo());
-                eventPublisher.publishEvent(event);
-                log.info("주가 변경 이벤트 발행: ticker={}, oldPrice={}, newPrice={}", ticker, oldPrice, newPrice);
-            }
-        } else {
-            log.warn("종목을 찾을 수 없습니다: ticker={}", ticker);
-        }
-    }
-
-    @Override
-    public Integer getCurrentPrice(String ticker) {
-        return stockRealtimeRepository.findByTicker(ticker)
-                .map(StockRealtime::getPrice)
-                .orElse(0);
-    }
-
-    private Double calculateRate(Integer oldPrice, Integer newPrice) {
-        if (oldPrice == null || oldPrice == 0) {
-            return 0.0;
-        }
-        return ((double) (newPrice - oldPrice) / oldPrice) * 100;
-    }
 }

@@ -26,7 +26,7 @@ public class RedisRefreshTokenStore implements RefreshTokenStore {
     private static String key(String h) { return "rt:token:" + h; }
 
     @Override
-    public String issue(Integer userNo, Duration ttl) {
+    public String issue(Long userNo, Duration ttl) {
         byte[] b = new byte[64]; RNG.nextBytes(b);
         String raw = HexFormat.of().formatHex(b);
         String hash = sha256(raw);
@@ -35,9 +35,9 @@ public class RedisRefreshTokenStore implements RefreshTokenStore {
     }
 
     @Override
-    public Integer verify(String raw) {
+    public Long verify(String raw) {
         String v = redis.opsForValue().get(key(sha256(raw)));
-        return v == null ? null : Integer.valueOf(v);
+        return v == null ? null : Long.valueOf(v);
     }
 
     @Override

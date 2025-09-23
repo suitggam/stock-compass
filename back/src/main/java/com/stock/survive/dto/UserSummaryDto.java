@@ -13,7 +13,7 @@ import java.time.format.DateTimeFormatter;
 @AllArgsConstructor
 @Getter
 public class UserSummaryDto {
-    private Integer userNo;
+    private Long userNo;
     private String socialEmail;
     private String nickname;
     private boolean cancel;
