@@ -7,17 +7,20 @@ import com.stock.survive.serviceImpl.UserLinkServiceImpl;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 public class AuthController {
 
     private final KakaoOAuthServiceImpl kakao;
@@ -25,7 +28,9 @@ public class AuthController {
     private final UserLinkServiceImpl linker;
     private final TokenServiceImpl tokenServiceImpl;
 
-    // ★ 이제 이것만 사용
+    //그냥 로그인한 유저 관리하는것도
+    private final com.stock.survive.service.AuthQueryService authQueryService;
+
     @Value("${app.front-origin:http://localhost:5173}")
     private String frontOrigin;
 
@@ -38,6 +43,11 @@ public class AuthController {
                 .fragment(null)
                 .build()
                 .toUriString();
+    }
+
+    @GetMapping("/login-user")
+    public com.stock.survive.dto.UserSummaryDto loginUser(Authentication auth) {
+        return authQueryService.me(extractUid(auth));
     }
 
     // ===== 구글 =====
@@ -92,5 +102,15 @@ public class AuthController {
     public ResponseEntity<Void> logout(HttpServletRequest req, HttpServletResponse res) {
         tokenServiceImpl.revokeFromCookie(req, res);
         return ResponseEntity.noContent().build();
+    }
+
+    private Integer extractUid(Authentication auth) {
+        if (auth == null || !auth.isAuthenticated())
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED");
+        Object p = auth.getPrincipal();
+        if (p instanceof Integer i) return i;
+        if (p instanceof Number n) return n.intValue();
+        try { return Integer.valueOf(String.valueOf(p)); } catch (Exception ignored) {}
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "INVALID_PRINCIPAL");
     }
 }

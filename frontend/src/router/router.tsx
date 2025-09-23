@@ -1,23 +1,23 @@
-import { createBrowserRouter } from "react-router";
-import { Suspense, lazy } from "react";
-import Layout from "../common/Layout";
-import LoadingPage from "../common/LoadingPage";
+import { createBrowserRouter } from 'react-router';
+import { Suspense, lazy } from 'react';
+import Layout from '../common/Layout';
+import LoadingPage from '../common/LoadingPage';
 
-const Home = lazy(() => import("../pages/HomePage"));
-const Login = lazy(() => import("../pages/LoginPage"));
-const Test = lazy(() => import("../pages/TestPage"));
-const OAuthSuccess = lazy(() => import("../pages/OAuthSuccess"));
-const MyPage = lazy(() => import("../pages/MyPage"));
-const OAuthFail = lazy(() => import("../pages/OAuthFail"));
-const TendencyGame = lazy(() => import("../pages/TendencyGamePage"));
-const StockDetail = lazy(() => import("../pages/StockInfoPage"));
-const StockTrade = lazy(() => import("../pages/StockTradePage"));
-const PortfolioPage = lazy(() => import("../pages/PortfolioPage"));
-const Search = lazy(() => import("../pages/SearchPage"));
+const Home = lazy(() => import('../pages/HomePage'));
+const Login = lazy(() => import('../pages/LoginPage'));
+const Test = lazy(() => import('../pages/TestPage'));
+const OAuthSuccess = lazy(() => import('../pages/OAuthSuccess'));
+const MyPage = lazy(() => import('../pages/MyPage'));
+const OAuthFail = lazy(() => import('../pages/OAuthFail'));
+const TendencyGame = lazy(() => import('../pages/TendencyGamePage'));
+const StockDetail = lazy(() => import('../pages/StockInfoPage'));
+const StockTrade = lazy(() => import('../pages/StockTradePage'));
+const PortfolioPage = lazy(() => import('../pages/PortfolioPage'));
+const Search = lazy(() => import('../pages/SearchPage'));
 
 const Router = createBrowserRouter([
   {
-    path: "/",
+    path: '/',
     element: <Layout />, // ✅
     children: [
       {
@@ -29,7 +29,7 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: "test",
+        path: 'test',
         element: (
           <Suspense fallback={<LoadingPage />}>
             <Test />
@@ -37,7 +37,7 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: "login",
+        path: 'login',
         element: (
           <Suspense fallback={<LoadingPage />}>
             <Login />
@@ -45,7 +45,7 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: "oauth/success",
+        path: 'oauth/success',
         element: (
           <Suspense fallback={<LoadingPage />}>
             <OAuthSuccess />
@@ -53,7 +53,7 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: "oauth/fail",
+        path: 'oauth/fail',
         element: (
           <Suspense fallback={<LoadingPage />}>
             <OAuthFail />
@@ -61,7 +61,7 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: "mypage",
+        path: 'mypage',
         element: (
           <Suspense fallback={<LoadingPage />}>
             <MyPage />
@@ -69,7 +69,7 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: "search",
+        path: 'search',
         element: (
           <Suspense fallback={<LoadingPage />}>
             <Search />
@@ -77,7 +77,15 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: "game",
+        path: 'search',
+        element: (
+          <Suspense fallback={<LoadingPage />}>
+            <Search />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'game',
         element: (
           <Suspense fallback={<LoadingPage />}>
             <TendencyGame />
@@ -85,7 +93,7 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: "portfolio",
+        path: 'portfolio',
         element: (
           <Suspense fallback={<LoadingPage />}>
             <PortfolioPage />
@@ -93,7 +101,7 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: "stock",
+        path: 'stock',
         element: (
           <Suspense fallback={<LoadingPage />}>
             <StockTrade />
@@ -101,7 +109,7 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: "stock/:ticker",
+        path: 'stock/:ticker',
         element: (
           <Suspense fallback={<LoadingPage />}>
             <StockDetail />
