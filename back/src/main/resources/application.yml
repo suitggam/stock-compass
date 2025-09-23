@@ -42,7 +42,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update # create는 매번 테이블 재생성, update는 기존 데이터 유지하면서 변경 반영
-    show-sql: true
+#    show-sql: true
     properties:
       hibernate:
         format_sql: true
