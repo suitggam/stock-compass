@@ -4,7 +4,7 @@ import com.stock.survive.dto.UserSummaryDto;
 import com.stock.survive.entity.OauthIdentity;
 import com.stock.survive.entity.User;
 import com.stock.survive.repository.UserRepository;
-import com.stock.survive.service.UserCommandService;
+import com.stock.survive.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,7 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class UserCommandServiceImpl implements UserCommandService {
+public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
     @Override

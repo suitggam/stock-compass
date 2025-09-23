@@ -1,7 +1,7 @@
 package com.stock.survive.controller;
 
 import com.stock.survive.dto.UserSummaryDto;
-import com.stock.survive.service.UserCommandService;
+import com.stock.survive.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -15,9 +15,9 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/users")
-public class UserCommandController {
+public class UserController {
 
-    private final UserCommandService userCommandService;
+    private final UserService userService;
 
     public record NickReq(@NotBlank String nickname) {}
 
@@ -25,14 +25,14 @@ public class UserCommandController {
     @PatchMapping("/me")
     @Transactional
     public UserSummaryDto updateNickname(Authentication auth, @Valid @RequestBody NickReq req) {
-        return userCommandService.changeNickname(extractUid(auth), req.nickname());
+        return userService.changeNickname(extractUid(auth), req.nickname());
     }
 
     /** 회원 탈퇴 */
     @DeleteMapping("/me")
     @Transactional
     public ResponseEntity<Void> deleteMe(Authentication auth) {
-        userCommandService.deleteMe(extractUid(auth));
+        userService.deleteMe(extractUid(auth));
         return ResponseEntity.noContent().build();
     }
 
