@@ -66,7 +66,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
     private EntityManager entityManager;
     
     @Override
-    public TendencyGameStateResponse start(Integer userId, TendencyGameStartRequest request) {
+    public TendencyGameStateResponse start(Long userId, TendencyGameStartRequest request) {
         User user = fetchUser(userId);
         
         // 미리 준비된 게임 차트 중 하나를 무작위로 선택
@@ -113,13 +113,13 @@ public class TendencyGameServiceImpl implements TendencyGameService {
     
     @Override
     @Transactional(Transactional.TxType.SUPPORTS)
-    public TendencyGameStateResponse getState(Integer userId, Long sessionId) {
+    public TendencyGameStateResponse getState(Long userId, Long sessionId) {
         TendencyGameSession session = fetchSession(userId, sessionId);
         return buildStateResponse(session);
     }
     
     @Override
-    public TendencyGameStateResponse placeOrder(Integer userId, Long sessionId, TendencyGameOrderRequest request) {
+    public TendencyGameStateResponse placeOrder(Long userId, Long sessionId, TendencyGameOrderRequest request) {
         TendencyGameSession session = fetchSession(userId, sessionId);
         ensureInProgress(session);
         
@@ -160,7 +160,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
     }
     
     @Override
-    public TendencyGameStateResponse proceedNextWeek(Integer userId, Long sessionId) {
+    public TendencyGameStateResponse proceedNextWeek(Long userId, Long sessionId) {
         TendencyGameSession session = fetchSession(userId, sessionId);
         ensureInProgress(session);
         
@@ -176,7 +176,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
     }
     
     @Override
-    public TendencyGameResultResponse finish(Integer userId, TendencyGameFinishRequest request) {
+    public TendencyGameResultResponse finish(Long userId, TendencyGameFinishRequest request) {
         TendencyGameSession session = fetchSession(userId, request.sessionId());
         ensureInProgress(session);
         
@@ -354,12 +354,12 @@ public class TendencyGameServiceImpl implements TendencyGameService {
         return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
     }
     
-    private User fetchUser(Integer userId) {
+    private User fetchUser(Long userId) {
         return userRepository.findById(userId.longValue())
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
     }
     
-    private TendencyGameSession fetchSession(Integer userId, Long sessionId) {
+    private TendencyGameSession fetchSession(Long userId, Long sessionId) {
         TendencyGameSession s = sessions.get(sessionId);
         if (s == null || s.getUser() == null || !s.getUser().getId().equals(userId.longValue())) {
             throw new IllegalArgumentException("진행 중인 게임 세션을 찾을 수 없습니다.");

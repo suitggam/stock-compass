@@ -8,13 +8,13 @@ import com.stock.survive.dto.tendency.TendencyGameStateResponse;
 
 public interface TendencyGameService {
 
-    TendencyGameStateResponse start(Integer userId, TendencyGameStartRequest request);
+    TendencyGameStateResponse start(Long userId, TendencyGameStartRequest request);
 
-    TendencyGameStateResponse getState(Integer userId, Long sessionId);
+    TendencyGameStateResponse getState(Long userId, Long sessionId);
 
-    TendencyGameStateResponse placeOrder(Integer userId, Long sessionId, TendencyGameOrderRequest request);
+    TendencyGameStateResponse placeOrder(Long userId, Long sessionId, TendencyGameOrderRequest request);
 
-    TendencyGameStateResponse proceedNextWeek(Integer userId, Long sessionId);
+    TendencyGameStateResponse proceedNextWeek(Long userId, Long sessionId);
 
-    TendencyGameResultResponse finish(Integer userId, TendencyGameFinishRequest request);
+    TendencyGameResultResponse finish(Long userId, TendencyGameFinishRequest request);
 }
