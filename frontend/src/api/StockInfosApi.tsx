@@ -12,7 +12,6 @@ export const API_SERVER_HOST =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 const prefix = `${API_SERVER_HOST}/api/stock`;
 
-// 🔹 키워드 추출 API (백엔드 호출)
 // 🔹 키워드 추출 API (백엔드 호출) - 토큰 추가 ✅
 export const extractKeywords = async (
   ticker: string,
