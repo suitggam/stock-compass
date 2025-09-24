@@ -1,8 +1,8 @@
 package com.stock.survive.serviceImpl;
 
 import com.stock.survive.dto.ExtractKeywordsDto;
-import com.stock.survive.dto.ExtractKeywordsDto.TopNewsArticle;
 import com.stock.survive.dto.StockInfosDto;
+import com.stock.survive.dto.TopNewsArticleDto;
 import com.stock.survive.entity.StockInfos;
 import com.stock.survive.entity.StockItems;
 import com.stock.survive.entity.User;
@@ -88,6 +88,7 @@ public class StockInfosServiceImpl implements StockInfosService {
                 : startDate;
         int topKeywords = requestDto.getTopKeywords() != null ? requestDto.getTopKeywords() : 10;
         boolean useAiFilter = requestDto.isUseAiFilter();
+        String analysis = requestDto.getAiAnalysis() != null ? requestDto.getAiAnalysis() : "";
 
         log.info(startDate + " " + endDate);
 
@@ -97,7 +98,8 @@ public class StockInfosServiceImpl implements StockInfosService {
                 "start_date", startDate,
                 "end_date", endDate,
                 "top_keywords", topKeywords,
-                "use_ai_filter", useAiFilter
+                "use_ai_filter", useAiFilter,
+                "ai_analysis",analysis
         );
 
         // 4️⃣ WebClient로 외부 API 호출
@@ -111,7 +113,7 @@ public class StockInfosServiceImpl implements StockInfosService {
         // 5️⃣ 결과 매핑
         Map<String, Integer> keywords = (Map<String, Integer>) response.get("keywords");
         List<Map<String, Object>> topNews = (List<Map<String, Object>>) response.get("top_news_articles");
-        List<TopNewsArticle> topNewsArticles = topNews.stream().map(news -> TopNewsArticle.builder()
+        List<TopNewsArticleDto> topNewsArticles = topNews.stream().map(news -> TopNewsArticleDto.builder()
                         .title((String) news.get("title"))
                         .date((String) news.get("date"))
                         .url((String) news.get("url"))
@@ -119,6 +121,8 @@ public class StockInfosServiceImpl implements StockInfosService {
                         .matchedKeywords((List<String>) news.get("matched_keywords"))
                         .build())
                 .toList();
+
+        String aiAnalysis = (String) response.get("ai_analysis");
 
         // 6️⃣ 최종 DTO 반환
         return ExtractKeywordsDto.builder()
@@ -129,6 +133,7 @@ public class StockInfosServiceImpl implements StockInfosService {
                 .useAiFilter(useAiFilter)
                 .keywords(keywords)
                 .topNewsArticles(topNewsArticles)
+                .aiAnalysis(aiAnalysis)
                 .build();
     }
     
