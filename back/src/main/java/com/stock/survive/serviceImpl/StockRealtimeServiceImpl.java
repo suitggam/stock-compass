@@ -3,7 +3,6 @@ package com.stock.survive.serviceImpl;
 import com.stock.survive.dto.PageRequestDto;
 import com.stock.survive.dto.PageResponseDto;
 import com.stock.survive.dto.StockRealtimeDto;
-import com.stock.survive.entity.StockRealtime;
 import com.stock.survive.repository.StockRealtimeRepository;
 import com.stock.survive.service.StockRealtimeService;
 import lombok.RequiredArgsConstructor;
@@ -14,9 +13,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor

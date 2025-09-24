@@ -1,20 +1,21 @@
 package com.stock.survive.serviceImpl;
 
-import com.stock.survive.dto.StockItemOptionDto;
 import com.stock.survive.dto.tendency.TendencyGameFinishRequest;
 import com.stock.survive.dto.tendency.TendencyGameOrderRequest;
 import com.stock.survive.dto.tendency.TendencyGameResultResponse;
-import com.stock.survive.dto.tendency.TendencyGameStartRequest;
 import com.stock.survive.dto.tendency.TendencyGameStateResponse;
+import com.stock.survive.dto.tendency.TendencyGameStartRequest;
 import com.stock.survive.entity.StockInfos;
 import com.stock.survive.entity.StockItems;
 import com.stock.survive.entity.User;
+import com.stock.survive.entity.tendency.TendencyGameChart;
 import com.stock.survive.entity.tendency.TendencyGameNews;
 import com.stock.survive.entity.tendency.TendencyGameSession;
 import com.stock.survive.entity.tendency.TendencyGameStatus;
 import com.stock.survive.entity.tendency.TendencyGameTrade;
 import com.stock.survive.entity.tendency.TendencyGameTradeType;
 import com.stock.survive.entity.tendency.TendencyGameWeek;
+import com.stock.survive.repository.tendency.GameChartsRepository;
 import com.stock.survive.repository.StockInfosRepository;
 import com.stock.survive.repository.StockItemsRepository;
 import com.stock.survive.repository.UserRepository;
@@ -52,6 +53,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
     private final UserRepository userRepository;
     private final StockItemsRepository stockItemsRepository;
     private final StockInfosRepository stockInfosRepository;
+    private final GameChartsRepository gameChartsRepository;
     
     // 인메모리 세션 저장소 (옵션 A)
     private final ConcurrentHashMap<Long, TendencyGameSession> sessions = new ConcurrentHashMap<>();
@@ -66,22 +68,26 @@ public class TendencyGameServiceImpl implements TendencyGameService {
     @Override
     public TendencyGameStateResponse start(Integer userId, TendencyGameStartRequest request) {
         User user = fetchUser(userId);
-        StockItems stockItem = selectStockItem(request);
         
-        List<StockInfos> timeline = stockInfosRepository.findRecent6YearsByTicker(stockItem.getTicker());
+        // 미리 준비된 게임 차트 중 하나를 무작위로 선택
+        TendencyGameChart selectedChart = selectGameChart();
+        StockItems stockItem = stockItemsRepository.findById(selectedChart.getItemNo())
+                .orElseThrow(() -> new IllegalStateException("게임 차트에 해당하는 종목이 없습니다."));
+        
+        // 선택된 차트의 기간에 해당하는 주식 정보만 가져옴
+        List<StockInfos> timeline = stockInfosRepository.findByStockItem_ItemNoAndDateBetween(
+                stockItem.getItemNo(), selectedChart.getStartDate(), selectedChart.getEndDate());
+        
         if (timeline.size() < DEFAULT_MAX_WEEK) {
-            throw new IllegalStateException("해당 종목의 데이터가 10주차 미만입니다.");
+            throw new IllegalStateException("선택된 차트 기간의 데이터가 10주차 미만입니다. 데이터베이스를 확인하세요.");
         }
-        
-        int startIndex = chooseStartIndex(timeline.size());
-        List<StockInfos> selected = timeline.subList(startIndex, startIndex + DEFAULT_MAX_WEEK);
         
         long newId = sessionSeq.getAndIncrement();
         TendencyGameSession session = TendencyGameSession.builder()
                 .id(newId)
                 .user(user)
                 .ticker(stockItem.getTicker())
-                .datasetId(stockItem.getTicker() + "-" + selected.get(0).getDate())
+                .datasetId(stockItem.getTicker() + "-" + selectedChart.getStartDate())
                 .companyAlias(generateAlias(stockItem.getCompanyName()))
                 .initialCash(DEFAULT_INITIAL_CASH)
                 .cash(DEFAULT_INITIAL_CASH)
@@ -99,7 +105,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
                 .yieldAboveThreshold(false)
                 .build();
         
-        buildWeeks(session, selected);
+        buildWeeks(session, timeline);
         sessions.put(session.getId(), session);
         
         return buildStateResponse(session);
@@ -211,8 +217,8 @@ public class TendencyGameServiceImpl implements TendencyGameService {
         session.setStatus(TendencyGameStatus.FINISHED);
         
         TendencyProfile profile = resolveTendencyProfile(totalYield, volatilityBuy + volatilitySell, sellDominantWeeks);
-        session.setTendencyType(profile.type());
-        session.setRecommendation(profile.recommendation());
+        session.setTendencyType(profile.getType());
+        session.setRecommendation(profile.getRecommendation());
         sessions.put(session.getId(), session);
         
         return new TendencyGameResultResponse(
@@ -252,12 +258,20 @@ public class TendencyGameServiceImpl implements TendencyGameService {
     
     private void buildWeeks(TendencyGameSession session, List<StockInfos> selected) {
         List<TendencyGameWeek> list = new ArrayList<>();
-        for (int i = 0; i < selected.size(); i++) {
-            StockInfos current = selected.get(i);
+        
+        // 데이터 개수가 10주(10개)가 되도록 샘플링 간격을 계산
+        int dataStep = selected.size() / session.getMaxWeek();
+        if (dataStep == 0) {
+            throw new IllegalStateException("주간 데이터를 생성할 수 없습니다.");
+        }
+        
+        for (int i = 0; i < session.getMaxWeek(); i++) {
+            // 1주차, 2주차...에 해당하는 데이터만 선택
+            StockInfos current = selected.get(i * dataStep);
             int closePrice = safePrice(Optional.ofNullable(current.getEndPrice()).orElse(0));
             int previousPrice = closePrice;
             if (i > 0) {
-                previousPrice = safePrice(Optional.ofNullable(selected.get(i - 1).getEndPrice()).orElse(closePrice));
+                previousPrice = safePrice(Optional.ofNullable(selected.get((i - 1) * dataStep).getEndPrice()).orElse(closePrice));
             }
             int change = closePrice - previousPrice;
             double changeRate = previousPrice == 0 ? 0.0 : (change * 100.0) / previousPrice;
@@ -266,7 +280,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
                     .session(session)
                     .weekIndex(i + 1)
                     .startDate(current.getDate())
-                    .endDate(current.getDate().plusDays(6))
+                    .endDate(current.getDate().plusDays(6)) // endDate는 단순히 startDate + 6일로 설정
                     .closePrice(closePrice)
                     .changePrice(change)
                     .changeRate(changeRate)
@@ -303,14 +317,16 @@ public class TendencyGameServiceImpl implements TendencyGameService {
         return "익명 기업 " + suffix;
     }
     
-    private int chooseStartIndex(int timelineSize) {
-        int maxStart = timelineSize - DEFAULT_MAX_WEEK;
-        if (maxStart <= 0) {
-            return 0;
+    private TendencyGameChart selectGameChart() {
+        List<TendencyGameChart> charts = gameChartsRepository.findAll();
+        if (charts.isEmpty()) {
+            throw new IllegalStateException("게임 차트 데이터가 존재하지 않습니다. 게임을 시작할 수 없습니다.");
         }
-        return ThreadLocalRandom.current().nextInt(0, maxStart + 1);
+        int randomIndex = ThreadLocalRandom.current().nextInt(charts.size());
+        return charts.get(randomIndex);
     }
     
+    // 이 메서드는 더 이상 사용되지 않으므로 삭제하거나 유지할 수 있습니다.
     private StockItems selectStockItem(TendencyGameStartRequest request) {
         if (request != null) {
             if (StringUtils.hasText(request.ticker())) {
@@ -322,29 +338,30 @@ public class TendencyGameServiceImpl implements TendencyGameService {
                         .orElseThrow(() -> new IllegalArgumentException("ticker에 해당하는 종목이 없습니다."));
             }
             if (request.itemNo() != null) {
-                return stockItemsRepository.findById(request.itemNo())
+                return stockItemsRepository.findById(request.itemNo().longValue())
                         .orElseThrow(() -> new IllegalArgumentException("itemNo에 해당하는 종목이 없습니다."));
             }
         }
         
-        List<StockItemOptionDto> options = stockItemsRepository.findAllOptions();
-        if (options.isEmpty()) {
+        // DTO 의존 없이 직접 종목 목록을 조회해 무작위 선택(최대 50개 후보)
+        List<StockItems> candidates = entityManager
+                .createQuery("SELECT si FROM StockItems si ORDER BY si.itemNo ASC", StockItems.class)
+                .setMaxResults(50)
+                .getResultList();
+        if (candidates.isEmpty()) {
             throw new IllegalStateException("등록된 종목이 없습니다.");
         }
-        List<StockItemOptionDto> candidates = options.size() > 50 ? options.subList(0, 50) : options;
-        StockItemOptionDto picked = candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
-        return stockItemsRepository.findById(picked.getItemNo())
-                .orElseThrow(() -> new IllegalStateException("선택된 종목을 조회할 수 없습니다."));
+        return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
     }
     
     private User fetchUser(Integer userId) {
-        return userRepository.findById(userId)
+        return userRepository.findById(userId.longValue())
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
     }
     
     private TendencyGameSession fetchSession(Integer userId, Long sessionId) {
         TendencyGameSession s = sessions.get(sessionId);
-        if (s == null || s.getUser() == null || !s.getUser().getId().equals(userId)) {
+        if (s == null || s.getUser() == null || !s.getUser().getId().equals(userId.longValue())) {
             throw new IllegalArgumentException("진행 중인 게임 세션을 찾을 수 없습니다.");
         }
         return s;
@@ -554,6 +571,22 @@ public class TendencyGameServiceImpl implements TendencyGameService {
         return new TendencyProfile("BALANCED", "수익과 리스크를 균형 있게 고려하는 성향입니다.");
     }
     
-    private record TendencyProfile(String type, String recommendation) {
+    // TendencyProfile 레코드를 클래스로 변경
+    private static class TendencyProfile {
+        private final String type;
+        private final String recommendation;
+        
+        public TendencyProfile(String type, String recommendation) {
+            this.type = type;
+            this.recommendation = recommendation;
+        }
+        
+        public String getType() {
+            return type;
+        }
+        
+        public String getRecommendation() {
+            return recommendation;
+        }
     }
 }

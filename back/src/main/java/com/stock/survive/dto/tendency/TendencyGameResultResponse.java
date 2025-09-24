@@ -1,6 +1,5 @@
 package com.stock.survive.dto.tendency;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 
 public record TendencyGameResultResponse(

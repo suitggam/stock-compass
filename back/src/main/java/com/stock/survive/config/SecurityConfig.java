@@ -13,8 +13,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -45,8 +43,8 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
 
-                    .requestMatchers("/users/auth/**",
-                                     "/users/logout",
+                    .requestMatchers("/api/users/auth/**",
+                                     "/api/users/logout",
                                      "/error",
                                      "/actuator/health", "/api/actuator/info",
                                      "/api/stock/**" ,"/extract-keywords/**",
@@ -55,8 +53,8 @@ public class SecurityConfig {
                     .requestMatchers("/api/games/tendency/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/games").permitAll()
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                    .requestMatchers(HttpMethod.DELETE, "/users/me").authenticated()
-                    .requestMatchers(HttpMethod.GET, "/users/me").authenticated()
+                    .requestMatchers(HttpMethod.DELETE, "/api/users/me").authenticated()
+                    .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
                     .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e
