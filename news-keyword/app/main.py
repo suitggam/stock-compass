@@ -12,6 +12,7 @@ import os
 from typing import Optional, Dict, List
 from contextlib import asynccontextmanager
 from keyword_extractor import KeywordExtractor
+from cache_manager import CacheManager
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -47,8 +48,9 @@ class KeywordResponse(BaseModel):
     original_keyword_count: Optional[int] = 0  # 원본 키워드 개수
     filtered_keyword_count: Optional[int] = 0  # 필터링된 키워드 개수
 
-# 키워드 추출기 인스턴스
+# 키워드 추출기 및 캐시 매니저 인스턴스
 keyword_extractor = KeywordExtractor()
+cache_manager = CacheManager()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -58,6 +60,7 @@ async def lifespan(app: FastAPI):
     yield
     # 종료 시
     keyword_extractor.cleanup()
+    cache_manager.cleanup()
     logger.info("FastAPI 애플리케이션이 종료되었습니다.")
 
 app = FastAPI(
@@ -74,14 +77,18 @@ async def root():
         "message": "뉴스 키워드 추출 API에 오신 것을 환영합니다!",
         "version": "1.0.0",
         "endpoints": {
-            "키워드 추출 (AI 필터링 포함)": "/extract-keywords",
+            "키워드 추출 (AI 필터링 포함)": "/extract-keywords/ticker",
+            "캐시 통계": "/cache/stats",
+            "캐시 삭제": "/cache/clear",
             "API 문서": "/docs",
             "헬스체크": "/health"
         },
         "features": {
             "빈도수 기반 키워드 추출": "기존 키워드 추출 방식",
             "AI 스마트 필터링": "OpenAI를 활용한 주가 관련 키워드 필터링",
-            "키워드 분석": "AI 기반 키워드 트렌드 분석"
+            "키워드 분석": "AI 기반 키워드 트렌드 분석",
+            "SQLite 캐싱": "동일한 요청에 대한 빠른 응답 제공",
+            "자동 캐시 관리": "오래된 캐시 자동 삭제 및 통계 제공"
         }
     }
 
@@ -89,6 +96,36 @@ async def root():
 async def health_check():
     """헬스체크 엔드포인트"""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+
+@app.get("/cache/stats")
+async def get_cache_stats():
+    """캐시 통계 조회 엔드포인트"""
+    try:
+        stats = cache_manager.get_cache_stats()
+        return {
+            "status": "success",
+            "cache_stats": stats,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"캐시 통계 조회 실패: {e}")
+        raise HTTPException(status_code=500, detail=f"캐시 통계 조회 중 오류가 발생했습니다: {str(e)}")
+
+@app.delete("/cache/clear")
+async def clear_old_cache(days: int = 30):
+    """오래된 캐시 삭제 엔드포인트"""
+    try:
+        deleted_count = cache_manager.clear_old_cache(days)
+        return {
+            "status": "success",
+            "message": f"{deleted_count}개의 오래된 캐시가 삭제되었습니다.",
+            "deleted_count": deleted_count,
+            "days_threshold": days,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"캐시 삭제 실패: {e}")
+        raise HTTPException(status_code=500, detail=f"캐시 삭제 중 오류가 발생했습니다: {str(e)}")
 
 @app.post("/extract-keywords/ticker", response_model=KeywordResponse)
 async def extract_keywords(request: KeywordRequest):
@@ -117,7 +154,7 @@ async def extract_keywords(request: KeywordRequest):
         }
     """
     try:
-        logger.info(f"키워드 추출 요청: {request.company_name}, {request.start_date}-{request.end_date}")
+        logger.info(f"🚀 키워드 추출 요청: {request.company_name}, {request.start_date}-{request.end_date}")
         
         # 날짜 형식 검증
         try:
@@ -126,22 +163,52 @@ async def extract_keywords(request: KeywordRequest):
         except ValueError:
             raise HTTPException(status_code=400, detail="날짜 형식이 올바르지 않습니다. YYYYMMDD 형식을 사용해주세요.")
         
-        # 키워드 추출 실행 (AI 필터링 옵션 포함)
-        if request.use_ai_filter:
-            result = keyword_extractor.extract_smart_keywords_from_csv(
+        # 캐시에서 결과 조회
+        cached_result = cache_manager.get_cached_result(
+            company_name=request.company_name,
+            start_date=request.start_date,
+            end_date=request.end_date,
+            top_keywords=request.top_keywords,
+            use_ai_filter=request.use_ai_filter
+        )
+        
+        if cached_result:
+            logger.info(f"🎯 캐시에서 결과 반환: {request.company_name}")
+            result = cached_result
+        else:
+            logger.info(f"🔍 캐시 미스 - 키워드 추출 실행: {request.company_name}")
+            
+            # 키워드 추출 실행 (AI 필터링 옵션 포함)
+            if request.use_ai_filter:
+                result = keyword_extractor.extract_smart_keywords_from_csv(
+                    company_name=request.company_name,
+                    start_date=request.start_date,
+                    end_date=request.end_date,
+                    top_keywords=request.top_keywords,
+                    use_ai_filter=request.use_ai_filter
+                )
+            else:
+                result = keyword_extractor.extract_keywords_from_csv(
+                    company_name=request.company_name,
+                    start_date=request.start_date,
+                    end_date=request.end_date,
+                    top_keywords=request.top_keywords
+                )
+            
+            # 결과를 캐시에 저장
+            cache_saved = cache_manager.save_result(
                 company_name=request.company_name,
                 start_date=request.start_date,
                 end_date=request.end_date,
                 top_keywords=request.top_keywords,
-                use_ai_filter=request.use_ai_filter
+                use_ai_filter=request.use_ai_filter,
+                result_data=result
             )
-        else:
-            result = keyword_extractor.extract_keywords_from_csv(
-                company_name=request.company_name,
-                start_date=request.start_date,
-                end_date=request.end_date,
-                top_keywords=request.top_keywords
-            )
+            
+            if cache_saved:
+                logger.info(f"💾 결과 캐시 저장 완료: {request.company_name}")
+            else:
+                logger.info(f"⚠️ 캐시 저장 실패 또는 이미 존재: {request.company_name}")
         
         # 응답 형식에 맞게 변환 (상위 키워드만)
         top_keywords_dict = dict(list(result["keywords"].items())[:request.top_keywords])
