@@ -48,6 +48,66 @@ export default function StockOverview({
   const diffText = formatDiff(change, rate);
   const positive = change >= 0;
 
+  // 💡 ChartMain.tsx의 디자인을 적용한 Chart.js options
+  const defaultChartOptions: ChartOptions<'line'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: 'rgb(30 41 59)', // slate-800
+        titleColor: '#cbd5e1', // slate-300
+        bodyColor: '#fcd34d', // amber-300
+        titleFont: {
+          size: 14,
+        },
+        bodyFont: {
+          size: 16,
+          weight: 'bold' as 'bold',
+        },
+        borderColor: 'rgb(71 85 105)', // slate-600
+        borderWidth: 1,
+        cornerRadius: 8,
+        displayColors: false,
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: '#cbd5e1', // slate-300
+          font: { size: 12 },
+        },
+        grid: {
+          color: 'rgba(203, 213, 225, 0.1)', // 배경에 맞춰 투명도 조절
+          borderColor: '#475569', // slate-600
+        },
+      },
+      y: {
+        ticks: {
+          color: '#cbd5e1', // slate-300
+        },
+        grid: {
+          color: 'rgba(203, 213, 225, 0.1)',
+          borderColor: '#475569',
+        },
+      },
+    },
+    elements: {
+      point: {
+        backgroundColor: '#fbbf24', // amber-400
+        borderColor: '#f59e0b', // amber-500
+        borderWidth: 2,
+        radius: 4,
+      },
+      line: {
+        borderColor: '#fbbf24', // amber-400
+        borderWidth: 2,
+      },
+    },
+  };
+
   return (
     <div className="space-y-4 rounded-2xl bg-white p-5 shadow-sm">
       <header className="flex items-start justify-between">
@@ -72,7 +132,7 @@ export default function StockOverview({
       <div className="rounded-xl border border-slate-200 bg-white p-2">
         <Line
           data={{ labels: chartData.labels, datasets: chartData.datasets as any }}
-          options={{ responsive: true, maintainAspectRatio: false, ...chartOptions }}
+          options={{ ...defaultChartOptions, ...chartOptions }} // 💡 기본 옵션과 사용자 정의 옵션 병합
           height={220}
         />
       </div>
