@@ -13,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/stock")
@@ -50,12 +51,17 @@ public class StockInfosController {
 
     // 최신 종가 조회
     @GetMapping("/latest-price/{itemNo}")
-    public ResponseEntity<Integer> getLatestEndPrice(@PathVariable("itemNo") Integer itemNo) {
-        Integer latestPrice = stockInfosService.getLatestEndPrice(itemNo);
-        log.info(latestPrice);
-        if (latestPrice == null) {
-            return ResponseEntity.notFound().build(); // 데이터 없으면 404
+    public ResponseEntity<Integer> getLatestEndPrice(@PathVariable("itemNo") Long itemNo) {
+        Optional<Integer> latestPriceOptional = stockInfosService.getLatestEndPrice(itemNo);
+        
+        // Optional 객체에서 값을 가져오고, 값이 없으면 404를 반환하도록 변경
+        if (latestPriceOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
         }
+        
+        Integer latestPrice = latestPriceOptional.get();
+        log.info(latestPrice);
+        
         return ResponseEntity.ok(latestPrice);
     }
 

@@ -15,7 +15,7 @@ public interface StockInfosService {
     List<StockInfosDto> getStock( String ticker);
 
     ExtractKeywordsDto getKeywords(String ticker,ExtractKeywordsDto requestDto);
-
-    Integer getLatestEndPrice(Integer itemNo);
+    
+    Optional<Integer> getLatestEndPrice(Long itemNo);
 
 }

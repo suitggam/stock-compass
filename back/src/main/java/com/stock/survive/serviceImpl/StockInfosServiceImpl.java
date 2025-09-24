@@ -130,9 +130,9 @@ public class StockInfosServiceImpl implements StockInfosService {
                 .topNewsArticles(topNewsArticles)
                 .build();
     }
-
-    public Integer getLatestEndPrice(Integer itemNo) {
-        return stockInfosRepository.findLatestEndPriceByItemNo(itemNo)
-                .orElse(null);
+    
+    @Override
+    public Optional<Integer> getLatestEndPrice(Long itemNo) {
+        return stockInfosRepository.findLatestEndPriceByItemNo(itemNo);
     }
 }

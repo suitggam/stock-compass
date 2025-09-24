@@ -1,6 +1,5 @@
 package com.stock.survive;
 
-import com.stock.survive.dto.StockRealtimeDto;
 import com.stock.survive.entity.StockRealtime;
 import com.stock.survive.repository.StockRealtimeRepository;
 import com.stock.survive.service.StockRealtimeService;
