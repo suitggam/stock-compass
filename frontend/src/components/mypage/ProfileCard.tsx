@@ -1,8 +1,7 @@
 import * as React from 'react';
 import { useAuth } from '../../stores/auth';
 import NicknameDialog from './NicknameDialog';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+import { url } from '../../api/config';
 
 // 헤더와 동일한 이니셜 생성 로직
 function getInitials(name: string) {
@@ -34,7 +33,7 @@ export default function ProfileCard({ favoriteCount = 0, gameCount = 0 }: Props)
     const ok = window.confirm('정말로 회원탈퇴 하시겠어요? 이 작업은 되돌릴 수 없습니다.');
     if (!ok) return;
     try {
-      await fetch(`${API_BASE}/api/users/me`, {
+      await fetch(url('/api/users/me'), {
         method: 'DELETE',
         credentials: 'include',
         headers: {

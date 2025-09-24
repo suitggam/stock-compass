@@ -7,10 +7,9 @@ import type {
   StockInfos,
 } from "../types/StockInfos";
 import { useAuth } from "../stores/auth";
+import { url } from "./config";
 
-export const API_SERVER_HOST =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
-const prefix = `${API_SERVER_HOST}/api/stock`;
+const prefix = url('/api/stock');
 
 // 🔹 키워드 추출 API (백엔드 호출) - 토큰 추가 ✅
 export const extractKeywords = async (
@@ -74,7 +73,7 @@ export async function toggleFavorite(ticker: string): Promise<boolean> {
   const accessToken = useAuth.getState().accessToken;
   try {
     const res = await axios.post(
-      `${API_SERVER_HOST}/api/stock/favorites/toggle`,
+      url('/api/stock/favorites/toggle'),
       null,
       {
         params: { ticker },
@@ -95,7 +94,7 @@ export async function fetchFavorite(ticker: string): Promise<boolean> {
   if (!accessToken) throw new Error("No access token available");
 
   const res = await axios.get(
-    `${API_SERVER_HOST}/api/stock/favorites/${ticker}`,
+    url(`/api/stock/favorites/${ticker}`),
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,

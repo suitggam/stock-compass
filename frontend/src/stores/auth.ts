@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { User } from '../types/user';
-import { API_BASE } from '../api/config';
+import { url } from '../api/config';
 import { getAccessToken, setAccessToken } from '../api/tokenCache';
 
 type State = {
@@ -32,7 +32,7 @@ export const useAuth = create<State & Actions>()(
         set({ loading: true });
         try {
           // 1) refresh로 accessToken 확보(메모리)
-          const res = await fetch(`${API_BASE}/api/users/auth/refresh`, {
+          const res = await fetch(url('/api/users/auth/refresh'), {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
@@ -51,7 +51,7 @@ export const useAuth = create<State & Actions>()(
           // 2) 토큰 있으면 me 조회
           const token = getAccessToken();
           if (token) {
-            const meRes = await fetch(`${API_BASE}/api/users/login-user`, {
+            const meRes = await fetch(url('/api/users/login-user'), {
               method: 'GET',
               credentials: 'include',
               headers: {
@@ -76,7 +76,7 @@ export const useAuth = create<State & Actions>()(
       logout: async () => {
         set({ loading: true });
         try {
-          await fetch(`${API_BASE}/api/users/logout`, {
+          await fetch(url('/api/users/logout'), {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },

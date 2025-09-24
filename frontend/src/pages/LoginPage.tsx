@@ -1,8 +1,7 @@
 import * as React from 'react';
 import { Navigate } from 'react-router';
 import { useAuth } from '../stores/auth';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+import { url } from '../api/config';
 
 export default function LoginPage() {
   const { user, loading, bootstrap } = useAuth();
@@ -18,11 +17,11 @@ export default function LoginPage() {
   }
 
   const loginGoogle = () => {
-    window.location.href = `${API_BASE}/api/users/auth/google`;
+    window.location.href = url('/api/users/auth/google');
   };
 
   const loginKakao = () => {
-    window.location.href = `${API_BASE}/api/users/auth/kakao`;
+    window.location.href = url('/api/users/auth/kakao');
   };
 
   return (
