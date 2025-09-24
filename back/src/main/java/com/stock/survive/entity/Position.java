@@ -23,7 +23,7 @@ public class Position {
     private Long positionNo;
 
     @Column(name = "user_no", nullable = false)
-    private Integer userNo;
+    private Long userNo;
 
     @Column(name = "stock_no", nullable = false)
     private Integer stockNo;

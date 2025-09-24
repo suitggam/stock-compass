@@ -13,12 +13,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -104,9 +104,9 @@ public class StockInfosServiceImpl implements StockInfosService {
                 .topNewsArticles(topNewsArticles)
                 .build();
     }
-
-    public Integer getLatestEndPrice(Integer itemNo) {
-        return stockInfosRepository.findLatestEndPriceByItemNo(itemNo)
-                .orElse(null);
+    
+    @Override
+    public Optional<Integer> getLatestEndPrice(Long itemNo) {
+        return stockInfosRepository.findLatestEndPriceByItemNo(itemNo);
     }
 }

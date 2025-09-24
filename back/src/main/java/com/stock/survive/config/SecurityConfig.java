@@ -13,8 +13,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -44,6 +42,8 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+
+                  
                     .requestMatchers(
                     "/oauth2/**",
                         "/login/oauth2/**",
@@ -60,8 +60,12 @@ public class SecurityConfig {
                         "/extract-keywords/**",
                         "/api/mypage/**"
                     ).permitAll()
-
+                    // Tendency Game endpoints (public access)
+                    .requestMatchers("/api/games/tendency/**").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/games").permitAll()
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     // 보호할 엔드포인트
+
                     .requestMatchers(HttpMethod.DELETE, "/api/users/me").authenticated()
                     .requestMatchers(HttpMethod.GET,    "/api/users/me").authenticated()
                     .anyRequest().authenticated()
