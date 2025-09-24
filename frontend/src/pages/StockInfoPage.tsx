@@ -1,4 +1,3 @@
-// src/pages/StockInfoPage.tsx
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router";
 import ChartHeader from "../components/Chart/ChartHeader";
@@ -20,7 +19,7 @@ import {
 import {
   extractKeywords,
   fetchFavorite,
-  getStockInfo as fetchStockInfo,
+  getStockInfo,
 } from "../api/StockInfosApi";
 
 import {
@@ -58,13 +57,14 @@ export default function StockInfoPage() {
   const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [news, setNews] = useState<News[]>([]);
+  const [aiAnalysis, setAiAnalysis] = useState<string>("");
 
-  const [isFavorite, setIsFavorite] = useState(false); // 추가
+  const [isFavorite, setIsFavorite] = useState(false);
 
   const { user } = useAuth();
   const isLoggedIn = Boolean(user);
 
-  // 페이지 로드 시 관심목록 상태 조회
+  // 관심목록 상태 조회
   useEffect(() => {
     if (!isLoggedIn || !ticker) return;
     (async () => {
@@ -82,7 +82,7 @@ export default function StockInfoPage() {
     if (marketOpen) connectRealtime();
   }, [marketOpen, connectRealtime]);
 
-  // 장중: BackendRealtime
+  // 장중 데이터
   useEffect(() => {
     if (!ticker || !marketOpen) return;
     (async () => {
@@ -97,7 +97,7 @@ export default function StockInfoPage() {
     })();
   }, [ticker, marketOpen]);
 
-  // 장마감: EndDay
+  // 종가 데이터
   useEffect(() => {
     if (!ticker || marketOpen) return;
     (async () => {
@@ -111,7 +111,7 @@ export default function StockInfoPage() {
     })();
   }, [ticker, marketOpen]);
 
-  // 차트용 기간 계산
+  // 차트 기간 계산
   const { startDate, endDate } = useMemo(() => {
     const today = new Date();
     let start: Date;
@@ -126,7 +126,7 @@ export default function StockInfoPage() {
     } else {
       start = new Date(today);
       switch (selectedTerm.text) {
-        case "1주":
+        case "1 주":
           start.setDate(start.getDate() - 7);
           break;
         case "1개월":
@@ -154,11 +154,11 @@ export default function StockInfoPage() {
     return { startDate: start, endDate: end };
   }, [selectedTerm, customStartDate, customEndDate]);
 
-  // 백엔드 주식 데이터
+  // 주식 데이터
   useEffect(() => {
     if (!ticker) return;
     (async () => {
-      const data = await fetchStockInfo(ticker);
+      const data = await getStockInfo(ticker);
       setStockData(data);
     })();
   }, [ticker]);
@@ -179,28 +179,33 @@ export default function StockInfoPage() {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [stockData, startDate, endDate]);
 
-  // 키워드 & 뉴스
+  // 키워드 & 뉴스 & 분석
   useEffect(() => {
     if (!latestStock || !startDate || !endDate) return;
     (async () => {
-      const { keywords, news } = await extractKeywords(
-        latestStock.ticker,
-        latestStock.companyName,
-        startDate.toISOString().slice(0, 10),
-        endDate.toISOString().slice(0, 10)
-      );
-      setKeywords(keywords);
-      setNews(news);
+      try {
+        const {
+          keywords: keywordList,
+          news: newsList,
+          aiAnalysis: analysis,
+        } = await extractKeywords(
+          latestStock.ticker,
+          latestStock.companyName,
+          startDate.toISOString().slice(0, 10),
+          endDate.toISOString().slice(0, 10)
+        );
+
+        setKeywords(keywordList);
+        setNews(newsList);
+        setAiAnalysis(analysis);
+      } catch (err) {
+        console.error("키워드 & 뉴스 추출 실패:", err);
+        setKeywords([]);
+        setNews([]);
+        setAiAnalysis("");
+      }
     })();
   }, [latestStock, startDate, endDate]);
-
-  const filteredNews = useMemo(() => {
-    return news
-      .filter(
-        (n) => new Date(n.date) >= startDate && new Date(n.date) <= endDate
-      )
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [news, startDate, endDate]);
 
   const handleSelect = (term: Term) => {
     setSelectedTerm(term);
@@ -245,8 +250,8 @@ export default function StockInfoPage() {
                 pastPrice={pastPrice}
                 date={displayDate}
                 isLoggedIn={isLoggedIn}
-                isFavorite={isFavorite} // 추가
-                setIsFavorite={setIsFavorite} // 추가
+                isFavorite={isFavorite}
+                setIsFavorite={setIsFavorite}
               />
 
               <div className="mt-4 ml-3">
@@ -284,10 +289,10 @@ export default function StockInfoPage() {
 
         <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-2xl shadow-xl p-6 border border-slate-600">
           <h2 className="font-bold mb-6 text-white text-2xl flex items-center gap-2">
-            뉴스 요약
+            AI 뉴스 요약
           </h2>
           <div className="grid">
-            <ChartNews />
+            <ChartNews analysis={aiAnalysis} />
           </div>
         </div>
 
@@ -295,11 +300,7 @@ export default function StockInfoPage() {
           <h2 className="font-bold mb-6 text-white text-2xl flex items-center gap-2">
             관련 뉴스
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredNews.slice(0, 10).map((n, index) => (
-              <NewsCard key={index} news={n} />
-            ))}
-          </div>
+          <NewsCard news={news} />
         </div>
       </div>
     </div>

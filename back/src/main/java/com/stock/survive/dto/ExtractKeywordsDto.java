@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -18,17 +19,7 @@ public class ExtractKeywordsDto {
     private Integer topKeywords;
     private boolean useAiFilter;
     private Map<String, Integer> keywords;
-    private List<TopNewsArticle> topNewsArticles;
+    private List<TopNewsArticleDto> topNewsArticles;
+    private String aiAnalysis;
 
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class TopNewsArticle {
-        private String title;
-        private String date;
-        private String url;
-        private int matchedKeywordsCount;
-        private List<String> matchedKeywords;
-    }
 }

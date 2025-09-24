@@ -18,54 +18,38 @@ export const extractKeywords = async (
   companyName: string,
   startDate: string,
   endDate: string
-): Promise<{ keywords: Keyword[]; news: News[] }> => {
-  try {
-    const accessToken = useAuth.getState().accessToken;
+): Promise<{ keywords: Keyword[]; news: News[]; aiAnalysis: string }> => {
+  const accessToken = useAuth.getState().accessToken;
 
-    const payload = {
-      companyName,
-      startDate,
-      endDate,
-      topKeywords: 10,
-      useAiFilter: true,
-    };
+  const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
 
-    // 토큰이 있는 경우에만 헤더에 포함
-    const headers = accessToken
-      ? {
-          Authorization: `Bearer ${accessToken}`,
-        }
-      : {};
+  const payload = {
+    companyName,
+    startDate,
+    endDate,
+    topKeywords: 10,
+    useAiFilter: true,
+  };
 
-    const url = `${prefix}/extract-keywords/${ticker}`;
-    console.log("Sending POST to backend /extract-keywords:", url, payload);
-    console.log(
-      "[extractKeywords] Using accessToken:",
-      accessToken ? "present" : "none"
-    );
+  const url = `${prefix}/extract-keywords/${ticker}`;
+  const res = await axios.post<ExtractKeywordsResponse>(url, payload, {
+    headers,
+  });
 
-    const res = await axios.post<ExtractKeywordsResponse>(url, payload, {
-      headers, // ✅ 헤더 추가!
-    });
-    console.log("Received response:", res.data);
+  const keywords = Object.entries(res.data.keywords || {}).map(
+    ([keyword, count]) => ({ keyword, count })
+  );
+  const news = (res.data.topNewsArticles ?? []).map((n) => ({
+    title: n.title,
+    date: n.date,
+    url: n.url,
+  }));
+  // 백엔드에서 직접 aiAnalysis 문자열을 받음
+  const aiAnalysis = res.data.aiAnalysis ?? "";
 
-    // keywords 변환
-    const keywords = Object.entries(res.data.keywords || {}).map(
-      ([keyword, count]) => ({ keyword, count })
-    );
+  console.log(res.data);
 
-    // 뉴스 변환 (title, date, url만 가져오기)
-    const news = (res.data.topNewsArticles ?? []).map((n) => ({
-      title: n.title,
-      date: n.date,
-      url: n.url,
-    }));
-
-    return { keywords, news };
-  } catch (err) {
-    console.error("extractKeywords error:", err);
-    return { keywords: [], news: [] };
-  }
+  return { keywords, news, aiAnalysis };
 };
 
 // 🔹 주식 정보 API - 토큰 추가 ✅
@@ -79,11 +63,6 @@ export const getStockInfo = async (ticker: string): Promise<StockInfos[]> => {
       }
     : {};
 
-  console.log(
-    "[getStockInfo] Using accessToken:",
-    accessToken ? "present" : "none"
-  );
-
   const res = await axios.get<StockInfos[]>(`${prefix}/info/${ticker}`, {
     headers,
   });
@@ -94,7 +73,6 @@ export const getStockInfo = async (ticker: string): Promise<StockInfos[]> => {
 export async function toggleFavorite(ticker: string): Promise<boolean> {
   const accessToken = useAuth.getState().accessToken;
   try {
-    console.log("[toggleFavorite] Sending request for ticker:", ticker);
     const res = await axios.post(
       `${API_SERVER_HOST}/api/stock/favorites/toggle`,
       null,
@@ -105,7 +83,6 @@ export async function toggleFavorite(ticker: string): Promise<boolean> {
         },
       }
     );
-    console.log("[toggleFavorite] Response:", res.data);
     return res.data;
   } catch (err) {
     console.error("[toggleFavorite] Error:", err);
@@ -117,8 +94,6 @@ export async function fetchFavorite(ticker: string): Promise<boolean> {
   const accessToken = useAuth.getState().accessToken; // store에서 토큰 가져오기
   if (!accessToken) throw new Error("No access token available");
 
-  console.log("[fetchFavorite] Using accessToken:", accessToken);
-
   const res = await axios.get(
     `${API_SERVER_HOST}/api/stock/favorites/${ticker}`,
     {
@@ -127,9 +102,6 @@ export async function fetchFavorite(ticker: string): Promise<boolean> {
       },
     }
   );
-
-  console.log("[fetchFavorite] Response status:", res.status);
-  console.log("[fetchFavorite] Data:", res.data);
 
   return res.data.isFavorite;
 }
