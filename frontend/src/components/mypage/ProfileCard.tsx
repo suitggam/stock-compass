@@ -1,8 +1,7 @@
 import * as React from 'react';
 import { useAuth } from '../../stores/auth';
 import NicknameDialog from './NicknameDialog';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+import { api } from '../../api/client';
 
 // 헤더와 동일한 이니셜 생성 로직
 function getInitials(name: string) {
@@ -25,6 +24,7 @@ export default function ProfileCard({ favoriteCount = 0, gameCount = 0 }: Props)
   const logout = useAuth((s) => s.logout);
 
   const [openNick, setOpenNick] = React.useState(false);
+
   const onSavedNickname = (newNickname: string) => {
     if (!user) return;
     setUser({ ...user, nickname: newNickname });
@@ -34,14 +34,7 @@ export default function ProfileCard({ favoriteCount = 0, gameCount = 0 }: Props)
     const ok = window.confirm('정말로 회원탈퇴 하시겠어요? 이 작업은 되돌릴 수 없습니다.');
     if (!ok) return;
     try {
-      await fetch(`${API_BASE}/api/users/me`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        },
-      });
+      await api.del<void>('/api/users/me');
     } finally {
       await logout();
     }
@@ -78,7 +71,7 @@ export default function ProfileCard({ favoriteCount = 0, gameCount = 0 }: Props)
             title="닉네임 변경"
             aria-label="닉네임 변경"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path
                 d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Z"
                 stroke="currentColor"

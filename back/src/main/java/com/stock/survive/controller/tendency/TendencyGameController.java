@@ -26,7 +26,7 @@ public class TendencyGameController {
     @PostMapping
     public ResponseEntity<TendencyGameStateResponse> start(Authentication authentication,
                                                            @Valid @RequestBody(required = false) TendencyGameStartRequest request) {
-        Integer userId = resolveUserId(authentication);
+        Long userId = (Long) authentication.getPrincipal();
         TendencyGameStateResponse response = tendencyGameService.start(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -34,7 +34,7 @@ public class TendencyGameController {
     @GetMapping("/{sessionId}")
     public ResponseEntity<TendencyGameStateResponse> state(Authentication authentication,
                                                            @PathVariable Long sessionId) {
-        Integer userId = resolveUserId(authentication);
+        Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(tendencyGameService.getState(userId, sessionId));
     }
 
@@ -42,28 +42,15 @@ public class TendencyGameController {
     public ResponseEntity<TendencyGameStateResponse> order(Authentication authentication,
                                                            @PathVariable Long sessionId,
                                                            @Valid @RequestBody TendencyGameOrderRequest request) {
-        Integer userId = resolveUserId(authentication);
+        Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(tendencyGameService.placeOrder(userId, sessionId, request));
     }
 
     @PostMapping("/{sessionId}/next-week")
     public ResponseEntity<TendencyGameStateResponse> nextWeek(Authentication authentication,
                                                               @PathVariable Long sessionId) {
-        Integer userId = resolveUserId(authentication);
+        Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(tendencyGameService.proceedNextWeek(userId, sessionId));
     }
 
-    private Integer resolveUserId(Authentication authentication) {
-        if (authentication == null || authentication.getPrincipal() == null) {
-            throw new IllegalStateException("인증 정보가 없습니다.");
-        }
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof Integer integer) {
-            return integer;
-        }
-        if (principal instanceof String str) {
-            return Integer.parseInt(str);
-        }
-        throw new IllegalStateException("지원하지 않는 인증 주체입니다.");
-    }
 }
