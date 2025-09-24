@@ -45,7 +45,7 @@ public class StockInfos {
 
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "item_no", nullable = false, columnDefinition = "BIGINT UNSIGNED")
+    @JoinColumn(name = "item_no", nullable = false)
     private StockItems stockItem;
 
 }

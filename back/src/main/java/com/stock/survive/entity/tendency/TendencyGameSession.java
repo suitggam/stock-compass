@@ -36,81 +36,81 @@ public class TendencyGameSession {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     // User 엔티티의 기본 키 컬럼 이름("user_no")을 명시적으로 지정
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_no", referencedColumnName = "user_no", nullable = false)
     private User user; // <-- 여기만 수정하면 됩니다.
-    
+
     @Column(name = "ticker", length = 20, nullable = false)
     private String ticker;
-    
+
     @Column(name = "dataset_id", length = 50, nullable = false)
     private String datasetId;
-    
+
     @Column(name = "company_alias", length = 50, nullable = false)
     private String companyAlias;
-    
+
     @Column(name = "initial_cash", nullable = false)
     private Integer initialCash;
-    
+
     @Column(name = "cash", nullable = false)
     private Integer cash;
-    
+
     @Column(name = "stock_quantity", nullable = false)
     private Integer stockQuantity;
-    
+
     @Column(name = "average_cost", nullable = false)
     private Integer averageCost;
-    
+
     @Column(name = "realized_profit", nullable = false)
     private Long realizedProfit;
-    
+
     @Column(name = "current_week", nullable = false)
     private Integer currentWeek;
-    
+
     @Column(name = "max_week", nullable = false)
     private Integer maxWeek;
-    
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20, nullable = false)
     private TendencyGameStatus status;
-    
+
     @Column(name = "started_at", nullable = false)
     private LocalDateTime startedAt;
-    
+
     @Column(name = "finished_at")
     private LocalDateTime finishedAt;
-    
+
     @Column(name = "decision_elapsed_millis", nullable = false)
     private Long decisionElapsedMillis;
-    
+
     @Column(name = "volatile_buy_count", nullable = false)
     private Integer volatileBuyCount;
-    
+
     @Column(name = "volatile_sell_count", nullable = false)
     private Integer volatileSellCount;
-    
+
     @Column(name = "sell_dominant_week_count", nullable = false)
     private Integer sellDominantWeekCount;
-    
+
     @Column(name = "yield_above_threshold", nullable = false)
     private Boolean yieldAboveThreshold;
-    
+
     @Column(name = "tendency_type", length = 30)
     private String tendencyType;
-    
+
     @Column(name = "recommendation", length = 255)
     private String recommendation;
-    
+
     @Builder.Default
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TendencyGameWeek> weeks = new ArrayList<>();
-    
+
     @Builder.Default
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TendencyGameTrade> trades = new ArrayList<>();
-    
+
     public void addWeek(TendencyGameWeek week) {
         week.setSession(this);
         this.weeks.add(week);
@@ -120,3 +120,4 @@ public class TendencyGameSession {
         trade.setSession(this);
         this.trades.add(trade);
     }
+}
