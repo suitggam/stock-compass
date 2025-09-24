@@ -9,7 +9,6 @@ declare global {
   }
 }
 
-// any 없이 안전 접근
 export const API_BASE: string =
   (typeof window !== 'undefined' ? window.__APP_CONFIG__?.API_BASE_URL : undefined) ??
   import.meta.env.VITE_API_BASE_URL ??
