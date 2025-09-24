@@ -483,7 +483,9 @@ public class TendencyGameServiceImpl implements TendencyGameService {
                 totalYield
         );
         
-        List<String> labels = weeks.stream().map(w -> "Week " + w.getWeekIndex()).collect(Collectors.toList());
+        List<String> labels = weeks.stream()
+                .map(w -> w.getStartDate().toString()) // LocalDate 객체를 "YYYY-MM-DD" 문자열로 변환
+                .collect(Collectors.toList());
         List<Integer> prices = weeks.stream().map(w -> safePrice(w.getClosePrice())).collect(Collectors.toList());
         
         LocalDate nextDate = null;
