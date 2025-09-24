@@ -29,6 +29,7 @@ export interface Chart {
 export interface ExtractKeywordsResponse {
   keywords: Record<string, number>;
   topNewsArticles?: News[];
+  aiAnalysis: string; // 문자열로만 관리
 }
 
 export const TermText: Term[] = [
@@ -36,7 +37,7 @@ export const TermText: Term[] = [
   { text: "1개월" },
   { text: "6개월" },
   { text: "1 년" },
-  { text: "3 년" },
-  { text: "5 년" },
+  // { text: "3 년" },
+  // { text: "5 년" },
   { text: "사용자 지정" },
 ];
