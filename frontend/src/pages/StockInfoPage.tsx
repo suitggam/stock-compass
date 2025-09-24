@@ -206,6 +206,23 @@ export default function StockInfoPage() {
       }
     })();
   }, [latestStock, startDate, endDate]);
+  // 실시간 가격 반영된 차트 데이터
+  const chartData = useMemo(() => {
+    if (!filteredData.length) return [];
+
+    if (!marketOpen || !realtime?.price) {
+      return filteredData;
+    }
+
+    // 마지막 데이터 복사해서 실시간 가격 적용
+    const lastData = filteredData[filteredData.length - 1];
+    const updatedLastData = {
+      ...lastData,
+      endPrice: Number(realtime.price), // 종가 대신 실시간 가격 반영
+    };
+
+    return [...filteredData.slice(0, -1), updatedLastData];
+  }, [filteredData, marketOpen, realtime]);
 
   const handleSelect = (term: Term) => {
     setSelectedTerm(term);
@@ -272,7 +289,7 @@ export default function StockInfoPage() {
               />
 
               <div className="mt-4">
-                <ChartMain term={selectedTerm.text} data={filteredData} />
+                <ChartMain term={selectedTerm.text} data={chartData} />
               </div>
             </div>
           </div>
