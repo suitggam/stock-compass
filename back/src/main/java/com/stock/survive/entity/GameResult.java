@@ -22,6 +22,7 @@ public class GameResult {
     private Long gameNo;
 
     @Column(name = "user_no", nullable = false)
+
     private Long userNo;
 
     @Column(name = "game_time", nullable = false)

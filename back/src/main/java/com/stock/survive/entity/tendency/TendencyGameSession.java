@@ -32,7 +32,7 @@ import java.util.List;
 @Entity
 @Table(name = "tendency_game_session")
 public class TendencyGameSession {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -115,9 +115,8 @@ public class TendencyGameSession {
         week.setSession(this);
         this.weeks.add(week);
     }
-    
+
     public void addTrade(TendencyGameTrade trade) {
         trade.setSession(this);
         this.trades.add(trade);
     }
-}
