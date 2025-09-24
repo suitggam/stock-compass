@@ -46,6 +46,7 @@ export function useTendencyGame() {
         const res = await tendencyGameApi.order(sessionId, {
           type,
           quantity: Math.max(1, Math.floor(qty ?? tradeAmount)),
+          tradeDate: (state?.stockOverview.currentDate ?? new Date().toISOString().slice(0, 10)),
         });
         setState(res);
       } catch (e: any) {
@@ -54,7 +55,7 @@ export function useTendencyGame() {
         setLoading(false);
       }
     },
-    [sessionId, tradeAmount],
+    [sessionId, tradeAmount, state?.stockOverview.currentDate],
   );
 
   const nextWeek = useCallback(async () => {
