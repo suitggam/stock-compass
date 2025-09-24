@@ -1,4 +1,3 @@
-// src/components/profile/ProfileCard.tsx
 import * as React from 'react';
 import { useAuth } from '../../stores/auth';
 import NicknameDialog from './NicknameDialog';
@@ -21,6 +20,7 @@ type Props = {
 export default function ProfileCard({ favoriteCount = 0, gameCount = 0 }: Props) {
   const user = useAuth((s) => s.user);
   const setUser = useAuth((s) => s.setUser);
+  const accessToken = useAuth((s) => s.accessToken);
   const logout = useAuth((s) => s.logout);
 
   const [openNick, setOpenNick] = React.useState(false);

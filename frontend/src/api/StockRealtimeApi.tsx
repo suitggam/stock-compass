@@ -4,11 +4,9 @@ import type {
   EndDay,
   PageResponseDto,
 } from "../types/StockRealtime";
+import { url } from "./config";
 
-export const API_SERVER_HOST =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
-
-const prefix = `${API_SERVER_HOST}/api/stock`;
+const prefix = url('/api/stock');
 
 export const getStockRealtimeWithPage = async (
   page: number,

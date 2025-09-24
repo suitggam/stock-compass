@@ -6,8 +6,7 @@ import PersonalityResult from '../components/mypage/PersonalityResult';
 import Watchlist from '../components/mypage/Watchlist';
 import MockInvestmentHistory from '../components/mypage/MockInvestmentHistory';
 import type { MyPageData } from '../types/MyPageData';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+import { url } from '../api/config';
 
 export default function MyPage() {
   const loading = useAuth((s) => s.loading);
@@ -24,7 +23,7 @@ export default function MyPage() {
     }
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/mypage/me`, {
+        const res = await fetch(url('/api/mypage/me'), {
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',

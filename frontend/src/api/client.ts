@@ -1,6 +1,6 @@
 import { useAuth } from '../stores/auth';
 import { getAccessToken, setAccessToken } from './tokenCache';
-import { API_BASE } from './config';
+import { url } from './config';
 
 // 서버 엔드포인트
 const REFRESH_PATH = '/api/users/auth/refresh';
@@ -41,7 +41,7 @@ async function refreshOnce(): Promise<boolean> {
   if (!inflightRefresh) {
     inflightRefresh = (async () => {
       try {
-        const res = await fetch(`${API_BASE}${REFRESH_PATH}`, {
+        const res = await fetch(url(REFRESH_PATH), {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -80,8 +80,8 @@ async function refreshOnce(): Promise<boolean> {
 
 // 요청 래퍼
 async function request<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
-  const url = `${API_BASE}${path}`;
-  const res = await fetch(url, {
+  const fullUrl = url(path);
+  const res = await fetch(fullUrl, {
     credentials: 'include',
     ...init,
     headers: { ...buildHeaders(path), ...(init.headers ?? {}) },
@@ -90,7 +90,7 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
   if (res.status === 401 && retry && !path.startsWith(REFRESH_PATH)) {
     const ok = await refreshOnce();
     if (ok) {
-      const res2 = await fetch(url, {
+      const res2 = await fetch(fullUrl, {
         credentials: 'include',
         ...init,
         headers: { ...buildHeaders(path), ...(init.headers ?? {}) },
@@ -115,7 +115,7 @@ export const api = {
   // 로그아웃(반환값 없음)
   logout: async (): Promise<void> => {
     try {
-      await fetch(`${API_BASE}${LOGOUT_PATH}`, {
+      await fetch(url(LOGOUT_PATH), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
