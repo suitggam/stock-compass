@@ -6,11 +6,13 @@ import type {
   News,
   StockInfos,
 } from "../types/StockInfos";
-import { useAuth } from "../stores/auth";
-import { url } from "./config";
+import { getAccessToken } from "./tokenCache";
 
-const prefix = url('/api/stock');
+export const API_SERVER_HOST =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+const prefix = `${API_SERVER_HOST}/api/stock`;
 
+const accessToken = getAccessToken();
 // 🔹 키워드 추출 API (백엔드 호출) - 토큰 추가 ✅
 export const extractKeywords = async (
   ticker: string,
@@ -18,10 +20,6 @@ export const extractKeywords = async (
   startDate: string,
   endDate: string
 ): Promise<{ keywords: Keyword[]; news: News[]; aiAnalysis: string }> => {
-  const accessToken = useAuth.getState().accessToken;
-
-  const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
-
   const payload = {
     companyName,
     startDate,
@@ -31,9 +29,7 @@ export const extractKeywords = async (
   };
 
   const url = `${prefix}/extract-keywords/${ticker}`;
-  const res = await axios.post<ExtractKeywordsResponse>(url, payload, {
-    headers,
-  });
+  const res = await axios.post<ExtractKeywordsResponse>(url, payload);
 
   const keywords = Object.entries(res.data.keywords || {}).map(
     ([keyword, count]) => ({ keyword, count })
@@ -53,27 +49,22 @@ export const extractKeywords = async (
 
 // 🔹 주식 정보 API - 토큰 추가 ✅
 export const getStockInfo = async (ticker: string): Promise<StockInfos[]> => {
-  const accessToken = useAuth.getState().accessToken;
-
   // 토큰이 있는 경우에만 헤더에 포함
-  const headers = accessToken
-    ? {
-        Authorization: `Bearer ${accessToken}`,
-      }
-    : {};
+  // const headers = accessToken
+  //   ? {
+  //       Authorization: `Bearer ${accessToken}`,
+  //     }
+  //   : {};
 
-  const res = await axios.get<StockInfos[]>(`${prefix}/info/${ticker}`, {
-    headers,
-  });
+  const res = await axios.get<StockInfos[]>(`${prefix}/info/${ticker}`, {});
   return res.data;
 };
 
 // src/api/FavoriteApi.ts
 export async function toggleFavorite(ticker: string): Promise<boolean> {
-  const accessToken = useAuth.getState().accessToken;
   try {
     const res = await axios.post(
-      url('/api/stock/favorites/toggle'),
+      `${API_SERVER_HOST}/api/stock/favorites/toggle`,
       null,
       {
         params: { ticker },
@@ -90,11 +81,10 @@ export async function toggleFavorite(ticker: string): Promise<boolean> {
 }
 
 export async function fetchFavorite(ticker: string): Promise<boolean> {
-  const accessToken = useAuth.getState().accessToken; // store에서 토큰 가져오기
   if (!accessToken) throw new Error("No access token available");
 
   const res = await axios.get(
-    url(`/api/stock/favorites/${ticker}`),
+    `${API_SERVER_HOST}/api/stock/favorites/${ticker}`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,

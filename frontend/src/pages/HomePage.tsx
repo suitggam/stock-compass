@@ -49,9 +49,9 @@ export default function HomePage() {
     const fetchData = async () => {
       try {
         if (isMarketOpen) {
-          // 장중: 전체 백엔드 데이터 1000개 가져오기
+          // 장중: 페이지별 데이터 slice
           const response: PageResponseDto<BackendRealtime> =
-            await getStockRealtimeWithPage(1, 1000);
+            await getStockRealtimeWithPage(1, 200); // 전체 1000개 가져오기
           setBackendStocks(response.dtoList);
           setTotalPages(Math.ceil(response.dtoList.length / size));
         } else {
@@ -108,7 +108,7 @@ export default function HomePage() {
 
   // 화면에 보여줄 데이터
   const displayStocks = isMarketOpen
-    ? backendStocks.slice(0, size).map((b) => {
+    ? backendStocks.slice((page - 1) * size, page * size).map((b) => {
         const wsItem = wsStocks.get(b.ticker);
         return {
           ticker: b.ticker,
@@ -149,39 +149,37 @@ export default function HomePage() {
       </div>
 
       {/* 페이지네이션 */}
-      {!isMarketOpen && (
-        <div className="pagination flex justify-center gap-2 mt-4 flex-wrap">
-          <button
-            disabled={page === 1}
-            className="cursor-pointer px-3 py-1 border rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
-            onClick={() => setPage((p) => Math.max(p - 1, 1))}
-          >
-            Prev
-          </button>
+      <div className="pagination flex justify-center gap-2 mt-4 flex-wrap">
+        <button
+          disabled={page === 1}
+          className="cursor-pointer px-3 py-1 border rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+          onClick={() => setPage((p) => Math.max(p - 1, 1))}
+        >
+          Prev
+        </button>
 
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <button
-              key={p}
-              className={`cursor-pointer px-3 py-1 border rounded ${
-                p === page
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 hover:bg-gray-300"
-              }`}
-              onClick={() => setPage(p)}
-            >
-              {p}
-            </button>
-          ))}
-
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
           <button
-            disabled={page === totalPages}
-            className="cursor-pointer px-3 py-1 border rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
-            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+            key={p}
+            className={`cursor-pointer px-3 py-1 border rounded ${
+              p === page
+                ? "bg-blue-500 text-white"
+                : "bg-gray-200 hover:bg-gray-300"
+            }`}
+            onClick={() => setPage(p)}
           >
-            Next
+            {p}
           </button>
-        </div>
-      )}
+        ))}
+
+        <button
+          disabled={page === totalPages}
+          className="cursor-pointer px-3 py-1 border rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+          onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }
