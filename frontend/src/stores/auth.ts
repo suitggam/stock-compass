@@ -98,7 +98,7 @@ export const useAuth = create<State & Actions>()(
   ),
 );
 
-// (선택) 탭 간 user 동기화 — any 없이 안전 파서
+//탭 간 user 동기화
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e: StorageEvent) => {
     if (e.key === 'auth-store') {
