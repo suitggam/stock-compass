@@ -1,103 +1,120 @@
+// src/stores/auth.ts
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { User } from '../types/user';
+import { API_BASE } from '../api/config';
+import { getAccessToken, setAccessToken } from '../api/tokenCache';
 
 type State = {
-  accessToken: string | null;
   user: User | null;
   loading: boolean;
 };
 
 type Actions = {
-  setAccessToken: (t: string | null) => void;
   setUser: (u: User | null) => void;
   bootstrap: () => Promise<void>;
   logout: () => Promise<void>;
 };
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
-
-// 중복 호출/1회 보장 플래그(타입 노출 없음)
-let __authReady = false;
-let __authInflight: Promise<void> | null = null;
+let __booting = false;
 
 export const useAuth = create<State & Actions>()(
   persist(
-    (set, get) => ({
-      accessToken: null,
+    (set) => ({
       user: null,
-      loading: true,
+      loading: false,
 
-      setAccessToken: (t) => set({ accessToken: t }),
       setUser: (u) => set({ user: u }),
 
-      // 앱 진입/리다이렉트 복귀 시 1회 실행 (내부에서 중복 방지)
       bootstrap: async () => {
-        if (__authReady) return;
-        if (__authInflight) return __authInflight;
+        if (__booting) return;
+        __booting = true;
+        set({ loading: true });
+        try {
+          // 1) refresh로 accessToken 확보(메모리)
+          const res = await fetch(`${API_BASE}/api/users/auth/refresh`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+          });
 
-        const job = (async () => {
-          set({ loading: true });
-          try {
-            // 1) 토큰 없으면 refresh 시도
-            if (!get().accessToken) {
-              const res = await fetch(`${API_BASE}/api/users/auth/refresh`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-              });
-              if (res.ok) {
-                const data = (await res.json()) as { accessToken?: string };
-                if (data?.accessToken) set({ accessToken: data.accessToken });
-              } else {
-                set({ accessToken: null, user: null });
-              }
-            }
-
-            // 2) 토큰이 있으면 me 조회
-            if (get().accessToken) {
-              const meRes = await fetch(`${API_BASE}/api/users/login-user`, {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${get().accessToken}`,
-                },
-              });
-              if (meRes.ok) {
-                const me = (await meRes.json()) as User;
-                set({ user: me });
-              } else {
-                set({ accessToken: null, user: null });
-              }
-            }
-          } finally {
-            set({ loading: false });
-            __authReady = true;
-            __authInflight = null;
+          if (res.ok) {
+            type RefreshResp = { accessToken?: string };
+            const data = (await res.json()) as RefreshResp;
+            if (data.accessToken) setAccessToken(data.accessToken);
+            else setAccessToken(null);
+          } else {
+            setAccessToken(null);
+            set({ user: null });
           }
-        })();
 
-        __authInflight = job;
-        return job;
+          // 2) 토큰 있으면 me 조회
+          const token = getAccessToken();
+          if (token) {
+            const meRes = await fetch(`${API_BASE}/api/users/login-user`, {
+              method: 'GET',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+            });
+            if (meRes.ok) {
+              const me = (await meRes.json()) as User;
+              set({ user: me });
+            } else {
+              setAccessToken(null);
+              set({ user: null });
+            }
+          }
+        } finally {
+          set({ loading: false });
+          __booting = false;
+        }
       },
 
       logout: async () => {
+        set({ loading: true });
         try {
           await fetch(`${API_BASE}/api/users/logout`, {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
           });
+        } catch {
+          // ignore
         } finally {
-          set({ accessToken: null, user: null });
-          __authReady = false;
+          setAccessToken(null);
+          set({ user: null, loading: false });
         }
       },
     }),
     {
       name: 'auth-store',
       storage: createJSONStorage(() => sessionStorage),
+      // user만 저장 (토큰은 메모리)
+      partialize: (s) => ({ user: s.user }),
     },
   ),
 );
+
+// (선택) 탭 간 user 동기화 — any 없이 안전 파서
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e: StorageEvent) => {
+    if (e.key === 'auth-store') {
+      const raw = e.newValue;
+      if (!raw) {
+        useAuth.getState().setUser(null);
+        return;
+      }
+      try {
+        const parsed = JSON.parse(raw) as { state?: { user?: User | null } };
+        if (parsed.state && 'user' in parsed.state) {
+          useAuth.getState().setUser(parsed.state.user ?? null);
+        }
+      } catch {
+        // ignore JSON parse errors
+      }
+    }
+  });
+}
