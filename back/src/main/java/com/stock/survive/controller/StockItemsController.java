@@ -41,13 +41,7 @@ public class StockItemsController {
                 .build();
 
         PageResponseDto<StockEndDayDto> response = stockItemsService.getEndDayData(pageRequestDto, targetDate);
-
-
-        log.info(response.getTotalPage());
-        log.info(response.getTotalCount());
-        log.info(response.getPageNumberList());
-        log.info(response.getCurrent());
-
+        
         return ResponseEntity.ok(response);
     }
 
