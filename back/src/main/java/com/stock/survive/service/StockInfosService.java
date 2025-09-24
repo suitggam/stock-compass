@@ -10,7 +10,9 @@ import java.util.Optional;
 @Transactional
 public interface StockInfosService {
 
-    List<StockInfosDto> getStock(String ticker);
+    boolean toggleFavorite(Long userId, Long itemNo);
+
+    List<StockInfosDto> getStock( String ticker);
 
     ExtractKeywordsDto getKeywords(String ticker,ExtractKeywordsDto requestDto);
 

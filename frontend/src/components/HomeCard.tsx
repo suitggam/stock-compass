@@ -1,25 +1,29 @@
-import StarGraySvg from "../svg/StarGraySvg";
-
-function numberFormat(num: number) {
-  return num.toLocaleString();
-}
+import { memo } from "react";
 
 type DisplayStock = {
   ticker: string;
   companyName: string;
-  price: number; // WS에서는 string이라 Number()로 변환
+  price: number;
   rate: number;
   volume: number;
   categoryName: string;
   marketCap: number;
 };
 
+function numberFormat(num: number) {
+  return num.toLocaleString();
+}
+
 function formatMarketCap(marketCap: number) {
   const inManWon = Math.floor(marketCap / 1000);
   return inManWon.toLocaleString();
 }
 
-function HomeCard({
+interface HomeCardProps extends DisplayStock {
+  onCardClick: () => void;
+}
+
+const HomeCard = memo(function HomeCard({
   ticker,
   companyName,
   price,
@@ -27,10 +31,14 @@ function HomeCard({
   volume,
   categoryName,
   marketCap,
-}: DisplayStock) {
+  onCardClick,
+}: HomeCardProps) {
   return (
-    <div className="cursor-pointer bg-white/20 border-white/30 backdrop-blur-sm rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border">
-      {/* 헤더 - 회사명과 즐겨찾기 */}
+    <div
+      className="cursor-pointer bg-white/20 border-white/30 backdrop-blur-sm rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border"
+      onClick={onCardClick}
+    >
+      {/* 헤더 */}
       <div className="flex justify-between items-start mb-3">
         <div className="flex-1">
           <div className="text-white font-semibold text-lg truncate">
@@ -38,9 +46,6 @@ function HomeCard({
           </div>
           <div className="text-white/70 text-sm font-mono">{ticker}</div>
         </div>
-        <button className="cursor-pointer p-1 hover:bg-black/10 rounded-lg transition-colors">
-          <StarGraySvg />
-        </button>
       </div>
 
       {/* 산업 분류와 시총 */}
@@ -61,15 +66,15 @@ function HomeCard({
       <div className="flex justify-between items-end">
         <div>
           <div className="text-white text-xl font-bold">
-            {numberFormat(Number(price))}원
+            {numberFormat(price)}원
           </div>
           <div
             className={`text-sm font-medium ${
-              Number(rate) >= 0 ? "text-green-400" : "text-red-400"
+              rate >= 0 ? "text-green-400" : "text-red-400"
             }`}
           >
-            {Number(rate) >= 0 ? "+" : ""}
-            {Number(rate).toFixed(2)}%
+            {rate >= 0 ? "+" : ""}
+            {rate.toFixed(2)}%
           </div>
         </div>
         <div className="text-right">
@@ -81,6 +86,6 @@ function HomeCard({
       </div>
     </div>
   );
-}
+});
 
 export default HomeCard;

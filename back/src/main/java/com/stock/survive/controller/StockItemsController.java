@@ -1,5 +1,6 @@
 package com.stock.survive.controller;
 
+import com.stock.survive.dto.FavoriteDto;
 import com.stock.survive.dto.PageRequestDto;
 import com.stock.survive.dto.PageResponseDto;
 import com.stock.survive.dto.StockEndDayDto;
@@ -8,13 +9,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/stock")
@@ -31,8 +29,11 @@ public class StockItemsController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "21") int size
     ) {
+        log.info("📌 요청 받은 page={}, size={}, date={}", page, size, date);
+
         // date가 null이면 DB에서 가장 최신 날짜 사용
         LocalDate targetDate = (date != null) ? date : stockItemsService.getLatestDataDate();
+        log.info("📌 실제 조회할 targetDate={}", targetDate);
 
         PageRequestDto pageRequestDto = PageRequestDto.builder()
                 .page(page)
@@ -40,9 +41,23 @@ public class StockItemsController {
                 .build();
 
         PageResponseDto<StockEndDayDto> response = stockItemsService.getEndDayData(pageRequestDto, targetDate);
+
+
+        log.info(response.getTotalPage());
+        log.info(response.getTotalCount());
+        log.info(response.getPageNumberList());
+        log.info(response.getCurrent());
+
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/favorites/{ticker}")
+    public ResponseEntity<FavoriteDto> getFavorite(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable String ticker) {
 
+        FavoriteDto dto = stockItemsService.getFavoriteStatus(userId, ticker);
+        return ResponseEntity.ok(dto);
+    }
 
 }

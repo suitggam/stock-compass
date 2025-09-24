@@ -44,6 +44,7 @@ public class StockInfos {
     @Column
     private LocalDateTime createdAt;
 
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_no", nullable = false)
     private StockItems stockItem;

@@ -78,23 +78,32 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
     }
 
     private String exchangeToken(String code) {
+        log.info("📌 Google OAuth: exchangeToken 호출, code={}", code);
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
         MultiValueMap<String,String> form = new LinkedMultiValueMap<>();
         form.add("grant_type", "authorization_code");
         form.add("client_id", props.getClientId());
-        if (props.getClientSecret() != null && !props.getClientSecret().isBlank()) {
-            form.add("client_secret", props.getClientSecret());
-        }
+        form.add("client_secret", props.getClientSecret());
         form.add("redirect_uri", props.getRedirectUri());
         form.add("code", code);
 
-        ResponseEntity<GoogleTokenResponse> resp = restTemplate.postForEntity(
-                props.getTokenUri(),
-                new HttpEntity<>(form, headers),
-                GoogleTokenResponse.class
-        );
+        ResponseEntity<GoogleTokenResponse> resp;
+        try {
+            resp = restTemplate.postForEntity(props.getTokenUri(),
+                    new HttpEntity<>(form, headers),
+                    GoogleTokenResponse.class);
+        } catch (Exception e) {
+            log.error("❌ Google OAuth 토큰 요청 실패", e);
+            throw e;
+        }
+
+        log.info("✅ Google OAuth 토큰 응답 상태: {}", resp.getStatusCode());
+        if (resp.getBody() != null) {
+            log.info("✅ access_token={}", resp.getBody().access_token);
+        }
 
         if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null || resp.getBody().access_token == null) {
             throw new IllegalStateException("GOOGLE_TOKEN_EXCHANGE_FAILED");
@@ -102,22 +111,36 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
         return resp.getBody().access_token;
     }
 
+
     private GoogleUserResponse fetchUser(String accessToken) {
+        log.info("📌 Google OAuth: fetchUser 호출, accessToken={}", accessToken);
+
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
 
-        ResponseEntity<GoogleUserResponse> resp = restTemplate.exchange(
-                props.getUserinfoUri(),
-                HttpMethod.GET,
-                new HttpEntity<>(headers),
-                GoogleUserResponse.class
-        );
+        ResponseEntity<GoogleUserResponse> resp;
+        try {
+            resp = restTemplate.exchange(props.getUserinfoUri(),
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    GoogleUserResponse.class);
+        } catch (Exception e) {
+            log.error("❌ Google OAuth 사용자 정보 조회 실패", e);
+            throw e;
+        }
+
+        log.info("✅ 사용자 정보 응답 상태: {}", resp.getStatusCode());
+        if (resp.getBody() != null) {
+            log.info("✅ 사용자 이메일: {}, 이름: {}", resp.getBody().email, resp.getBody().name);
+        }
 
         if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) {
             throw new IllegalStateException("GOOGLE_USERINFO_FETCH_FAILED");
         }
+
         return resp.getBody();
     }
+
 
     // --- 응답 모델 ---
     public static class GoogleTokenResponse {

@@ -5,20 +5,24 @@ import com.stock.survive.dto.ExtractKeywordsDto.TopNewsArticle;
 import com.stock.survive.dto.StockInfosDto;
 import com.stock.survive.entity.StockInfos;
 import com.stock.survive.entity.StockItems;
+import com.stock.survive.entity.User;
 import com.stock.survive.repository.StockInfosRepository;
 import com.stock.survive.repository.StockItemsRepository;
+import com.stock.survive.repository.UserRepository;
 import com.stock.survive.service.StockInfosService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -28,13 +32,34 @@ public class StockInfosServiceImpl implements StockInfosService {
     private final StockInfosRepository stockInfosRepository;
     private final StockItemsRepository stockItemsRepository;
     private final WebClient webClient; // WebClient 주입
+    private final UserRepository userRepository;
+
 
     @Value("${keywords.api.url}")
     private String keywordsApiUrl; // application.properties나 application.yml에서 설정
 
     @Override
-    public List<StockInfosDto> getStock(String ticker) {
+    public boolean toggleFavorite(Long userId, Long itemNo) {
+        User u = userRepository.findWithFavoritesById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "USER_NOT_FOUND"));
+
+        StockItems item = stockItemsRepository.findById(itemNo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ITEM_NOT_FOUND"));
+
+        Set<StockItems> favs = u.getFavorites();
+        if (favs.contains(item)) {
+            favs.remove(item);
+            return false;
+        } else {
+            favs.add(item);
+            return true;
+        }
+    }
+
+    @Override
+    public List<StockInfosDto> getStock( String ticker) {
         List<StockInfos> infos = stockInfosRepository.findRecent6YearsByTicker(ticker);
+
         return infos.stream()
                 .map(stockInfos -> StockInfosDto.builder()
                         .ticker(stockInfos.getStockItem().getTicker())
@@ -44,6 +69,7 @@ public class StockInfosServiceImpl implements StockInfosService {
                         .build())
                 .toList();
     }
+
 
     @Override
     public ExtractKeywordsDto getKeywords(String ticker, ExtractKeywordsDto requestDto) {

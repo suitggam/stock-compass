@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import HomeCard from "../components/HomeCard";
 import type {
   WebSocketRealtime,
@@ -10,9 +11,10 @@ import {
   getStockRealtimeWithPage,
   getEndDayWithPage,
 } from "../api/StockRealtimeApi";
-import { Link } from "react-router";
 
 export default function HomePage() {
+  const navigate = useNavigate();
+
   const [backendStocks, setBackendStocks] = useState<BackendRealtime[]>([]);
   const [wsStocks, setWsStocks] = useState<Map<string, WebSocketRealtime>>(
     new Map()
@@ -25,7 +27,7 @@ export default function HomePage() {
   const [size] = useState(21);
   const [totalPages, setTotalPages] = useState(1);
 
-  // 0️⃣ 장 시간 확인 (09:00 ~ 15:30)
+  // 장 시간 확인 (09:00 ~ 15:30)
   useEffect(() => {
     const checkMarketOpen = () => {
       const now = new Date();
@@ -35,12 +37,6 @@ export default function HomePage() {
         (now.getHours() < 15 ||
           (now.getHours() === 15 && now.getMinutes() < 30));
       setIsMarketOpen(marketOpen);
-      console.log(
-        "⏰ 현재 시각:",
-        now.toLocaleTimeString(),
-        "장 열림 여부:",
-        marketOpen
-      );
     };
 
     checkMarketOpen();
@@ -48,24 +44,24 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // 1️⃣ 백엔드 데이터 1분 단위 fetch
+  // 백엔드 데이터 fetch
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (isMarketOpen) {
+          // 장중: 전체 백엔드 데이터 1000개 가져오기
           const response: PageResponseDto<BackendRealtime> =
             await getStockRealtimeWithPage(1, 1000);
           setBackendStocks(response.dtoList);
           setTotalPages(Math.ceil(response.dtoList.length / size));
-          console.log("📈 백엔드 실시간 데이터:", response.dtoList.length);
         } else {
+          // 장마감: 페이지별 데이터 가져오기
           const response: PageResponseDto<EndDay> = await getEndDayWithPage(
             page,
             size
           );
           setEndDayStocks(response.dtoList);
           setTotalPages(response.totalPage || 1);
-          console.log("📉 종가 데이터:", response.dtoList.length);
         }
       } catch (err) {
         console.error("❌ API 에러:", err);
@@ -77,7 +73,7 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [isMarketOpen, page, size]);
 
-  // 2️⃣ WebSocket 연결 (장 열려있을 때만)
+  // WebSocket 연결 (시장 열렸을 때만)
   useEffect(() => {
     if (!isMarketOpen) return;
 
@@ -110,86 +106,82 @@ export default function HomePage() {
     return () => ws.close();
   }, [isMarketOpen]);
 
-  // 3️⃣ 화면에 보여줄 데이터 결정
-  const displayStocks: (BackendRealtime & {
-    endPrice?: number;
-    rate?: number;
-  })[] = (() => {
-    if (isMarketOpen) {
-      const startIdx = (page - 1) * size;
-      const endIdx = startIdx + size;
-      return backendStocks.slice(startIdx, endIdx).map((b) => {
+  // 화면에 보여줄 데이터
+  const displayStocks = isMarketOpen
+    ? backendStocks.slice(0, size).map((b) => {
         const wsItem = wsStocks.get(b.ticker);
         return {
-          ...b,
-          endPrice: wsItem ? Number(wsItem.price) : 0,
+          ticker: b.ticker,
+          companyName: b.companyName,
+          volume: b.volume,
+          marketCap: b.marketCap,
+          categoryName: b.categoryName,
+          price: wsItem ? Number(wsItem.price) : 0, // WS 없으면 0
           rate: wsItem ? wsItem.rate : 0,
         };
-      });
-    } else {
-      // 장 마감: 종가 데이터 사용
-      if (endDayStocks.length > 0) return endDayStocks;
-      // fallback: 장중 데이터
-      const startIdx = (page - 1) * size;
-      const endIdx = startIdx + size;
-      return backendStocks.slice(startIdx, endIdx).map((b) => ({
-        ...b,
-        endPrice: 0,
-        rate: 0,
+      })
+    : endDayStocks.map((e) => ({
+        ticker: e.ticker,
+        companyName: e.companyName,
+        volume: e.volume,
+        marketCap: e.marketCap,
+        categoryName: e.categoryName,
+        price: e.endPrice, // 종가
+        rate: e.rate,
       }));
-    }
-  })();
 
   return (
     <div>
       <div className="grid grid-cols-3 gap-4 p-4">
         {displayStocks.map((stock) => (
-          <Link key={stock.ticker} to={`stock/${stock.ticker}`}>
-            <HomeCard
-              ticker={stock.ticker}
-              companyName={stock.companyName}
-              price={stock.endPrice ?? 0}
-              rate={stock.rate ?? 0}
-              volume={stock.volume}
-              marketCap={stock.marketCap}
-              categoryName={stock.categoryName}
-            />
-          </Link>
+          <HomeCard
+            key={stock.ticker}
+            ticker={stock.ticker}
+            companyName={stock.companyName}
+            price={stock.price}
+            rate={stock.rate}
+            volume={stock.volume}
+            marketCap={stock.marketCap}
+            categoryName={stock.categoryName}
+            onCardClick={() => navigate(`/stock/${stock.ticker}`)}
+          />
         ))}
       </div>
 
-      {/* 4️⃣ 페이지네이션 UI */}
-      <div className="pagination flex justify-center gap-2 mt-4 flex-wrap">
-        <button
-          disabled={page === 1}
-          className="cursor-pointer px-3 py-1 border rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
-          onClick={() => setPage((p) => Math.max(p - 1, 1))}
-        >
-          Prev
-        </button>
-
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+      {/* 페이지네이션 */}
+      {!isMarketOpen && (
+        <div className="pagination flex justify-center gap-2 mt-4 flex-wrap">
           <button
-            key={p}
-            className={`cursor-pointer px-3 py-1 border rounded ${
-              p === page
-                ? "bg-blue-500 text-white"
-                : "bg-gray-200 hover:bg-gray-300"
-            }`}
-            onClick={() => setPage(p)}
+            disabled={page === 1}
+            className="cursor-pointer px-3 py-1 border rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+            onClick={() => setPage((p) => Math.max(p - 1, 1))}
           >
-            {p}
+            Prev
           </button>
-        ))}
 
-        <button
-          disabled={page === totalPages}
-          className="cursor-pointer px-3 py-1 border rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
-          onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-        >
-          Next
-        </button>
-      </div>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <button
+              key={p}
+              className={`cursor-pointer px-3 py-1 border rounded ${
+                p === page
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-200 hover:bg-gray-300"
+              }`}
+              onClick={() => setPage(p)}
+            >
+              {p}
+            </button>
+          ))}
+
+          <button
+            disabled={page === totalPages}
+            className="cursor-pointer px-3 py-1 border rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }
