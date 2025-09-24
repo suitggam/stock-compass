@@ -24,6 +24,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -40,6 +41,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -122,7 +124,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
     public TendencyGameStateResponse placeOrder(Long userId, Long sessionId, TendencyGameOrderRequest request) {
         TendencyGameSession session = fetchSession(userId, sessionId);
         ensureInProgress(session);
-        
+
         TendencyGameWeek currentWeek = currentWeek(session);
         int price = safePrice(currentWeek.getClosePrice());
         
@@ -140,7 +142,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
                 session.setVolatileSellCount(session.getVolatileSellCount() + 1);
             }
         }
-        
+
         TendencyGameTrade trade = TendencyGameTrade.builder()
                 .id(tradeSeq.getAndIncrement())
                 .session(session)
@@ -149,7 +151,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
                 .quantity(request.quantity())
                 .weekIndex(session.getCurrentWeek())
                 .executedAt(LocalDateTime.now())
-                .executedDate(LocalDate.now())
+                .executedDate(LocalDate.parse(request.tradeDate()))
                 .volatilityContext(volatileContext)
                 .build();
         getTrades(session.getId()).add(trade);
