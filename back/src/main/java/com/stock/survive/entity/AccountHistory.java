@@ -22,7 +22,7 @@ public class AccountHistory {
     private Long transactionNo;
 
     @Column(name = "user_no", nullable = false)
-    private Integer userNo;
+    private Long userNo;
 
     @Column(name = "transaction_value", nullable = false)
     private Integer transactionValue;

@@ -19,4 +19,5 @@ public class StockInfosDto {
     private Integer endPrice;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date;
+
 }

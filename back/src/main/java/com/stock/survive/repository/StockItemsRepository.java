@@ -1,6 +1,7 @@
 package com.stock.survive.repository;
 
 import com.stock.survive.dto.StockEndDayDto;
+import com.stock.survive.entity.StockInfos;
 import com.stock.survive.entity.StockItems;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,27 +18,31 @@ import java.util.Optional;
 public interface StockItemsRepository extends JpaRepository<StockItems, Long> {
 
 
-    @Query(
-            value = "SELECT new com.stock.survive.dto.StockEndDayDto(" +
-                    "si.ticker, si.companyName, inf.startPrice, inf.endPrice, inf.volume, si.category.categoryName, inf.marketCap) " +
-                    "FROM StockItems si JOIN si.infos inf " +
-                    "WHERE FUNCTION('DATE', inf.date) = :targetDate " +
-                    "ORDER BY si.itemNo ASC",
-            countQuery = "SELECT count(si) FROM StockItems si JOIN si.infos inf WHERE FUNCTION('DATE', inf.date) = :targetDate"
+    @Query("""
+    SELECT new com.stock.survive.dto.StockEndDayDto(
+        si.ticker,
+        si.companyName,
+        inf.startPrice,
+        inf.endPrice,
+        inf.volume,
+        sc.categoryName,
+        inf.marketCap
     )
-    Page<StockEndDayDto> getEndOfDayData(@Param("targetDate") LocalDate targetDate, Pageable pageable);
-
-
+    FROM StockItems si
+    JOIN si.category sc
+    JOIN si.infos inf
+    WHERE inf.date = (
+        SELECT MAX(sinf.date) 
+        FROM StockInfos sinf 
+        WHERE sinf.stockItem.itemNo = si.itemNo
+          AND FUNCTION('DATE', sinf.date) = :targetDate
+    )
+    ORDER BY si.itemNo ASC
+""")
+    Page<StockEndDayDto> findEndOfDayLatest(@Param("targetDate") LocalDate targetDate, Pageable pageable);
 
     @Query("SELECT MAX(inf.date) FROM StockInfos inf")
     LocalDate findMaxDate();
-
-
+    
     Optional<StockItems> findCompanyNameByTicker(String ticker);
-
-
-
-
-
-
 }

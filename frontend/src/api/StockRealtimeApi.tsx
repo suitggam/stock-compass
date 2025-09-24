@@ -21,6 +21,7 @@ export const getEndDayWithPage = async (
   page: number,
   size: number
 ): Promise<PageResponseDto<EndDay>> => {
+  console.log("📌 요청 page, size:", page, size);
   const res = await axios.get(`${prefix}/endDay?page=${page}&size=${size}`);
   return res.data;
 };

@@ -2,7 +2,9 @@ package com.stock.survive.serviceImpl;
 
 import com.stock.survive.dto.UserSummaryDto;
 import com.stock.survive.entity.OauthIdentity;
+import com.stock.survive.entity.StockItems;
 import com.stock.survive.entity.User;
+import com.stock.survive.repository.StockItemsRepository;
 import com.stock.survive.repository.UserRepository;
 import com.stock.survive.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -11,11 +13,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final StockItemsRepository stockItemsRepository;
 
     @Override
     public UserSummaryDto changeNickname(Long userId, String raw) {
@@ -48,6 +53,28 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "USER_NOT_FOUND"));
         userRepository.delete(u);
         userRepository.flush();
+    }
+
+    public boolean toggleFavorite(Long userId, String ticker) {
+        User user = userRepository.findWithFavoritesById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "USER_NOT_FOUND"));
+
+        StockItems stock = stockItemsRepository.findCompanyNameByTicker(ticker)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "STOCK_NOT_FOUND"));
+
+        Set<StockItems> favorites = user.getFavorites();
+        boolean isFavorite;
+
+        if (favorites.contains(stock)) {
+            favorites.remove(stock);
+            isFavorite = false;
+        } else {
+            favorites.add(stock);
+            isFavorite = true;
+        }
+
+        // @Transactional + dirty checking으로 자동 DB 반영
+        return isFavorite;
     }
 }
 

@@ -2,7 +2,6 @@ package com.stock.survive.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -43,6 +42,7 @@ public class StockInfos {
 
     @Column
     private LocalDateTime createdAt;
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_no", nullable = false)

@@ -15,4 +15,5 @@ public class StockItemsDto {
     private Long volume;
     private Long marketCap;
     private String categoryName;
+
 }

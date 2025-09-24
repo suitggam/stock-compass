@@ -49,4 +49,12 @@ public class MyPageServiceImpl implements MyPageService {
                         .findFirst()
                         .orElse(null);
     }
+
+    @Transactional(readOnly = true)
+    public boolean isFavorite(Long userId, String ticker) {
+        User u = userRepository.findWithFavoritesById(userId)
+                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "USER_NOT_FOUND"));
+        return u.getFavorites().stream()
+                .anyMatch(stock -> stock.getTicker().equals(ticker));
+    }
 }

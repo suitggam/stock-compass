@@ -1,6 +1,5 @@
 package com.stock.survive;
 
-import com.stock.survive.dto.StockEndDayDto;
 import com.stock.survive.entity.StockItems;
 import com.stock.survive.repository.StockItemsRepository;
 import com.stock.survive.service.StockItemsService;
@@ -11,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,40 +33,25 @@ public class StockItemsTest {
     @Transactional
     public void getTest() {
         List<StockItems> list = stockItemsRepository.findAll();
-            for (StockItems stockItems : list) {
-                log.info(stockItems.getItemNo()+", "+stockItems.getCategory().getCategoryName()+", "+stockItems.getTicker()+", "+stockItems.getCompanyName());
+        for (StockItems stockItems : list) {
+            log.info(stockItems.getItemNo() + ", " + stockItems.getCategory().getCategoryName() + ", " + stockItems.getTicker() + ", " + stockItems.getCompanyName());
         }
-
     }
 
     @Test
     @Transactional
     public void getOneTest() {
-        Integer id = 1;
+        Long id = 1L;
         Optional<StockItems> list = stockItemsRepository.findById(id);
         StockItems items = list.orElseThrow();
-        log.info(items.getItemNo()+", "+items.getCategory().getCategoryName()+", "+items.getTicker()+", "+items.getCompanyName());
+        log.info(items.getItemNo() + ", " + items.getCategory().getCategoryName() + ", " + items.getTicker() + ", " + items.getCompanyName());
     }
 
     @Test
     @Transactional
     public void getInsertTest() {
-
-//        StockItems save = stockItemsRepository.save(new StockItems(100,1,"test","test",1));
-//        log.info(save);
+        // Correctly commented out
+        // StockItems save = stockItemsRepository.save(new StockItems(100,1,"test","test",1));
+        // log.info(save);
     }
-
-
-//    @Test
-//    @Transactional
-//    public void testGetEndOfDayData() {
-//        LocalDate targetDate=LocalDate.now();
-//        List<StockEndDayDto> result = stockItemsService.getEndDayData(targetDate);
-//
-//            for (StockEndDayDto stockEndDayDto : result) {
-//                log.info(stockEndDayDto.getTicker());
-//
-//        }
-//    }
-
 }
