@@ -14,9 +14,9 @@ import java.util.Optional;
 @Repository
 public interface TendencyGameSessionRepository extends JpaRepository<TendencyGameSession, Long> {
 
-    Optional<TendencyGameSession> findByIdAndUser_Id(Long id, Integer userId);
+    Optional<TendencyGameSession> findByIdAndUser_Id(Long id, Long userId);
 
-    List<TendencyGameSession> findByUser_IdOrderByStartedAtDesc(Integer userId);
+    List<TendencyGameSession> findByUser_IdOrderByStartedAtDesc(Long userId);
     
     List<TendencyGameSession> findByTickerAndStartedAtBetween(String ticker, LocalDateTime startDate, LocalDateTime endDate);
 }
