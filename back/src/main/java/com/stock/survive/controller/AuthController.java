@@ -8,6 +8,8 @@ import com.stock.survive.serviceImpl.UserLinkServiceImpl;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +24,7 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/users")
+@Log4j2
 public class AuthController {
 
     private final KakaoOAuthServiceImpl kakao;
@@ -60,16 +63,23 @@ public class AuthController {
     @GetMapping("/auth/google/callback")
     public void googleCallback(@RequestParam String code,
                                @RequestParam String state,
-                               HttpServletResponse res) throws Exception {
-        google.verifyState(state);
-        var info = google.exchangeAndFetchUser(code);
-        var user = linker.linkOrCreateByProvider(info);
+                               HttpServletResponse res) {
+        try {
+            log.info("📌 Google OAuth 콜백 호출, code={}, state={}", code, state);
+            google.verifyState(state);
+            var info = google.exchangeAndFetchUser(code);
+            var user = linker.linkOrCreateByProvider(info);
 
-        var pair = tokenServiceImpl.issue(user);
-        tokenServiceImpl.setRefreshCookie(res, pair.refresh());
+            var pair = tokenServiceImpl.issue(user);
+            tokenServiceImpl.setRefreshCookie(res, pair.refresh());
 
-        res.sendRedirect(frontHome());
+            res.sendRedirect(frontHome());
+        } catch (Exception e) {
+            log.error("❌ Google OAuth 콜백 처리 중 에러", e);
+            try { res.sendRedirect(frontOrigin + "/login?error=google_oauth_failed"); } catch (Exception ignored) {}
+        }
     }
+
 
     // ===== 카카오 =====
     @GetMapping("/auth/kakao")

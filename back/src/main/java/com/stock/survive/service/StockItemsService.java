@@ -1,5 +1,6 @@
 package com.stock.survive.service;
 
+import com.stock.survive.dto.FavoriteDto;
 import com.stock.survive.dto.PageRequestDto;
 import com.stock.survive.dto.PageResponseDto;
 import com.stock.survive.dto.StockEndDayDto;
@@ -12,4 +13,6 @@ public interface StockItemsService {
     PageResponseDto<StockEndDayDto> getEndDayData(PageRequestDto pageRequestDto, LocalDate targetDate);
 
     LocalDate getLatestDataDate();
+
+    FavoriteDto getFavoriteStatus(Long userId, String ticker);
 }

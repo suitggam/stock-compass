@@ -6,14 +6,14 @@ import type {
   News,
   StockInfos,
 } from "../types/StockInfos";
+import { useAuth } from "../stores/auth";
 
 export const API_SERVER_HOST =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 const prefix = `${API_SERVER_HOST}/api/stock`;
 
-// 🔹 응답 타입 정의
-
 // 🔹 키워드 추출 API (백엔드 호출)
+// 🔹 키워드 추출 API (백엔드 호출) - 토큰 추가 ✅
 export const extractKeywords = async (
   ticker: string,
   companyName: string,
@@ -21,6 +21,8 @@ export const extractKeywords = async (
   endDate: string
 ): Promise<{ keywords: Keyword[]; news: News[] }> => {
   try {
+    const accessToken = useAuth.getState().accessToken;
+
     const payload = {
       companyName,
       startDate,
@@ -29,10 +31,23 @@ export const extractKeywords = async (
       useAiFilter: true,
     };
 
+    // 토큰이 있는 경우에만 헤더에 포함
+    const headers = accessToken
+      ? {
+          Authorization: `Bearer ${accessToken}`,
+        }
+      : {};
+
     const url = `${prefix}/extract-keywords/${ticker}`;
     console.log("Sending POST to backend /extract-keywords:", url, payload);
+    console.log(
+      "[extractKeywords] Using accessToken:",
+      accessToken ? "present" : "none"
+    );
 
-    const res = await axios.post<ExtractKeywordsResponse>(url, payload);
+    const res = await axios.post<ExtractKeywordsResponse>(url, payload, {
+      headers, // ✅ 헤더 추가!
+    });
     console.log("Received response:", res.data);
 
     // keywords 변환
@@ -54,8 +69,68 @@ export const extractKeywords = async (
   }
 };
 
-// 🔹 기존 주식 정보 API
+// 🔹 주식 정보 API - 토큰 추가 ✅
 export const getStockInfo = async (ticker: string): Promise<StockInfos[]> => {
-  const res = await axios.get<StockInfos[]>(`${prefix}/info/${ticker}`);
-  return res.data; // 그대로 반환
+  const accessToken = useAuth.getState().accessToken;
+
+  // 토큰이 있는 경우에만 헤더에 포함
+  const headers = accessToken
+    ? {
+        Authorization: `Bearer ${accessToken}`,
+      }
+    : {};
+
+  console.log(
+    "[getStockInfo] Using accessToken:",
+    accessToken ? "present" : "none"
+  );
+
+  const res = await axios.get<StockInfos[]>(`${prefix}/info/${ticker}`, {
+    headers,
+  });
+  return res.data;
 };
+
+// src/api/FavoriteApi.ts
+export async function toggleFavorite(ticker: string): Promise<boolean> {
+  const accessToken = useAuth.getState().accessToken;
+  try {
+    console.log("[toggleFavorite] Sending request for ticker:", ticker);
+    const res = await axios.post(
+      `${API_SERVER_HOST}/api/stock/favorites/toggle`,
+      null,
+      {
+        params: { ticker },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    console.log("[toggleFavorite] Response:", res.data);
+    return res.data;
+  } catch (err) {
+    console.error("[toggleFavorite] Error:", err);
+    throw err;
+  }
+}
+
+export async function fetchFavorite(ticker: string): Promise<boolean> {
+  const accessToken = useAuth.getState().accessToken; // store에서 토큰 가져오기
+  if (!accessToken) throw new Error("No access token available");
+
+  console.log("[fetchFavorite] Using accessToken:", accessToken);
+
+  const res = await axios.get(
+    `${API_SERVER_HOST}/api/stock/favorites/${ticker}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  console.log("[fetchFavorite] Response status:", res.status);
+  console.log("[fetchFavorite] Data:", res.data);
+
+  return res.data.isFavorite;
+}

@@ -17,8 +17,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 @Transactional
 public class FavoriteCommandServiceImpl implements FavoriteCommandService {
-    private final UserRepository userRepository;
     private final StockItemsRepository stockItemsRepository;
+    private final UserRepository userRepository;
 
     @Override
     public boolean toggleFavorite(Long userId, Long itemNo) {
