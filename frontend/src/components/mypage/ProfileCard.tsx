@@ -15,7 +15,7 @@ function getInitials(name: string) {
 
 type Props = {
   favoriteCount?: number; // 관심 종목 개수
-  gameCount?: number; // 추후 필요시 사용
+  gameCount?: number;
 };
 
 export default function ProfileCard({ favoriteCount = 0, gameCount = 0 }: Props) {
@@ -52,9 +52,6 @@ export default function ProfileCard({ favoriteCount = 0, gameCount = 0 }: Props)
   return (
     // 카드 높이가 커져도 하단이 비지 않게 flex-col + mt-auto 앵커
     <section className="h-full flex flex-col w-full bg-slate-700 backdrop-blur-xl rounded-2xl shadow-lg border border-slate-600 p-6 relative overflow-visible">
-      {/* 상단 액센트 바 */}
-      <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-amber-500 to-amber-600" />
-
       {/* ── 상단(아바타/이름/가입일) */}
       <div>
         {/* 아바타 */}
