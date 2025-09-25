@@ -1,4 +1,6 @@
-type FavoriteItem = { itemId: number; name: string };
+import { Link } from 'react-router';
+
+type FavoriteItem = { itemId: number; name: string; ticker: string };
 
 export default function Watchlist({ items = [] }: { items?: FavoriteItem[] }) {
   const empty = !items || items.length === 0;
@@ -18,16 +20,15 @@ export default function Watchlist({ items = [] }: { items?: FavoriteItem[] }) {
         // 1열 → sm:2열 → lg:3열 → xl:4열
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {items.map((it) => (
-            <button
+            <Link
+              to={`/stock/${it.ticker}`}
               key={it.itemId}
               className="px-4 py-5 rounded-2xl bg-slate-600 border border-slate-500 shadow-lg text-left hover:bg-slate-500 hover:border-amber-400 transition-all hover:shadow-xl"
               title={it.name}
-              // onClick={() => navigate(`/stock/${it.itemId}`)} // 라우팅 원하면 활성화
             >
               <div className="text-white font-bold truncate">{it.name}</div>
-              <div className="text-slate-400 text-sm mt-1">종목 상세보기</div>
-              {/* 필요하면 코드/심볼 등 추가 */}
-            </button>
+              <div className="text-slate-400 text-sm mt-1">{it.ticker}</div>
+            </Link>
           ))}
         </div>
       )}

@@ -78,8 +78,6 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
     }
 
     private String exchangeToken(String code) {
-        log.info("📌 Google OAuth: exchangeToken 호출, code={}", code);
-
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
@@ -96,25 +94,14 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
                     new HttpEntity<>(form, headers),
                     GoogleTokenResponse.class);
         } catch (Exception e) {
-            log.error("❌ Google OAuth 토큰 요청 실패", e);
             throw e;
         }
 
-        log.info("✅ Google OAuth 토큰 응답 상태: {}", resp.getStatusCode());
-        if (resp.getBody() != null) {
-            log.info("✅ access_token={}", resp.getBody().access_token);
-        }
-
-        if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null || resp.getBody().access_token == null) {
-            throw new IllegalStateException("GOOGLE_TOKEN_EXCHANGE_FAILED");
-        }
         return resp.getBody().access_token;
     }
 
 
     private GoogleUserResponse fetchUser(String accessToken) {
-        log.info("📌 Google OAuth: fetchUser 호출, accessToken={}", accessToken);
-
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
 
@@ -125,17 +112,7 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
                     new HttpEntity<>(headers),
                     GoogleUserResponse.class);
         } catch (Exception e) {
-            log.error("❌ Google OAuth 사용자 정보 조회 실패", e);
             throw e;
-        }
-
-        log.info("✅ 사용자 정보 응답 상태: {}", resp.getStatusCode());
-        if (resp.getBody() != null) {
-            log.info("✅ 사용자 이메일: {}, 이름: {}", resp.getBody().email, resp.getBody().name);
-        }
-
-        if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) {
-            throw new IllegalStateException("GOOGLE_USERINFO_FETCH_FAILED");
         }
 
         return resp.getBody();

@@ -70,7 +70,6 @@ public class KakaoOAuthServiceImpl implements KakaoOAuthService {
 
         if (user.kakao_account != null) {
             email = user.kakao_account.email;
-            // 카카오 응답은 is_email_verified 또는 email_verified 둘 다 케이스 존재
             emailVerified = Boolean.TRUE.equals(user.kakao_account.is_email_verified) ||
                     Boolean.TRUE.equals(user.kakao_account.email_verified);
             if (user.kakao_account.profile != null) {
@@ -132,7 +131,7 @@ public class KakaoOAuthServiceImpl implements KakaoOAuthService {
         return resp.getBody();
     }
 
-    // --- Kakao 응답 모델(필요 필드만) ---
+    // --- Kakao 응답 모델 ---
     public static class KakaoTokenResponse {
         public String access_token;
     }
@@ -142,7 +141,7 @@ public class KakaoOAuthServiceImpl implements KakaoOAuthService {
     }
     public static class KakaoAccount {
         public String email;
-        public Boolean is_email_verified;  // 케이스에 따라 둘 중 하나로 내려오는 경우가 있어 둘 다 둠
+        public Boolean is_email_verified; 
         public Boolean email_verified;
         public Profile profile;
     }
