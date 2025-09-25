@@ -17,7 +17,7 @@ import com.stock.survive.entity.tendency.TendencyGameTradeType;
 import com.stock.survive.entity.tendency.TendencyGameWeek;
 import com.stock.survive.repository.tendency.GameChartsRepository;
 import com.stock.survive.repository.StockInfosRepository;
-import com.stock.survive.repository.StockItemsRepository;
+import com.stock.survive.repository.StockItemRepository;
 import com.stock.survive.repository.UserRepository;
 import com.stock.survive.service.TendencyGameService;
 import jakarta.persistence.EntityManager;
@@ -53,7 +53,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
     private static final double YIELD_THRESHOLD = 3.0d;
     
     private final UserRepository userRepository;
-    private final StockItemsRepository stockItemsRepository;
+    private final StockItemRepository stockItemRepository;
     private final StockInfosRepository stockInfosRepository;
     private final GameChartsRepository gameChartsRepository;
     
@@ -73,7 +73,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
         
         // 미리 준비된 게임 차트 중 하나를 무작위로 선택
         TendencyGameChart selectedChart = selectGameChart();
-        StockItems stockItem = stockItemsRepository.findById(selectedChart.getItemNo())
+        StockItems stockItem = stockItemRepository.findById(selectedChart.getItemNo())
                 .orElseThrow(() -> new IllegalStateException("게임 차트에 해당하는 종목이 없습니다."));
         
         // 선택된 차트의 기간에 해당하는 주식 정보만 가져옴
@@ -340,7 +340,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
                         .orElseThrow(() -> new IllegalArgumentException("ticker에 해당하는 종목이 없습니다."));
             }
             if (request.itemNo() != null) {
-                return stockItemsRepository.findById(request.itemNo().longValue())
+                return stockItemRepository.findById(request.itemNo().longValue())
                         .orElseThrow(() -> new IllegalArgumentException("itemNo에 해당하는 종목이 없습니다."));
             }
         }

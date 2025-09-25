@@ -1,6 +1,6 @@
 package com.stock.survive.dto;
 
-import com.stock.survive.entity.PlatformType;
+import com.stock.survive.enumType.PlatformType;
 
 public record OAuthUserInfo(
         PlatformType provider,

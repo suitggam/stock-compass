@@ -1,8 +1,11 @@
 package com.stock.survive.repository;
 
 import com.stock.survive.entity.*;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +33,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // 메인에서 사용할 것 가볍게
     @Query("select f.itemNo from User u join u.favorites f where u.id = :userId")
     List<Long> findFavoriteItemIds(@org.springframework.data.repository.query.Param("userId") Long userId);
+
+    @Transactional
+    @Modifying
+    @Query("UPDATE User u SET u.cash = :cash, u.haveStock = :haveStock WHERE u.id = :userNo")
+    void updateCashAndHaveStock(@Param("userNo") Long userNo, @Param("cash") Long cash, @Param("haveStock") Long haveStock);
 
 
 }

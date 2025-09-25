@@ -1,5 +1,6 @@
 package com.stock.survive.entity;
 
+import com.stock.survive.enumType.PlatformType;
 import jakarta.persistence.*;
 import lombok.*;
 

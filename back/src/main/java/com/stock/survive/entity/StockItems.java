@@ -30,4 +30,7 @@ public class StockItems {
 
     @OneToMany(mappedBy = "stockItem", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<StockInfos> infos = new ArrayList<>();
+
+    @OneToMany(mappedBy = "stockItems", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TradeHistory> tradeHistories = new ArrayList<>();
 }

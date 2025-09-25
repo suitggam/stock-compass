@@ -3,7 +3,7 @@ package com.stock.survive.controller.tendency;
 import com.stock.survive.dto.tendency.StockInfoResponse;
 import com.stock.survive.entity.StockInfos;
 import com.stock.survive.repository.StockInfosRepository;
-import com.stock.survive.repository.StockItemsRepository;
+import com.stock.survive.repository.StockItemRepository;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class StockInfoQueryController {
 
-    private final StockItemsRepository stockItemsRepository;
+    private final StockItemRepository stockItemRepository;
     private final StockInfosRepository stockInfosRepository;
 
     @GetMapping("/api/stocks/info/{ticker}")
@@ -32,7 +32,7 @@ public class StockInfoQueryController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
     ) {
-        var item = stockItemsRepository.findAll().stream()
+        var item = stockItemRepository.findAll().stream()
                 .filter(stock -> stock.getTicker().equalsIgnoreCase(ticker))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("해당 티커의 종목을 찾을 수 없습니다."));

@@ -11,7 +11,8 @@ const MyPage = lazy(() => import("../pages/MyPage"));
 const OAuthFail = lazy(() => import("../pages/OAuthFail"));
 const TendencyGame = lazy(() => import("../pages/TendencyGamePage"));
 const StockInfo = lazy(() => import("../pages/StockInfoPage"));
-const StockTrade = lazy(() => import("../pages/StockTradePage"));
+const Trade = lazy(() => import("../pages/TradePage"));
+const TradeInfo = lazy(() => import("../pages/TradeInfoPage"));
 const PortfolioPage = lazy(() => import("../pages/PortfolioPage"));
 const Search = lazy(() => import("../pages/SearchPage"));
 
@@ -93,10 +94,18 @@ const Router = createBrowserRouter([
         ),
       },
       {
-        path: "stock",
+        path: "trade",
         element: (
           <Suspense fallback={<LoadingPage />}>
-            <StockTrade />
+            <Trade />
+          </Suspense>
+        ),
+      },
+      {
+        path: "trade/:ticker",
+        element: (
+          <Suspense fallback={<LoadingPage />}>
+            <TradeInfo />
           </Suspense>
         ),
       },

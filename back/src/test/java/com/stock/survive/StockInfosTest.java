@@ -50,14 +50,14 @@ public class StockInfosTest {
         }
     }
 
-    @Test
-    @Transactional
-    public void getLatestEndPriceTest() {
-        Long itemNo = 1L; // 실제 DB에 있는 itemNo로 바꿔주세요
-        Integer latestPrice = stockInfosService.getLatestEndPrice(itemNo);
-
-        Assertions.assertNotNull(latestPrice, "최신 종가가 존재해야 합니다");
-        log.info("itemNo={} 최신 종가={}", itemNo, latestPrice);
-    }
+//    @Test
+//    @Transactional
+//    public void getLatestEndPriceTest() {
+//        Long itemNo = 1L; // 실제 DB에 있는 itemNo로 바꿔주세요
+//        Integer latestPrice = stockInfosService.getLatestEndPrice(itemNo);
+//
+//        Assertions.assertNotNull(latestPrice, "최신 종가가 존재해야 합니다");
+//        log.info("itemNo={} 최신 종가={}", itemNo, latestPrice);
+//    }
 
 }

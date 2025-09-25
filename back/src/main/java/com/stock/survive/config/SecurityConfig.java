@@ -59,7 +59,9 @@ public class SecurityConfig {
                         "/api/actuator/**",
                         "/api/stock/**",
                         "/extract-keywords/**",
-                        "/api/mypage/**"
+                        "/api/mypage/**",
+                            "/api/trade/**"
+
                     ).permitAll()
                     // Tendency Game endpoints (public access)
                     .requestMatchers("/api/games/tendency/**").permitAll()
