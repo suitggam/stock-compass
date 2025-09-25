@@ -4,7 +4,7 @@ import com.stock.survive.dto.UserSummaryDto;
 import com.stock.survive.entity.OauthIdentity;
 import com.stock.survive.entity.StockItems;
 import com.stock.survive.entity.User;
-import com.stock.survive.repository.StockItemsRepository;
+import com.stock.survive.repository.StockItemRepository;
 import com.stock.survive.repository.UserRepository;
 import com.stock.survive.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ import java.util.Set;
 @Transactional
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
-    private final StockItemsRepository stockItemsRepository;
+    private final StockItemRepository stockItemRepository;
 
     @Override
     public UserSummaryDto changeNickname(Long userId, String raw) {
@@ -59,7 +59,7 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findWithFavoritesById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "USER_NOT_FOUND"));
 
-        StockItems stock = stockItemsRepository.findCompanyNameByTicker(ticker)
+        StockItems stock = stockItemRepository.findCompanyNameByTicker(ticker)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "STOCK_NOT_FOUND"));
 
         Set<StockItems> favorites = user.getFavorites();

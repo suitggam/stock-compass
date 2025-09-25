@@ -25,6 +25,10 @@ public class User {
     @Column(name = "user_no")
     private Long id;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<TradeHistory> tradeHistories = new ArrayList<>();
+
     @Column(name = "social_email", length = 254, nullable = false, unique = true)
     private String socialEmail;
 
@@ -41,7 +45,11 @@ public class User {
 
     @Builder.Default
     @Column(name = "cash",nullable = false)
-    private Integer cash = 10_000_000;
+    private Long cash = 10_000_000L;
+
+    @Builder.Default
+    @Column(name = "haveStock",nullable = false)
+    private Long haveStock=0L;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

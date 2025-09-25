@@ -2,7 +2,7 @@ package com.stock.survive.serviceImpl;
 
 import com.stock.survive.entity.StockItems;
 import com.stock.survive.entity.User;
-import com.stock.survive.repository.StockItemsRepository;
+import com.stock.survive.repository.StockItemRepository;
 import com.stock.survive.repository.UserRepository;
 import com.stock.survive.service.FavoriteCommandService;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 @Transactional
 public class FavoriteCommandServiceImpl implements FavoriteCommandService {
-    private final StockItemsRepository stockItemsRepository;
+    private final StockItemRepository stockItemRepository;
     private final UserRepository userRepository;
 
     @Override
@@ -25,7 +25,7 @@ public class FavoriteCommandServiceImpl implements FavoriteCommandService {
         User u = userRepository.findWithFavoritesById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "USER_NOT_FOUND"));
 
-        StockItems item = stockItemsRepository.findById(itemNo)
+        StockItems item = stockItemRepository.findById(itemNo)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ITEM_NOT_FOUND"));
 
         Set<StockItems> favs = u.getFavorites();

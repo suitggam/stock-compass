@@ -1,7 +1,6 @@
 package com.stock.survive.repository;
 
 import com.stock.survive.dto.StockEndDayDto;
-import com.stock.survive.entity.StockInfos;
 import com.stock.survive.entity.StockItems;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,11 +10,10 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface StockItemsRepository extends JpaRepository<StockItems, Long> {
+public interface StockItemRepository extends JpaRepository<StockItems, Long> {
 
 
     @Query("""
@@ -45,4 +43,6 @@ public interface StockItemsRepository extends JpaRepository<StockItems, Long> {
     LocalDate findMaxDate();
     
     Optional<StockItems> findCompanyNameByTicker(String ticker);
+
+    StockItems findByTicker(String ticker);
 }

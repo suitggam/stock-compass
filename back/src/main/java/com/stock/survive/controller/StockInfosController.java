@@ -40,12 +40,10 @@ public class StockInfosController {
             @PathVariable("ticker") String ticker,
             @RequestBody ExtractKeywordsDto requestDto
     ) {
-        log.info("Extract keywords request: ticker={}, requestDto={}", ticker, requestDto);
 
         // 서비스에서 외부 API 호출 및 DTO 생성
         ExtractKeywordsDto result = stockInfosService.getKeywords(ticker, requestDto);
 
-        log.info("Extract keywords response: {}", result);
         return ResponseEntity.ok(result);
     }
 

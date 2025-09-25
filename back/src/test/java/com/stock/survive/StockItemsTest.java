@@ -1,8 +1,8 @@
 package com.stock.survive;
 
 import com.stock.survive.entity.StockItems;
-import com.stock.survive.repository.StockItemsRepository;
-import com.stock.survive.service.StockItemsService;
+import com.stock.survive.repository.StockItemRepository;
+import com.stock.survive.service.StockItemService;
 import jakarta.transaction.Transactional;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.Assertions;
@@ -18,21 +18,21 @@ import java.util.Optional;
 public class StockItemsTest {
 
     @Autowired
-    StockItemsRepository stockItemsRepository;
+    StockItemRepository stockItemRepository;
 
     @Autowired
-    StockItemsService stockItemsService;
+    StockItemService stockItemService;
 
     @Test
     public void repoTest() {
-        Assertions.assertNotNull(stockItemsRepository);
-        log.info(stockItemsRepository.getClass().getName());
+        Assertions.assertNotNull(stockItemRepository);
+        log.info(stockItemRepository.getClass().getName());
     }
 
     @Test
     @Transactional
     public void getTest() {
-        List<StockItems> list = stockItemsRepository.findAll();
+        List<StockItems> list = stockItemRepository.findAll();
         for (StockItems stockItems : list) {
             log.info(stockItems.getItemNo() + ", " + stockItems.getCategory().getCategoryName() + ", " + stockItems.getTicker() + ", " + stockItems.getCompanyName());
         }
@@ -42,7 +42,7 @@ public class StockItemsTest {
     @Transactional
     public void getOneTest() {
         Long id = 1L;
-        Optional<StockItems> list = stockItemsRepository.findById(id);
+        Optional<StockItems> list = stockItemRepository.findById(id);
         StockItems items = list.orElseThrow();
         log.info(items.getItemNo() + ", " + items.getCategory().getCategoryName() + ", " + items.getTicker() + ", " + items.getCompanyName());
     }
