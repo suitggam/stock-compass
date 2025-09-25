@@ -1,23 +1,22 @@
 pipeline {
   agent any
 
-  // === 전역 옵션(로그/시간/보존/동시실행/성능) ===
   options {
-    timestamps()                                  // 콘솔 로그에 시간 찍기
-    ansiColor('xterm')                            // 컬러 로그
-    disableConcurrentBuilds()                     // 같은 잡 동시 실행 방지
+    timestamps()
+    ansiColor('xterm')
+    disableConcurrentBuilds()
     buildDiscarder(logRotator(
-      daysToKeepStr: '14',                        // 빌드 로그 14일 보관
-      numToKeepStr: '50',                         // 최대 50개 보관
+      daysToKeepStr: '14',
+      numToKeepStr: '50',
       artifactDaysToKeepStr: '14',
       artifactNumToKeepStr: '20'
     ))
-    timeout(time: 60, unit: 'MINUTES')            // 파이프라인 전체 타임아웃
-    durabilityHint('PERFORMANCE_OPTIMIZED')       // 컨트롤러 I/O 절약
-    skipDefaultCheckout(true)                     // 이 잡은 원격에서 git clone 하므로 워크스페이스 기본 checkout 생략
+    timeout(time: 60, unit: 'MINUTES')
+    durabilityHint('PERFORMANCE_OPTIMIZED')
+    skipDefaultCheckout(true)
   }
 
-  // === GitLab Generic Webhook 트리거 (master push만) ===
+  // GitLab Generic Webhook (master push)
   triggers {
     GenericTrigger(
       token: 'deploy-hook',
@@ -27,7 +26,6 @@ pipeline {
     )
   }
 
-  // === 공통 환경 ===
   environment {
     HOST   = '13.125.222.104'
     REPO   = 'https://lab.ssafy.com/s13-bigdata-dist-sub1/S13P21A301.git'
@@ -35,44 +33,43 @@ pipeline {
   }
 
   stages {
-
     stage('Build & Deploy') {
-      // 이 스테이지만의 제한(선택)
       options {
-        timeout(time: 40, unit: 'MINUTES')        // 이 단계가 40분 넘으면 중단
-        retry(1)                                  // 일시적 오류 한 번 재시도
+        timeout(time: 40, unit: 'MINUTES')
+        retry(1)
       }
       steps {
-        withCredentials([
-          sshUserPrivateKey(credentialsId: 'prod-ssh', keyFileVariable: 'KEY', usernameVariable: 'USER'),
-          usernamePassword(credentialsId: 'gitlab-deploy', usernameVariable: 'GL_USER', passwordVariable: 'GL_PASS'),
-          file(credentialsId: 'FRONTEND_ENV', variable: 'FE_ENV_FILE'),
-          file(credentialsId: 'BACKEND_ENV',  variable: 'BE_ENV_FILE')
-        ]) {
-          sh '''
-            set -euo pipefail
+        ansiColor('xterm') {
+          withCredentials([
+            sshUserPrivateKey(credentialsId: 'prod-ssh', keyFileVariable: 'KEY', usernameVariable: 'SSH_USER'),
+            usernamePassword(credentialsId: 'gitlab-deploy', usernameVariable: 'GL_USER', passwordVariable: 'GL_PASS'),
+            file(credentialsId: 'FRONTEND_ENV', variable: 'FE_ENV_FILE'),
+            file(credentialsId: 'BACKEND_ENV',  variable: 'BE_ENV_FILE')
+          ]) {
+            sh '''
+              set -eu   # <-- dash에서도 OK (pipefail 제거)
 
-            echo "==[1/5] 원격 준비 =="
-            ssh -o StrictHostKeyChecking=no -i "$KEY" "$USER@${HOST}" '
-              set -e
-              mkdir -p ~/ci/app/repo/frontend ~/ci/app/repo/back /srv/app/backend /srv/app/frontend
-              chmod 700 ~/ci/app/repo/back
-              chown $USER:$USER ~/ci/app/repo/back
-            '
+              echo "==[1/5] 원격 준비 =="
+              ssh -o StrictHostKeyChecking=no -i "$KEY" "$SSH_USER@${HOST}" '
+                set -e
+                mkdir -p ~/ci/app/repo/frontend ~/ci/app/repo/back /srv/app/backend /srv/app/frontend
+                chmod 700 ~/ci/app/repo/back
+                chown $USER:$USER ~/ci/app/repo/back
+              '
 
-            echo "==[2/5] .env 업로드 =="
-            scp -o StrictHostKeyChecking=no -i "$KEY" "$FE_ENV_FILE" "$USER@${HOST}:~/ci/app/repo/frontend/.env.tmp"
-            scp -o StrictHostKeyChecking=no -i "$KEY" "$BE_ENV_FILE" "$USER@${HOST}:~/ci/app/repo/back/.env.tmp"
-            ssh -o StrictHostKeyChecking=no -i "$KEY" "$USER@${HOST}" '
-              set -e
-              mv ~/ci/app/repo/frontend/.env.tmp ~/ci/app/repo/frontend/.env && chmod 600 ~/ci/app/repo/frontend/.env
-              mv ~/ci/app/repo/back/.env.tmp     ~/ci/app/repo/back/.env     && chmod 600 ~/ci/app/repo/back/.env
-            '
+              echo "==[2/5] .env 업로드 =="
+              scp -o StrictHostKeyChecking=no -i "$KEY" "$FE_ENV_FILE" "$SSH_USER@${HOST}:~/ci/app/repo/frontend/.env.tmp"
+              scp -o StrictHostKeyChecking=no -i "$KEY" "$BE_ENV_FILE" "$SSH_USER@${HOST}:~/ci/app/repo/back/.env.tmp"
+              ssh -o StrictHostKeyChecking=no -i "$KEY" "$SSH_USER@${HOST}" '
+                set -e
+                mv ~/ci/app/repo/frontend/.env.tmp ~/ci/app/repo/frontend/.env && chmod 600 ~/ci/app/repo/frontend/.env
+                mv ~/ci/app/repo/back/.env.tmp     ~/ci/app/repo/back/.env     && chmod 600 ~/ci/app/repo/back/.env
+              '
 
-            rm -rf logs && mkdir -p logs
+              rm -rf logs && mkdir -p logs
 
-            echo "==[3/5] 원격 빌드/배포 =="
-            ssh -o StrictHostKeyChecking=no -i "$KEY" "$USER@${HOST}" GL_USER="$GL_USER" GL_PASS="$GL_PASS" REPO="$REPO" BRANCH="$BRANCH" 'bash -s' <<'EOS'
+              echo "==[3/5] 원격 빌드/배포 =="
+              ssh -o StrictHostKeyChecking=no -i "$KEY" "$SSH_USER@${HOST}" GL_USER="$GL_USER" GL_PASS="$GL_PASS" REPO="$REPO" BRANCH="$BRANCH" 'bash -s' <<'EOS'
 set -Eeuo pipefail
 mkdir -p ~/ci/app ~/ci/logs
 cd ~/ci/app
@@ -115,7 +112,7 @@ fi
   echo "[back] artifact: $JAR"
 ) 2>&1 | tee ~/ci/logs/backend_build.log
 
-# --- Backend image build (compose) ---
+# --- Backend image build ---
 (
   set -e
   cd /srv/app
@@ -141,8 +138,10 @@ fi
   [ -d dist ] && OUTDIR="dist"
   [ -z "$OUTDIR" ] && [ -d build ] && OUTDIR="build"
   if [ -z "$OUTDIR" ]; then echo "[front][ERR] build output not found"; exit 21; fi
+
   sudo mkdir -p /srv/app/frontend/dist
   sudo rsync -a --delete "$OUTDIR/"/ /srv/app/frontend/dist/
+
   COMMIT=$(git -C .. rev-parse --short HEAD || true)
   DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
   echo "commit=${COMMIT} built_at=${DATE}" | sudo tee /srv/app/frontend/dist/__build.txt >/dev/null
@@ -164,15 +163,15 @@ fi
 ) 2>&1 | tee ~/ci/logs/deploy.log
 EOS
 
-            echo "==[4/5] 원격 로그 수집 =="
-            scp -o StrictHostKeyChecking=no -i "$KEY" "$USER@${HOST}:~/ci/logs/*" ./logs/ || true
-          '''
+              echo "==[4/5] 원격 로그 수집 =="
+              scp -o StrictHostKeyChecking=no -i "$KEY" "$SSH_USER@${HOST}:~/ci/logs/*" ./logs/ || true
+            '''
+          }
         }
       }
     }
   }
 
-  // === 전체 결과/소요시간/아티팩트 정리 ===
   post {
     always {
       archiveArtifacts artifacts: 'logs/**', fingerprint: true, onlyIfSuccessful: false
@@ -184,3 +183,4 @@ EOS
     cleanup { cleanWs(deleteDirs: true, notFailBuild: true) }
   }
 }
+

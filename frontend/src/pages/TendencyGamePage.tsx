@@ -5,12 +5,19 @@ import TradeRecord from "../components/TendencyGame/TradeRecord";
 import StockOverview from "../components/TendencyGame/StockOverview";
 import StockHighlights from "../components/TendencyGame/StockHighlights";
 import TradeSuccessModal from "../components/TendencyGame/TradeSuccessModal";
+import GameFinishModal from "../components/TendencyGame/GameFinishModal";
 import { useTendencyGame } from "../hooks/useTendencyGame";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function TendencyGamePage() {
-  const { state, loading, error, summaryItems, tradeAmount, setTradeAmount, order, nextWeek, finish, tradeSuccessModal, closeTradeSuccessModal } =
+  const { state, loading, error, summaryItems, tradeAmount, setTradeAmount, order, nextWeek, finish, tradeSuccessModal, closeTradeSuccessModal, gameFinishModal, closeGameFinishModal } =
     useTendencyGame();
+  const navigate = useNavigate();
+
+  const handleGoHome = () => {
+    navigate("/");
+  };
 
     const [currentChartData, setCurrentChartData] = useState(null);
 
@@ -98,6 +105,13 @@ export default function TendencyGamePage() {
         tradeType={tradeSuccessModal.tradeType}
         quantity={tradeSuccessModal.quantity}
         price={tradeSuccessModal.price}
+      />
+      
+      <GameFinishModal
+        isOpen={gameFinishModal.isOpen}
+        onClose={closeGameFinishModal}
+        onGoHome={handleGoHome}
+        result={gameFinishModal.result}
       />
     </div>
   );
