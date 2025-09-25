@@ -1,30 +1,31 @@
-// TendencyGamePage.tsx 파일
-import SummaryStats from '../components/TendencyGame/SummaryStats';
-import TradePanel from '../components/TendencyGame/TradePanel';
-import TradeRecord from '../components/TendencyGame/TradeRecord';
-import StockOverview from '../components/TendencyGame/StockOverview';
-import StockHighlights from '../components/TendencyGame/StockHighlights';
+import SummaryStats from "../components/TendencyGame/SummaryStats";
+import type { SummaryStatItem } from "../components/TendencyGame/SummaryStats";
+import TradePanel from "../components/TendencyGame/TradePanel";
+import TradeRecord from "../components/TendencyGame/TradeRecord";
+import StockOverview from "../components/TendencyGame/StockOverview";
+import StockHighlights from "../components/TendencyGame/StockHighlights";
 import TradeSuccessModal from '../components/TendencyGame/TradeSuccessModal';
 import GameFinishModal from '../components/TendencyGame/GameFinishModal';
-import { useTendencyGame } from '../hooks/useTendencyGame';
-import { useState, useEffect } from 'react';
+import { useTendencyGame } from "../hooks/useTendencyGame";
+import { useEffect, useMemo, useState } from "react";
+import { extractKeywords } from "../api/StockInfosApi";
 import { useNavigate } from 'react-router';
 
 export default function TendencyGamePage() {
-  const {
-    state,
-    loading,
-    error,
-    summaryItems,
-    tradeAmount,
-    setTradeAmount,
-    order,
-    nextWeek,
-    finish,
-    tradeSuccessModal,
-    closeTradeSuccessModal,
-    gameFinishModal,
-    closeGameFinishModal,
+  const { 
+    state, 
+    loading, 
+    error, 
+    summaryItems, 
+    tradeAmount, 
+    setTradeAmount, 
+    order, 
+    nextWeek, 
+    finish, 
+    tradeSuccessModal, 
+    closeTradeSuccessModal, 
+    gameFinishModal, 
+    closeGameFinishModal
   } = useTendencyGame();
   const navigate = useNavigate();
 
@@ -33,6 +34,35 @@ export default function TendencyGamePage() {
   };
 
   const [currentChartData, setCurrentChartData] = useState(null);
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [news, setNews] = useState<Array<{ title: string; url: string; date: string }>>([]);
+
+  const so = state?.stockOverview;
+
+  const startDate = useMemo(() => so?.currentDate, [so?.currentDate]);
+  const endDate = useMemo(() => {
+    const next = so?.nextDate;
+    if (!next || !startDate) return startDate;
+    const d = new Date(next);
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().slice(0, 10);
+  }, [so?.nextDate, startDate]);
+
+  useEffect(() => {
+    if (!so?.ticker || !so?.companyAlias || !startDate || !endDate) return;
+    
+    const run = async () => {
+      try {
+        const res = await extractKeywords(so.ticker, so.companyAlias, startDate, endDate);
+        setKeywords(res.keywords.map((k) => k.keyword).slice(0, 5));
+        setNews(res.news);
+      } catch {
+        setKeywords([]);
+        setNews([]);
+      }
+    };
+    void run();
+  }, [so?.ticker, so?.companyAlias, startDate, endDate]);
 
   useEffect(() => {
     if (state && state.stockOverview) {
@@ -50,18 +80,15 @@ export default function TendencyGamePage() {
     }
   }, [state]);
 
-  if (loading && !state)
-    return <div className="min-h-screen grid place-items-center">불러오는 중…</div>;
-  if (error && !state)
-    return <div className="min-h-screen grid place-items-center text-red-600">{error}</div>;
-  if (!state) return null;
+  if (loading && !state) return <div className="min-h-screen grid place-items-center">불러오는 중…</div>;
+  if (error && !state) return <div className="min-h-screen grid place-items-center text-red-600">{error}</div>;
+  if (!state || !so) return null;
 
-  const so = state.stockOverview;
   const tp = state.tradePanel;
 
   return (
     <div className="min-h-screen p-5">
-      <SummaryStats items={summaryItems} />
+      <SummaryStats items={summaryItems as SummaryStatItem[]} />
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <section className="space-y-4 lg:col-span-2">
@@ -76,7 +103,7 @@ export default function TendencyGamePage() {
               chartData={currentChartData}
             />
           )}
-          <StockHighlights keywords={state.highlights.keywords} news={state.highlights.news} />
+          <StockHighlights keywords={keywords} news={news} />
         </section>
         <section className="space-y-4">
           <TradePanel

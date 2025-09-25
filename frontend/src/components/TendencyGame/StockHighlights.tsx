@@ -1,8 +1,6 @@
-﻿import type { NewsItem } from "../../types/tendency";
-
-type Props = {
+﻿type Props = {
   keywords: string[];
-  news: NewsItem[];
+  news: Array<{ title: string; url: string; date: string }>;
 };
 
 export default function StockHighlights({ keywords, news }: Props) {
@@ -35,18 +33,12 @@ export default function StockHighlights({ keywords, news }: Props) {
         <h3 className="mb-2 text-sm font-semibold text-white">관련 뉴스</h3>
         {news.length > 0 ? (
           <ul className="space-y-2">
-            {news.map((item) => (
-              <li
-                key={item.id}
-                // 💡 배경과 어울리도록 색상을 변경
-                className="rounded-xl border border-slate-600 bg-slate-800 px-4 py-3"
-              >
-                {/* 💡 텍스트 색상을 배경에 맞게 변경 */}
-                <div className="font-semibold text-white">{item.title}</div>
-                {item.summary ? (
-                  // 💡 텍스트 색상을 배경에 맞게 변경
-                  <p className="mt-1 text-sm text-slate-400">{item.summary}</p>
-                ) : null}
+            {news.map((n, idx) => (
+              <li key={`${n.url}-${idx}`} className="rounded-xl border border-slate-600 bg-slate-800 px-4 py-3">
+                <a href={n.url} target="_blank" rel="noreferrer" className="font-semibold text-white hover:underline">
+                  {n.title}
+                </a>
+                <div className="mt-1 text-xs text-slate-500">{n.date}</div>
               </li>
             ))}
           </ul>
