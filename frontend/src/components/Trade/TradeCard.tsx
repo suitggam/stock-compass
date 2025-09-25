@@ -1,10 +1,11 @@
 import { useState } from "react";
-import type { UserTrade } from "../../types/user";
 import { useTrade } from "../../hooks/useTrade";
+import { sellStock } from "../../api/TradeApi";
+import type { UserAsset } from "../../types/Trade";
 
 interface TradeCardProps {
   ticker: string; // 종목 코드 추가
-  userTrade: UserTrade;
+  userTrade: UserAsset;
   stockPrice: number;
   onTrade?: (type: "BUY" | "SELL", amount: number) => void; // 로컬 상태 업데이트용
   onTradeSuccess?: () => void; // 거래 성공 시 추가 처리
@@ -63,49 +64,48 @@ function TradeCard({
     }
   };
 
-  // 매도 관련 함수 (현재 주석 처리된 상태)
-  // const handleSell = async () => {
-  //   if (amount <= 0) {
-  //     alert("수량을 입력해주세요.");
-  //     return;
-  //   }
+  const handleSell = async () => {
+    if (amount <= 0) {
+      alert("수량을 입력해주세요.");
+      return;
+    }
 
-  //   const totalValue = amount * stockPrice;
-  //   if (totalValue > userTrade.haveStock) {
-  //     alert("보유 주식이 부족합니다.");
-  //     return;
-  //   }
+    const totalValue = amount * stockPrice;
+    if (totalValue > userTrade.haveStock) {
+      alert("보유 주식이 부족합니다.");
+      return;
+    }
 
-  //   try {
-  //     clearError();
+    try {
+      clearError();
 
-  //     // 실제 API 호출
-  //     const result = await sellStock({
-  //       ticker,
-  //       price: stockPrice,
-  //       volume: amount,
-  //     });
+      // 실제 API 호출
+      const result = await sellStock({
+        ticker,
+        price: stockPrice,
+        volume: amount,
+      });
 
-  //     if (result) {
-  //       // 성공 시
-  //       alert(
-  //         `매도 완료!\n종목: ${ticker}\n수량: ${amount}주\n총 금액: ${result.totalPrice.toLocaleString()}원`
-  //       );
+      if (result) {
+        // 성공 시
+        alert(
+          `매도 완료!\n종목: ${ticker}\n수량: ${amount}주\n총 금액: ${result.totalPrice.toLocaleString()}원`
+        );
 
-  //       // 로컬 상태 업데이트 (기존 로직 유지)
-  //       if (onTrade) onTrade("SELL", totalValue);
+        // 로컬 상태 업데이트 (기존 로직 유지)
+        if (onTrade) onTrade("SELL", totalValue);
 
-  //       // 추가 처리
-  //       if (onTradeSuccess) onTradeSuccess();
+        // 추가 처리
+        if (onTradeSuccess) onTradeSuccess();
 
-  //       // 수량 초기화
-  //       setAmount(0);
-  //     }
-  //   } catch (err) {
-  //     console.error("매도 실패:", err);
-  //     alert("매도 주문 처리 중 오류가 발생했습니다.");
-  //   }
-  // };
+        // 수량 초기화
+        setAmount(0);
+      }
+    } catch (err) {
+      console.error("매도 실패:", err);
+      alert("매도 주문 처리 중 오류가 발생했습니다.");
+    }
+  };
 
   const increase = () => setAmount((prev) => prev + 1);
   const decrease = () => setAmount((prev) => (prev > 0 ? prev - 1 : 0));
@@ -133,7 +133,7 @@ function TradeCard({
         <div className="flex justify-between border-b border-slate-700 pb-2">
           <span>총 자산</span>
           <span className="font-semibold">
-            {userTrade.totalMoney.toLocaleString()} 원
+            {userTrade.originalMoney.toLocaleString()} 원
           </span>
         </div>
         <div className="flex justify-between border-b border-slate-700 pb-2">
@@ -152,11 +152,23 @@ function TradeCard({
           <span>전체 손익률</span>
           <span
             className={`font-semibold ${
-              userTrade.marginPercent >= 0 ? "text-green-400" : "text-red-400"
+              (userTrade.cash + userTrade.haveStock - userTrade.originalMoney) /
+                userTrade.originalMoney >=
+              0
+                ? "text-green-400"
+                : "text-red-400"
             }`}
           >
-            {userTrade.marginPercent > 0 ? "+" : ""}
-            {userTrade.marginPercent.toFixed(2)} %
+            {(userTrade.cash + userTrade.haveStock - userTrade.originalMoney) /
+              userTrade.originalMoney >
+            0
+              ? "+"
+              : ""}
+            {(
+              (userTrade.cash + userTrade.haveStock - userTrade.originalMoney) /
+              userTrade.originalMoney
+            ).toFixed(2)}{" "}
+            %
           </span>
         </div>
       </div>
@@ -190,11 +202,9 @@ function TradeCard({
         </div>
 
         {/* 예상 금액 표시 */}
-        {amount > 0 && (
-          <div className="text-sm text-slate-300 text-center bg-slate-700 rounded py-2">
-            예상 거래금액: {(amount * stockPrice).toLocaleString()}원
-          </div>
-        )}
+        <div className="text-sm text-slate-300 text-center bg-slate-700 rounded py-2">
+          거래금액: {(amount * stockPrice).toLocaleString()}원
+        </div>
 
         <div className="flex gap-3">
           <button
@@ -206,17 +216,12 @@ function TradeCard({
           </button>
           <button
             className="flex-1 bg-red-500 px-4 py-2 rounded-lg text-white font-semibold hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            // onClick={handleSell} // 매도 버튼 활성화
+            onClick={handleSell} // 매도 버튼 활성화
             disabled={loading || amount <= 0}
           >
             {loading ? "처리중..." : "매도"}
           </button>
         </div>
-      </div>
-
-      {/* 현재 주가 정보 */}
-      <div className="text-center text-sm text-slate-300 bg-slate-700 rounded py-2">
-        현재 주가: {stockPrice.toLocaleString()}원
       </div>
     </div>
   );

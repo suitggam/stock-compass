@@ -41,7 +41,11 @@ public class User {
 
     @Builder.Default
     @Column(name = "total_reward", nullable = false)
-    private Integer totalReward = 10_000_000;
+    private Integer totalReward = 0;
+
+    @Builder.Default
+    @Column(name = "original_money",nullable = false)
+    private Long originalMoney = 10_000_000L;
 
     @Builder.Default
     @Column(name = "cash",nullable = false)

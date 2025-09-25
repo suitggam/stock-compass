@@ -55,6 +55,9 @@ public class UserServiceImpl implements UserService {
         userRepository.flush();
     }
 
+
+
+
     public boolean toggleFavorite(Long userId, String ticker) {
         User user = userRepository.findWithFavoritesById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "USER_NOT_FOUND"));

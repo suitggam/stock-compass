@@ -1,6 +1,7 @@
 package com.stock.survive.serviceImpl;
 
 import com.stock.survive.dto.TradeHistoryDto;
+import com.stock.survive.dto.UserAssetDto;
 import com.stock.survive.entity.StockItems;
 import com.stock.survive.entity.TradeHistory;
 import com.stock.survive.entity.User;
@@ -22,6 +23,16 @@ public class TradeHistoryServiceImpl implements TradeHistoryService {
     private final StockItemRepository stockItemRepository;
     private final UserRepository userRepository;
     private final TradeHistoryRepository tradeHistoryRepository;
+
+    @Override
+    public UserAssetDto getUserAssets(Long userNo) {
+        Optional<User> user=userRepository.findById(userNo);
+        return UserAssetDto.builder()
+                .cash(user.get().getCash())
+                .haveStock(user.get().getHaveStock())
+                .originalMoney(user.get().getOriginalMoney())
+                .build();
+    }
 
 
 
@@ -65,6 +76,48 @@ public class TradeHistoryServiceImpl implements TradeHistoryService {
                 .createAt(tradeHistory.getCreateAt()) // 거래 생성 시점
                 .build();
     }
+
+    @Transactional
+    @Override
+    public TradeHistoryDto processSell(Long userNo, String ticker, Long price, Integer volume) {
+        // 1. 티커로 주식 정보 조회
+        StockItems stockItem = stockItemRepository.findByTicker(ticker);
+        Optional<User> optionalUser = userRepository.findById(userNo);
+
+
+        User user = optionalUser.get();
+        // 2. 거래 금액 계산
+        Long totalPrice = price * volume;
+
+        // 3. 사용자 자산 업데이트
+        Long setCash = user.getCash() + totalPrice;
+        Long setHaveStock = user.getHaveStock() - totalPrice;
+
+        // 4. 거래 내역 저장
+        TradeHistory tradeHistory = TradeHistory.builder()
+                .tradeType(TradeType.BUY)
+                .price(price)
+                .volume(volume)
+                .totalPrice(totalPrice)
+                .user(user)
+                .stockItems(stockItem)
+                .build();
+
+        // 5. 거래 내역 저장 및 사용자 자산 업데이트
+        tradeHistoryRepository.save(tradeHistory);
+        userRepository.updateCashAndHaveStock(userNo, setCash, setHaveStock);
+
+
+        // 6. 거래 내역을 DTO로 반환
+        return TradeHistoryDto.builder()
+                .tradeType("SELL")
+                .price(price)
+                .volume(volume)
+                .totalPrice(totalPrice)
+                .createAt(tradeHistory.getCreateAt()) // 거래 생성 시점
+                .build();
+    }
+
 
 }
 
