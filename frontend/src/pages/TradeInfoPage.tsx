@@ -34,19 +34,25 @@ import { useRealtimeStore } from "../stores/RealtimeState";
 import { useAuth } from "../stores/auth";
 import TradeKeywords from "../components/Trade/TradeKeywords";
 import TradeCard from "../components/Trade/TradeCard";
-import { mockData } from "../types/Trade";
+import { mockData, type UserAsset } from "../types/Trade";
 import TradeHistory from "../components/Trade/TradeHistory";
-import { mockData2, type UserTrade } from "../types/user";
+import { userAsset } from "../api/TradeApi"; // userAsset import
 
 function isMarketOpen(): boolean {
   const now = new Date();
   const totalMinutes = now.getHours() * 60 + now.getMinutes();
   return totalMinutes >= 9 * 60 && totalMinutes <= 15 * 60 + 30;
 }
+
 function TradeInfoPage() {
   const { ticker } = useParams<{ ticker: string }>();
   const marketOpen = isMarketOpen();
-  const [userTrade, setUserTrade] = useState<UserTrade>(mockData2);
+  const [userTrade, setUserTrade] = useState<UserAsset>({
+    cash: 0,
+    haveStock: 0,
+    originalMoney: 0,
+  }); // 초기값 설정
+  // 자산 정보 상태
 
   const realtime = useRealtimeStore((s) => s.data[ticker ?? ""]);
   const connectRealtime = useRealtimeStore((s) => s.connect);
@@ -67,6 +73,19 @@ function TradeInfoPage() {
 
   const { user } = useAuth();
   const isLoggedIn = Boolean(user);
+
+  // 사용자 자산 정보 가져오기
+  useEffect(() => {
+    if (!isLoggedIn) return; // 로그인 상태일 때만 실행
+    (async () => {
+      try {
+        const res = await userAsset(); // 실제 데이터 호출
+        setUserTrade(res); // 자산 데이터를 상태에 저장
+      } catch (err) {
+        console.error("사용자 자산 데이터 가져오기 실패:", err);
+      }
+    })();
+  }, [isLoggedIn]); // 로그인 상태가 변경될 때마다 호출
 
   // 관심목록 상태 조회
   useEffect(() => {
@@ -261,6 +280,8 @@ function TradeInfoPage() {
     console.log(type, amount);
 
     setUserTrade((prev) => {
+      if (!prev) return prev;
+
       const cash = prev.cash;
       const haveStock = prev.haveStock;
       let newCash = cash;
@@ -276,7 +297,7 @@ function TradeInfoPage() {
 
       const totalMoney = newCash + newStock;
       const marginPercent =
-        ((totalMoney - prev.totalMoney) / prev.totalMoney) * 100;
+        ((totalMoney - prev.originalMoney) / prev.originalMoney) * 100;
 
       return {
         ...prev,
@@ -365,11 +386,9 @@ function TradeInfoPage() {
               <TradeCard
                 ticker={ticker!} // ticker 추가
                 stockPrice={displayPrice}
-                userTrade={userTrade}
+                userTrade={userTrade} // userTrade 상태 사용
                 onTrade={handleTrade}
                 onTradeSuccess={() => {
-                  // 거래 성공 시 추가 처리 (선택사항)
-                  // 예: 거래 내역 새로고침, 토스트 알림 등
                   console.log("거래가 성공적으로 완료되었습니다.");
                 }}
               />

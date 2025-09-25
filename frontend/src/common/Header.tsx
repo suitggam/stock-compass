@@ -66,13 +66,13 @@ export default function Header() {
       >
         모의 투자
       </Link>
-      <Link
+      {/* <Link
         to="/ranking"
         className="px-2 py-2 text-slate-300 hover:text-white font-bold flex-none shrink-0 whitespace-nowrap"
         onClick={onClick}
       >
         모의 투자 랭킹
-      </Link>
+      </Link> */}
     </>
   );
 
