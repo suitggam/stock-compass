@@ -4,12 +4,20 @@ import TradePanel from "../components/TendencyGame/TradePanel";
 import TradeRecord from "../components/TendencyGame/TradeRecord";
 import StockOverview from "../components/TendencyGame/StockOverview";
 import StockHighlights from "../components/TendencyGame/StockHighlights";
+import TradeSuccessModal from "../components/TendencyGame/TradeSuccessModal";
+import GameFinishModal from "../components/TendencyGame/GameFinishModal";
 import { useTendencyGame } from "../hooks/useTendencyGame";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function TendencyGamePage() {
-    const { state, loading, error, summaryItems, tradeAmount, setTradeAmount, order, nextWeek, finish } =
-        useTendencyGame();
+  const { state, loading, error, summaryItems, tradeAmount, setTradeAmount, order, nextWeek, finish, tradeSuccessModal, closeTradeSuccessModal, gameFinishModal, closeGameFinishModal } =
+    useTendencyGame();
+  const navigate = useNavigate();
+
+  const handleGoHome = () => {
+    navigate("/");
+  };
 
     const [currentChartData, setCurrentChartData] = useState(null);
 
@@ -56,32 +64,30 @@ export default function TendencyGamePage() {
                     <StockHighlights keywords={state.highlights.keywords} news={state.highlights.news} />
                 </section>
                 <section className="space-y-4">
-                    <TradePanel
-                        stockCount={tp.stockCount}
-                        totalValue={tp.stockValuation}
-                        averageCost={tp.averageCost}
-                        evaluationProfit={tp.evaluationProfit}
-                        evaluationRate={tp.evaluationRate}
-                        tradeAmount={tradeAmount}
-                        onTradeAmountChange={setTradeAmount}
-                        onBuy={() => order("BUY", tradeAmount)}
-                        onSell={() => order("SELL", tradeAmount)}
-                        onNextWeek={nextWeek}
-                        onEndGame={async () => {
-                            const res = await finish();
-                            if (res) {
-                                alert(
-                                    `게임 종료\n총 자산: ${new Intl.NumberFormat("ko-KR").format(res.totalAsset)}원\n실현 손익: ${new Intl.NumberFormat(
-                                        "ko-KR",
-                                    ).format(res.realizedProfit)}원\n수익률: ${res.totalYield.toFixed(2)}%\n성향: ${res.tendencyType}\n추천: ${res.recommendation}`,
-                                );
-                            }
-                        }}
-                        term={"0주"}
-                        onTermChange={() => {}}
-                        maxAffordable={tp.maxAffordable}
-                        maxSellable={tp.maxSellable}
-                    />
+          <TradePanel
+            stockCount={tp.stockCount}
+            totalValue={tp.stockValuation}
+            averageCost={tp.averageCost}
+            evaluationProfit={tp.evaluationProfit}
+            evaluationRate={tp.evaluationRate}
+            tradeAmount={tradeAmount}
+            onTradeAmountChange={setTradeAmount}
+            onBuy={() => order("BUY", tradeAmount)}
+            onSell={() => order("SELL", tradeAmount)}
+            onNextWeek={nextWeek}
+            onEndGame={async () => {
+              const res = await finish();
+              if (res) {
+                alert(
+                  `게임 종료\n총 자산: ${new Intl.NumberFormat("ko-KR").format(res.totalAsset)}원\n실현 손익: ${new Intl.NumberFormat(
+                    "ko-KR",
+                  ).format(res.realizedProfit)}원\n수익률: ${res.totalYield.toFixed(2)}%\n성향: ${res.tendencyType}\n추천: ${res.recommendation}`,
+                );
+              }
+            }}
+            maxAffordable={tp.maxAffordable}
+            maxSellable={tp.maxSellable}
+          />
                     <TradeRecord
                         items={state.trades.map((t) => ({
                             gameTradeType: t.type,
@@ -90,8 +96,23 @@ export default function TendencyGamePage() {
                             qty: t.quantity,
                         }))}
                     />
-                </section>
-            </div>
-        </div>
-    );
+        </section>
+      </div>
+      
+      <TradeSuccessModal
+        isOpen={tradeSuccessModal.isOpen}
+        onClose={closeTradeSuccessModal}
+        tradeType={tradeSuccessModal.tradeType}
+        quantity={tradeSuccessModal.quantity}
+        price={tradeSuccessModal.price}
+      />
+      
+      <GameFinishModal
+        isOpen={gameFinishModal.isOpen}
+        onClose={closeGameFinishModal}
+        onGoHome={handleGoHome}
+        result={gameFinishModal.result}
+      />
+    </div>
+  );
 }

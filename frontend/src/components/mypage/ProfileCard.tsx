@@ -20,7 +20,6 @@ type Props = {
 export default function ProfileCard({ favoriteCount = 0, gameCount = 0 }: Props) {
   const user = useAuth((s) => s.user);
   const setUser = useAuth((s) => s.setUser);
-  const accessToken = useAuth((s) => s.accessToken);
   const logout = useAuth((s) => s.logout);
 
   const [openNick, setOpenNick] = React.useState(false);
@@ -93,7 +92,7 @@ export default function ProfileCard({ favoriteCount = 0, gameCount = 0 }: Props)
       </div>
 
       {/* ── 하단(요약 3칸 + 탈퇴 버튼) : 카드 바닥에 고정 */}
-      <div className="mt-6 flex flex-col gap-5 mt-auto">
+      <div className="flex flex-col gap-5 mt-auto pt-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* 관심 종목 */}
           <div className="rounded-xl p-4 text-center bg-slate-600 border border-slate-500 hover:border-amber-400 transition-all">

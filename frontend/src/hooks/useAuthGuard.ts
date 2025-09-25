@@ -1,20 +1,33 @@
-// src/hooks/useAuthGuard.ts
-
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../stores/auth';
+import { getAccessToken, subscribe } from '../api/tokenCache';
 
 export default function useAuthGuard(redirectTo: string = '/') {
   const nav = useNavigate();
-  const { accessToken, loading, bootstrap } = useAuth();
+  const { loading, bootstrap } = useAuth();
+
+  // 토큰을 state로 관리해 변경에 반응
+  const [token, setToken] = useState<string | null>(() => getAccessToken());
 
   useEffect(() => {
-    if (loading) void bootstrap(); // refresh → me
+    const off = subscribe(setToken); // 반드시 () => void 반환
+    return off;
+  }, []);
+
+  // 앱 부트스트랩(쿠키→refresh→me)
+  useEffect(() => {
+    if (loading) void bootstrap();
   }, [loading, bootstrap]);
 
+  const ready = !loading;
+
+  // 가드: 로딩 끝났고 토큰 없으면 리다이렉트
   useEffect(() => {
-    if (!loading && !accessToken) {
+    if (ready && !token) {
       nav(redirectTo, { replace: true });
     }
-  }, [loading, accessToken, nav, redirectTo]);
+  }, [ready, token, nav, redirectTo]);
+
+  return { authed: !!token, ready };
 }
