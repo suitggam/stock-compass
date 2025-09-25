@@ -41,10 +41,6 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .oauth2Login(oauth -> oauth
-                    .authorizationEndpoint(ep -> ep.baseUri("/users/auth"))
-                    .redirectionEndpoint(ep -> ep.baseUri("/login/oauth2/code/*"))
-                )
                 .authorizeHttpRequests(auth -> auth
 
                   
