@@ -40,25 +40,29 @@ pipeline {
       }
       steps {
         ansiColor('xterm') {
-          withCredentials([
-            sshUserPrivateKey(credentialsId: 'prod-ssh', keyFileVariable: 'KEY', usernameVariable: 'SSH_USER'),
+        withCredentials([
+            sshUserPrivateKey(
+              credentialsId: 'prod-ssh',
+              keyFileVariable: 'KEY',
+              usernameVariable: 'SSH_USER'        
+            ),
             usernamePassword(credentialsId: 'gitlab-deploy', usernameVariable: 'GL_USER', passwordVariable: 'GL_PASS'),
             file(credentialsId: 'FRONTEND_ENV', variable: 'FE_ENV_FILE')
-        ]) {
-          sh '''
-            set -eu
-            echo "==[1/5] 원격 준비 =="
-            ssh -o StrictHostKeyChecking=no -i "$KEY" "$USER@${HOST}" '
-              set -e
-              mkdir -p ~/ci/app/repo/frontend /srv/app/backend /srv/app/frontend
-            '
+          ]) {
+            sh '''
+              set -eu
+              echo "==[1/5] 원격 준비 =="
+              ssh -o StrictHostKeyChecking=no -i "$KEY" "$SSH_USER@${HOST}" '   # ← 여기서도 SSH_USER
+                set -e
+                mkdir -p ~/ci/app/repo/frontend /srv/app/backend /srv/app/frontend
+              '
 
-            echo "==[2/5] .env 업로드 (프론트만 필요시) =="
-            scp -o StrictHostKeyChecking=no -i "$KEY" "$FE_ENV_FILE" "$USER@${HOST}:~/ci/app/repo/frontend/.env.tmp"
-            ssh -o StrictHostKeyChecking=no -i "$KEY" "$USER@${HOST}" '
-              set -e
-              mv ~/ci/app/repo/frontend/.env.tmp ~/ci/app/repo/frontend/.env && chmod 600 ~/ci/app/repo/frontend/.env
-            '
+              echo "==[2/5] .env 업로드 (프론트만) =="
+              scp -o StrictHostKeyChecking=no -i "$KEY" "$FE_ENV_FILE" "$SSH_USER@${HOST}:~/ci/app/repo/frontend/.env.tmp"
+              ssh -o StrictHostKeyChecking=no -i "$KEY" "$SSH_USER@${HOST}" '
+                set -e
+                mv ~/ci/app/repo/frontend/.env.tmp ~/ci/app/repo/frontend/.env && chmod 600 ~/ci/app/repo/frontend/.env
+              '
 
               rm -rf logs && mkdir -p logs
 
