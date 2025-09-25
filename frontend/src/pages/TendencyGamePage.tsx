@@ -57,32 +57,30 @@ export default function TendencyGamePage() {
                     <StockHighlights keywords={state.highlights.keywords} news={state.highlights.news} />
                 </section>
                 <section className="space-y-4">
-                    <TradePanel
-                        stockCount={tp.stockCount}
-                        totalValue={tp.stockValuation}
-                        averageCost={tp.averageCost}
-                        evaluationProfit={tp.evaluationProfit}
-                        evaluationRate={tp.evaluationRate}
-                        tradeAmount={tradeAmount}
-                        onTradeAmountChange={setTradeAmount}
-                        onBuy={() => order("BUY", tradeAmount)}
-                        onSell={() => order("SELL", tradeAmount)}
-                        onNextWeek={nextWeek}
-                        onEndGame={async () => {
-                            const res = await finish();
-                            if (res) {
-                                alert(
-                                    `게임 종료\n총 자산: ${new Intl.NumberFormat("ko-KR").format(res.totalAsset)}원\n실현 손익: ${new Intl.NumberFormat(
-                                        "ko-KR",
-                                    ).format(res.realizedProfit)}원\n수익률: ${res.totalYield.toFixed(2)}%\n성향: ${res.tendencyType}\n추천: ${res.recommendation}`,
-                                );
-                            }
-                        }}
-                        term={"0주"}
-                        onTermChange={() => {}}
-                        maxAffordable={tp.maxAffordable}
-                        maxSellable={tp.maxSellable}
-                    />
+          <TradePanel
+            stockCount={tp.stockCount}
+            totalValue={tp.stockValuation}
+            averageCost={tp.averageCost}
+            evaluationProfit={tp.evaluationProfit}
+            evaluationRate={tp.evaluationRate}
+            tradeAmount={tradeAmount}
+            onTradeAmountChange={setTradeAmount}
+            onBuy={() => order("BUY", tradeAmount)}
+            onSell={() => order("SELL", tradeAmount)}
+            onNextWeek={nextWeek}
+            onEndGame={async () => {
+              const res = await finish();
+              if (res) {
+                alert(
+                  `게임 종료\n총 자산: ${new Intl.NumberFormat("ko-KR").format(res.totalAsset)}원\n실현 손익: ${new Intl.NumberFormat(
+                    "ko-KR",
+                  ).format(res.realizedProfit)}원\n수익률: ${res.totalYield.toFixed(2)}%\n성향: ${res.tendencyType}\n추천: ${res.recommendation}`,
+                );
+              }
+            }}
+            maxAffordable={tp.maxAffordable}
+            maxSellable={tp.maxSellable}
+          />
                     <TradeRecord
                         items={state.trades.map((t) => ({
                             gameTradeType: t.type,

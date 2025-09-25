@@ -78,15 +78,6 @@ export default function TradePanel({
 
                 <div className="flex items-center justify-between">
                     <label className="text-sm text-slate-400">투자 금액</label>
-                    <select
-                        className="rounded-lg border border-slate-600 px-3 py-2 text-sm bg-slate-900 text-white"
-                        value={term}
-                        onChange={(e) => onTermChange(e.target.value)}
-                    >
-                        <option value="0주">0주</option>
-                        <option value="2주">2주</option>
-                        <option value="4주">4주</option>
-                    </select>
                 </div>
 
                 <div className="flex items-end gap-3">
