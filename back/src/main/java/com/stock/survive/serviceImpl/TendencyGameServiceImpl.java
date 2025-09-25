@@ -2,7 +2,7 @@ package com.stock.survive.serviceImpl;
 
 import com.stock.survive.dto.tendency.TendencyGameFinishRequest;
 import com.stock.survive.dto.tendency.TendencyGameOrderRequest;
-import com.stock.survive.dto.tendency.TendencyGameResultResponse;
+import com.stock.survive.dto.tendency.TendencyGameResponse;
 import com.stock.survive.dto.tendency.TendencyGameStateResponse;
 import com.stock.survive.dto.tendency.TendencyGameStartRequest;
 import com.stock.survive.entity.StockInfos;
@@ -178,7 +178,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
     }
     
     @Override
-    public TendencyGameResultResponse finish(Long userId, TendencyGameFinishRequest request) {
+    public TendencyGameResponse finish(Long userId, TendencyGameFinishRequest request) {
         TendencyGameSession session = fetchSession(userId, request.sessionId());
         ensureInProgress(session);
         
@@ -223,7 +223,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
         session.setRecommendation(profile.getRecommendation());
         sessions.put(session.getId(), session);
         
-        return new TendencyGameResultResponse(
+        return new TendencyGameResponse(
                 session.getId(),
                 session.getMaxWeek(),
                 session.getCurrentWeek(),

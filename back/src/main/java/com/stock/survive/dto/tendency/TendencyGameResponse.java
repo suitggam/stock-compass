@@ -2,7 +2,7 @@ package com.stock.survive.dto.tendency;
 
 import java.time.LocalDateTime;
 
-public record TendencyGameResultResponse(
+public record TendencyGameResponse(
         Long sessionId,
         int maxWeek,
         int finalWeek,
