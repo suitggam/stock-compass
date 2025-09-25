@@ -20,4 +20,4 @@ email-ext
 mailer
 slack
 telegram-notifications
-
+generic-webhook-trigger

@@ -56,6 +56,7 @@ public class SecurityConfig {
                         "/api/users/logout",
                         "/error",
                         "/actuator/**",
+                        "/api/actuator/**",
                         "/api/stock/**",
                         "/extract-keywords/**",
                         "/api/mypage/**"

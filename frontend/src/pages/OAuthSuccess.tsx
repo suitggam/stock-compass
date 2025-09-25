@@ -22,7 +22,6 @@ export default function OAuthSuccess() {
 
     (async () => {
       try {
-        // 백엔드가 콜백에서 Refresh(HttpOnly 쿠키)만 심어줬다고 가정:
         // bootstrap()이 refresh → accessToken → me 조회까지 수행
         await bootstrap();
 

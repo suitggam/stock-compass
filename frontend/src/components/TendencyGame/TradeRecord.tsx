@@ -5,14 +5,17 @@ const formatCurrency = (v: number) => `${new Intl.NumberFormat("ko-KR").format(M
 
 export default function TradeRecord({ items }: Props) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm">
+    // 💡 배경, 그림자, 테두리 스타일을 어두운 테마에 맞게 변경
+    <div className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-700 p-5 shadow-xl border border-slate-600 text-white">
       <div className="mb-3 flex items-center justify-between">
-        <div className="font-bold text-slate-900">최근 매수/매도 내역</div>
+        {/* 💡 텍스트 색상 변경 */}
+        <div className="font-bold text-white">최근 매수/매도 내역</div>
       </div>
       <div className="max-h-96 overflow-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-slate-500">
+            {/* 💡 텍스트 색상 변경 */}
+            <tr className="text-slate-400">
               <th className="py-2 text-left font-medium">구분</th>
               <th className="py-2 text-right font-medium">가격</th>
               <th className="py-2 text-right font-medium">수량</th>
@@ -28,8 +31,10 @@ export default function TradeRecord({ items }: Props) {
               </tr>
             ) : (
               items.map((t, idx) => (
-                <tr key={`${t.gameTradeDate}-${idx}`} className="border-t border-slate-100">
-                  <td className={`py-2 font-semibold ${t.gameTradeType === "BUY" ? "text-emerald-600" : "text-rose-600"}`}>
+                // 💡 테두리 색상과 텍스트 색상 변경
+                <tr key={`${t.gameTradeDate}-${idx}`} className="border-t border-slate-600 text-slate-300">
+                  {/* 💡 매수/매도 색상 변경 */}
+                  <td className={`py-2 font-semibold ${t.gameTradeType === "BUY" ? "text-emerald-400" : "text-rose-400"}`}>
                     {t.gameTradeType === "BUY" ? "매수" : "매도"}
                   </td>
                   <td className="py-2 text-right">{formatCurrency(t.gameTradePrice)}</td>

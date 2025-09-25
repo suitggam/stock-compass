@@ -8,6 +8,24 @@ export function useTendencyGame() {
   const [error, setError] = useState<string | null>(null);
   const [tradeAmount, setTradeAmount] = useState(1);
   const [finishResult, setFinishResult] = useState<FinishResultResponse | null>(null);
+  const [tradeSuccessModal, setTradeSuccessModal] = useState<{
+    isOpen: boolean;
+    tradeType: "BUY" | "SELL";
+    quantity: number;
+    price: number;
+  }>({
+    isOpen: false,
+    tradeType: "BUY",
+    quantity: 0,
+    price: 0,
+  });
+  const [gameFinishModal, setGameFinishModal] = useState<{
+    isOpen: boolean;
+    result: FinishResultResponse | null;
+  }>({
+    isOpen: false,
+    result: null,
+  });
 
   const start = useCallback(async (opts?: { ticker?: string; itemNo?: number }) => {
     setLoading(true);
@@ -46,15 +64,24 @@ export function useTendencyGame() {
         const res = await tendencyGameApi.order(sessionId, {
           type,
           quantity: Math.max(1, Math.floor(qty ?? tradeAmount)),
+          tradeDate: (state?.stockOverview.currentDate ?? new Date().toISOString().slice(0, 10)),
         });
         setState(res);
+        
+        // 거래 성공 모달 표시
+        setTradeSuccessModal({
+          isOpen: true,
+          tradeType: type,
+          quantity: Math.max(1, Math.floor(qty ?? tradeAmount)),
+          price: res.stockOverview.price,
+        });
       } catch (e: any) {
         setError(e?.message ?? "주문 실패");
       } finally {
         setLoading(false);
       }
     },
-    [sessionId, tradeAmount],
+    [sessionId, tradeAmount, state?.stockOverview.currentDate],
   );
 
   const nextWeek = useCallback(async () => {
@@ -78,6 +105,13 @@ export function useTendencyGame() {
     try {
       const res = await tendencyGameApi.finish(sessionId);
       setFinishResult(res);
+      
+      // 게임 종료 모달 표시
+      setGameFinishModal({
+        isOpen: true,
+        result: res,
+      });
+      
       return res;
     } catch (e: any) {
       setError(e?.message ?? "게임 종료 실패");
@@ -86,6 +120,14 @@ export function useTendencyGame() {
       setLoading(false);
     }
   }, [sessionId]);
+
+  const closeTradeSuccessModal = useCallback(() => {
+    setTradeSuccessModal(prev => ({ ...prev, isOpen: false }));
+  }, []);
+
+  const closeGameFinishModal = useCallback(() => {
+    setGameFinishModal(prev => ({ ...prev, isOpen: false }));
+  }, []);
 
   useEffect(() => {
     // 첫 진입 시 바로 시작(랜덤 종목/기간)
@@ -131,6 +173,10 @@ export function useTendencyGame() {
     nextWeek,
     finish,
     finishResult,
+    tradeSuccessModal,
+    closeTradeSuccessModal,
+    gameFinishModal,
+    closeGameFinishModal,
   };
 }
 

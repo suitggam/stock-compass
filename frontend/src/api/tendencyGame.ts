@@ -59,6 +59,7 @@ export interface StartRequest {
 export interface OrderRequest {
   type: TradeType;
   quantity: number;
+  tradeDate?: string; // 클라이언트에서 현재 주차 날짜를 명시적으로 전달
 }
 
 export interface FinishResultResponse {
