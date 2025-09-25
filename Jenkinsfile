@@ -40,30 +40,28 @@ pipeline {
       }
       steps {
         ansiColor('xterm') {
-          withCredentials([
-            sshUserPrivateKey(credentialsId: 'prod-ssh', keyFileVariable: 'KEY', usernameVariable: 'SSH_USER'),
+        withCredentials([
+            sshUserPrivateKey(
+              credentialsId: 'prod-ssh',
+              keyFileVariable: 'KEY',
+              usernameVariable: 'SSH_USER'        
+            ),
             usernamePassword(credentialsId: 'gitlab-deploy', usernameVariable: 'GL_USER', passwordVariable: 'GL_PASS'),
-            file(credentialsId: 'FRONTEND_ENV', variable: 'FE_ENV_FILE'),
-            file(credentialsId: 'BACKEND_ENV',  variable: 'BE_ENV_FILE')
+            file(credentialsId: 'FRONTEND_ENV', variable: 'FE_ENV_FILE')
           ]) {
             sh '''
-              set -eu   # <-- dash에서도 OK (pipefail 제거)
-
+              set -eu
               echo "==[1/5] 원격 준비 =="
-              ssh -o StrictHostKeyChecking=no -i "$KEY" "$SSH_USER@${HOST}" '
+              ssh -o StrictHostKeyChecking=no -i "$KEY" "$SSH_USER@${HOST}" '   # ← 여기서도 SSH_USER
                 set -e
-                mkdir -p ~/ci/app/repo/frontend ~/ci/app/repo/back /srv/app/backend /srv/app/frontend
-                chmod 700 ~/ci/app/repo/back
-                chown $USER:$USER ~/ci/app/repo/back
+                mkdir -p ~/ci/app/repo/frontend /srv/app/backend /srv/app/frontend
               '
 
-              echo "==[2/5] .env 업로드 =="
+              echo "==[2/5] .env 업로드 (프론트만) =="
               scp -o StrictHostKeyChecking=no -i "$KEY" "$FE_ENV_FILE" "$SSH_USER@${HOST}:~/ci/app/repo/frontend/.env.tmp"
-              scp -o StrictHostKeyChecking=no -i "$KEY" "$BE_ENV_FILE" "$SSH_USER@${HOST}:~/ci/app/repo/back/.env.tmp"
               ssh -o StrictHostKeyChecking=no -i "$KEY" "$SSH_USER@${HOST}" '
                 set -e
                 mv ~/ci/app/repo/frontend/.env.tmp ~/ci/app/repo/frontend/.env && chmod 600 ~/ci/app/repo/frontend/.env
-                mv ~/ci/app/repo/back/.env.tmp     ~/ci/app/repo/back/.env     && chmod 600 ~/ci/app/repo/back/.env
               '
 
               rm -rf logs && mkdir -p logs
