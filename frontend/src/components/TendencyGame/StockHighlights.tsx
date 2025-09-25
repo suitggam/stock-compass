@@ -1,8 +1,6 @@
-﻿import type { NewsItem } from "../../types/tendency";
-
-type Props = {
+﻿type Props = {
   keywords: string[];
-  news: NewsItem[];
+  news: Array<{ title: string; url: string; date: string }>;
 };
 
 export default function StockHighlights({ keywords, news }: Props) {
@@ -30,10 +28,12 @@ export default function StockHighlights({ keywords, news }: Props) {
         <h3 className="mb-2 text-sm font-semibold text-slate-700">관련 뉴스</h3>
         {news.length > 0 ? (
           <ul className="space-y-2">
-            {news.map((item) => (
-              <li key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <div className="font-semibold text-slate-900">{item.title}</div>
-                {item.summary ? <p className="mt-1 text-sm text-slate-600">{item.summary}</p> : null}
+            {news.map((n, idx) => (
+              <li key={`${n.url}-${idx}`} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <a href={n.url} target="_blank" rel="noreferrer" className="font-semibold text-slate-900 hover:underline">
+                  {n.title}
+                </a>
+                <div className="mt-1 text-xs text-slate-500">{n.date}</div>
               </li>
             ))}
           </ul>
