@@ -37,14 +37,14 @@ public class GameResultServiceImpl implements GameResultService {
         
         GameResultEntity gameResultEntity = GameResultEntity.builder()
                 .userNo(userId)
-                .tendencyI(10) // 예시로 임시값 사용
-                .tendencyE(10)
-                .tendencyS(10)
-                .tendencyN(10)
-                .tendencyF(10)
-                .tendencyT(10)
-                .tendencyJ(10)
-                .tendencyP(10)
+                .tendencyI(response.tendencyI())
+                .tendencyE(response.tendencyE())
+                .tendencyS(response.tendencyS())
+                .tendencyN(response.tendencyN())
+                .tendencyF(response.tendencyF())
+                .tendencyT(response.tendencyT())
+                .tendencyJ(response.tendencyJ())
+                .tendencyP(response.tendencyP())
                 .build();
         
         gameResultRepository.save(gameResultEntity);

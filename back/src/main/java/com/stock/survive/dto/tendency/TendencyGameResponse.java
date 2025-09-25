@@ -1,7 +1,9 @@
 package com.stock.survive.dto.tendency;
 
+import lombok.Builder;
 import java.time.LocalDateTime;
 
+@Builder
 public record TendencyGameResponse(
         Long sessionId,
         int maxWeek,
@@ -17,6 +19,15 @@ public record TendencyGameResponse(
         int volatileSellCount,
         int sellDominantWeekCount,
         LocalDateTime startedAt,
-        LocalDateTime finishedAt
+        LocalDateTime finishedAt,
+        
+        Integer tendencyI,
+        Integer tendencyE,
+        Integer tendencyS,
+        Integer tendencyN,
+        Integer tendencyF,
+        Integer tendencyT,
+        Integer tendencyJ,
+        Integer tendencyP
 ) {
 }
