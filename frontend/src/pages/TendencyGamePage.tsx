@@ -6,6 +6,7 @@ import StockOverview from "../components/TendencyGame/StockOverview";
 import StockHighlights from "../components/TendencyGame/StockHighlights";
 import TradeSuccessModal from '../components/TendencyGame/TradeSuccessModal';
 import GameFinishModal from '../components/TendencyGame/GameFinishModal';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useTendencyGame } from "../hooks/useTendencyGame";
 import { useEffect, useMemo, useState } from "react";
 import { extractKeywords } from "../api/StockInfosApi";
@@ -25,7 +26,8 @@ export default function TendencyGamePage() {
     tradeSuccessModal, 
     closeTradeSuccessModal, 
     gameFinishModal, 
-    closeGameFinishModal
+    closeGameFinishModal,
+    nextWeekLoading
   } = useTendencyGame();
   const navigate = useNavigate();
 
@@ -36,6 +38,7 @@ export default function TendencyGamePage() {
   const [currentChartData, setCurrentChartData] = useState(null);
   const [keywords, setKeywords] = useState<string[]>([]);
   const [news, setNews] = useState<Array<{ title: string; url: string; date: string }>>([]);
+  const [keywordsLoading, setKeywordsLoading] = useState(false);
 
   const so = state?.stockOverview;
 
@@ -52,6 +55,7 @@ export default function TendencyGamePage() {
     if (!so?.ticker || !so?.companyAlias || !startDate || !endDate) return;
     
     const run = async () => {
+      setKeywordsLoading(true);
       try {
         const res = await extractKeywords(so.ticker, so.companyAlias, startDate, endDate);
         setKeywords(res.keywords.map((k) => k.keyword).slice(0, 5));
@@ -59,6 +63,8 @@ export default function TendencyGamePage() {
       } catch {
         setKeywords([]);
         setNews([]);
+      } finally {
+        setKeywordsLoading(false);
       }
     };
     void run();
@@ -102,9 +108,24 @@ export default function TendencyGamePage() {
               rate={so.changeRate}
               chartData={currentChartData}
             />
-          )}
-          <StockHighlights keywords={keywords} news={news} />
-        </section>
+           )}
+           {(nextWeekLoading || keywordsLoading) ? (
+             <div className="rounded-xl bg-slate-900 p-5">
+               <div className="mb-3 flex items-center justify-between">
+                 <div className="font-semibold text-white">주요 키워드 & 뉴스</div>
+               </div>
+               <div className="flex items-center justify-center py-8">
+                 <LoadingSpinner 
+                   size="md" 
+                   textColor="dark"
+                   text={nextWeekLoading ? "다음 주 데이터를 불러오는 중..." : "키워드와 뉴스를 불러오는 중..."} 
+                 />
+               </div>
+             </div>
+           ) : (
+             <StockHighlights keywords={keywords} news={news} />
+           )}
+         </section>
         <section className="space-y-4">
           <TradePanel
             stockCount={tp.stockCount}
@@ -131,6 +152,8 @@ export default function TendencyGamePage() {
                 );
               }
             }}
+            term="0주"
+            onTermChange={() => {}}
             maxAffordable={tp.maxAffordable}
             maxSellable={tp.maxSellable}
           />
