@@ -37,7 +37,8 @@ public class JWTCheckFilter extends OncePerRequestFilter {
         "/users/auth/**",
         "/api/users/auth/**",
         "/error",
-        "/actuator/health","/actuator/info",
+        "/actuator/**",
+        "/api/actuator/**",
         "/favicon.ico"
     );
     
