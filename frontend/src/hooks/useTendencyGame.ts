@@ -19,6 +19,13 @@ export function useTendencyGame() {
     quantity: 0,
     price: 0,
   });
+  const [gameFinishModal, setGameFinishModal] = useState<{
+    isOpen: boolean;
+    result: FinishResultResponse | null;
+  }>({
+    isOpen: false,
+    result: null,
+  });
 
   const start = useCallback(async (opts?: { ticker?: string; itemNo?: number }) => {
     setLoading(true);
@@ -98,6 +105,13 @@ export function useTendencyGame() {
     try {
       const res = await tendencyGameApi.finish(sessionId);
       setFinishResult(res);
+      
+      // 게임 종료 모달 표시
+      setGameFinishModal({
+        isOpen: true,
+        result: res,
+      });
+      
       return res;
     } catch (e: any) {
       setError(e?.message ?? "게임 종료 실패");
@@ -109,6 +123,10 @@ export function useTendencyGame() {
 
   const closeTradeSuccessModal = useCallback(() => {
     setTradeSuccessModal(prev => ({ ...prev, isOpen: false }));
+  }, []);
+
+  const closeGameFinishModal = useCallback(() => {
+    setGameFinishModal(prev => ({ ...prev, isOpen: false }));
   }, []);
 
   useEffect(() => {
@@ -157,6 +175,8 @@ export function useTendencyGame() {
     finishResult,
     tradeSuccessModal,
     closeTradeSuccessModal,
+    gameFinishModal,
+    closeGameFinishModal,
   };
 }
 
