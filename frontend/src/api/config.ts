@@ -25,5 +25,10 @@ export const url = (path: string): string => {
   // path가 슬래시로 시작하는지 확인하고 적절히 구성
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   
+  // 중복 /api 방지: base가 /api로 끝나고 path가 /api로 시작하면 중복 제거
+  if (base.endsWith('/api') && normalizedPath.startsWith('/api')) {
+    return `${base}${normalizedPath.substring(4)}`; // /api 제거
+  }
+  
   return `${base}${normalizedPath}`;
 };
