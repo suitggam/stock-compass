@@ -1,4 +1,5 @@
 import type { MyPageData } from '../../types/MyPageData';
+import { Link } from 'react-router';
 
 type Props = {
   items?: NonNullable<MyPageData['mockInvestHistory']> | undefined;
@@ -22,14 +23,14 @@ export default function MockInvestmentHistory({ items = [] }: Props) {
       {/* KPI */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="rounded-2xl p-5 text-center bg-slate-600 border border-slate-500 hover:border-amber-400 transition-all">
-          <div className="text-amber-400 text-xl sm:text-2xl font-bold">{totalGames}</div>
-          <div className="text-slate-300 text-xs">총 게임</div>
+          <div className="text-amber-400 text-xl sm:text-2xl font-bold">{totalGames}원</div>
+          <div className="text-slate-300 text-xs">총 투자 금액</div>
         </div>
         <div className="rounded-2xl p-5 text-center bg-slate-600 border border-slate-500 hover:border-amber-400 transition-all">
           <div className="text-amber-400 text-xl sm:text-2xl font-bold">
             {lastTotal.toLocaleString()}원
           </div>
-          <div className="text-slate-300 text-xs">보유 자산(임시)</div>
+          <div className="text-slate-300 text-xs">보유 자산</div>
         </div>
         <div className="rounded-2xl p-5 text-center bg-slate-600 border border-slate-500 hover:border-amber-400 transition-all">
           <div className="text-amber-400 text-xl sm:text-2xl font-bold">{totalReturnPct}%</div>
@@ -45,9 +46,12 @@ export default function MockInvestmentHistory({ items = [] }: Props) {
       {empty ? (
         <div className="text-center py-8">
           <div className="text-slate-400 mb-4">투자 내역이 없습니다.</div>
-          <button className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 transition-all">
+          <Link
+            to="/trade"
+            className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 transition-all"
+          >
             모의투자 시작하기
-          </button>
+          </Link>
         </div>
       ) : (
         <div className="flex flex-col gap-3.5">

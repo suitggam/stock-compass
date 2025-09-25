@@ -8,8 +8,8 @@ import requests
 from stock_items_data import TICKER_TO_ITEM_NO
 
 # ===================== 설정 =====================
-APP_KEY = ""
-SECRET_KEY = ""
+APP_KEY = "PSgXaH8s5e6LjYFuJcx6XIEt7fk4idpDKiOU"
+SECRET_KEY = "rI+GejeP/8lysdn0ooKkuSNLTlXERdY6UtJHLNjaHwwRtd+cQ+70RKZyoDiU9SHjWMchZn0odqt+bitxZ47EnkSq3LPy/EvOrwZPmHJxCTfdKdlqPNy5oS6OE22xsS99whjbjuU4zGOL0AnwWRUo="
 CUSTTYPE = "P"
 TR_TYPE = "1"
 

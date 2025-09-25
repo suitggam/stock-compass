@@ -38,7 +38,7 @@ public class MyPageDto {
                 .createdAt(u.getCreatedAt() != null
                         ? u.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null)
                 .avatarUrl(avatarUrl)
-                .build(); // favorites, personality, mockInvestHistory는 null
+                .build(); 
     }
 
     /** 관심종목 리스트까지 채움 */
@@ -53,14 +53,13 @@ public class MyPageDto {
     public static class FavoriteItemDto {
         private Long itemId;
         private String name;
-        // 필요시 현재가/등락률 등 추가
+        private String ticker;
     }
 
     @Getter @Setter @AllArgsConstructor @NoArgsConstructor
     public static class PersonalityResultDto {
         private String type;     // 예: "INT-R" 등
         private String summary;  // 한줄 요약
-        // score breakdown 등 필요시 추가
     }
 
     @Getter @Setter @AllArgsConstructor @NoArgsConstructor
@@ -70,6 +69,5 @@ public class MyPageDto {
         private Integer quantity;
         private Long price;      // 체결가
         private String tradedAt; // ISO 문자열
-        // 손익, 수수료 등 필요시 추가
     }
 }
