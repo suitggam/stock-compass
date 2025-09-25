@@ -2,7 +2,7 @@ package com.stock.survive.service;
 
 import com.stock.survive.dto.tendency.TendencyGameFinishRequest;
 import com.stock.survive.dto.tendency.TendencyGameOrderRequest;
-import com.stock.survive.dto.tendency.TendencyGameResultResponse;
+import com.stock.survive.dto.tendency.TendencyGameResponse;
 import com.stock.survive.dto.tendency.TendencyGameStartRequest;
 import com.stock.survive.dto.tendency.TendencyGameStateResponse;
 
@@ -16,5 +16,5 @@ public interface TendencyGameService {
 
     TendencyGameStateResponse proceedNextWeek(Long userId, Long sessionId);
 
-    TendencyGameResultResponse finish(Long userId, TendencyGameFinishRequest request);
+    TendencyGameResponse finish(Long userId, TendencyGameFinishRequest request);
 }
