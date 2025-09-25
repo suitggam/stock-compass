@@ -7,7 +7,7 @@ import com.stock.survive.entity.StockInfos;
 import com.stock.survive.entity.StockItems;
 import com.stock.survive.entity.User;
 import com.stock.survive.repository.StockInfosRepository;
-import com.stock.survive.repository.StockItemsRepository;
+import com.stock.survive.repository.StockItemRepository;
 import com.stock.survive.repository.UserRepository;
 import com.stock.survive.service.StockInfosService;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,7 @@ import java.util.Set;
 public class StockInfosServiceImpl implements StockInfosService {
 
     private final StockInfosRepository stockInfosRepository;
-    private final StockItemsRepository stockItemsRepository;
+    private final StockItemRepository stockItemRepository;
     private final WebClient webClient; // WebClient 주입
     private final UserRepository userRepository;
 
@@ -44,7 +44,7 @@ public class StockInfosServiceImpl implements StockInfosService {
         User u = userRepository.findWithFavoritesById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "USER_NOT_FOUND"));
 
-        StockItems item = stockItemsRepository.findById(itemNo)
+        StockItems item = stockItemRepository.findById(itemNo)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ITEM_NOT_FOUND"));
 
         Set<StockItems> favs = u.getFavorites();
@@ -75,7 +75,7 @@ public class StockInfosServiceImpl implements StockInfosService {
     @Override
     public ExtractKeywordsDto getKeywords(String ticker, ExtractKeywordsDto requestDto) {
         // 1️⃣ DB에서 companyName 조회
-        String companyName = stockItemsRepository.findCompanyNameByTicker(ticker)
+        String companyName = stockItemRepository.findCompanyNameByTicker(ticker)
                 .map(StockItems::getCompanyName)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 ticker: " + ticker));
 
@@ -90,7 +90,6 @@ public class StockInfosServiceImpl implements StockInfosService {
         boolean useAiFilter = requestDto.isUseAiFilter();
         String analysis = requestDto.getAiAnalysis() != null ? requestDto.getAiAnalysis() : "";
 
-        log.info(startDate + " " + endDate);
 
         // 3️⃣ 외부 API 호출 payload 구성
         var payload = Map.of(

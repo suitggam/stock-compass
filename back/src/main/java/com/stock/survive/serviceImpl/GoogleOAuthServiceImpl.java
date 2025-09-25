@@ -2,7 +2,7 @@ package com.stock.survive.serviceImpl;
 
 import com.stock.survive.config.GoogleOAuthProperties;
 import com.stock.survive.dto.OAuthUserInfo;
-import com.stock.survive.entity.PlatformType;
+import com.stock.survive.enumType.PlatformType;
 import com.stock.survive.service.GoogleOAuthService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;

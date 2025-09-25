@@ -9,10 +9,11 @@ import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 
 @Transactional
-public interface StockItemsService {
+public interface StockItemService {
     PageResponseDto<StockEndDayDto> getEndDayData(PageRequestDto pageRequestDto, LocalDate targetDate);
 
     LocalDate getLatestDataDate();
 
     FavoriteDto getFavoriteStatus(Long userId, String ticker);
+
 }

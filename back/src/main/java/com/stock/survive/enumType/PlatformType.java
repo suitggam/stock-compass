@@ -1,4 +1,4 @@
-package com.stock.survive.entity;
+package com.stock.survive.enumType;
 
 public enum PlatformType {
     GOOGLE,KAKAO

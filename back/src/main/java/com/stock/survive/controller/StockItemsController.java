@@ -4,7 +4,7 @@ import com.stock.survive.dto.FavoriteDto;
 import com.stock.survive.dto.PageRequestDto;
 import com.stock.survive.dto.PageResponseDto;
 import com.stock.survive.dto.StockEndDayDto;
-import com.stock.survive.service.StockItemsService;
+import com.stock.survive.service.StockItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -20,7 +20,7 @@ import java.time.LocalDate;
 @Log4j2
 public class StockItemsController {
 
-    private final StockItemsService stockItemsService;
+    private final StockItemService stockItemService;
 
     // 장 마감 데이터 조회 (페이지네이션 적용)
     @GetMapping("/endDay")
@@ -29,19 +29,19 @@ public class StockItemsController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "21") int size
     ) {
-        log.info("📌 요청 받은 page={}, size={}, date={}", page, size, date);
 
         // date가 null이면 DB에서 가장 최신 날짜 사용
-        LocalDate targetDate = (date != null) ? date : stockItemsService.getLatestDataDate();
-        log.info("📌 실제 조회할 targetDate={}", targetDate);
+        LocalDate targetDate = (date != null) ? date : stockItemService.getLatestDataDate();
 
         PageRequestDto pageRequestDto = PageRequestDto.builder()
                 .page(page)
                 .size(size)
                 .build();
 
-        PageResponseDto<StockEndDayDto> response = stockItemsService.getEndDayData(pageRequestDto, targetDate);
-        
+        PageResponseDto<StockEndDayDto> response = stockItemService.getEndDayData(pageRequestDto, targetDate);
+
+
+
         return ResponseEntity.ok(response);
     }
 
@@ -50,7 +50,7 @@ public class StockItemsController {
             @AuthenticationPrincipal Long userId,
             @PathVariable String ticker) {
 
-        FavoriteDto dto = stockItemsService.getFavoriteStatus(userId, ticker);
+        FavoriteDto dto = stockItemService.getFavoriteStatus(userId, ticker);
         return ResponseEntity.ok(dto);
     }
 

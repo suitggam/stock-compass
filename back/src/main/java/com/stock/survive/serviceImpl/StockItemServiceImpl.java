@@ -4,9 +4,9 @@ import com.stock.survive.dto.FavoriteDto;
 import com.stock.survive.dto.PageRequestDto;
 import com.stock.survive.dto.PageResponseDto;
 import com.stock.survive.dto.StockEndDayDto;
-import com.stock.survive.repository.StockItemsRepository;
+import com.stock.survive.repository.StockItemRepository;
 import com.stock.survive.repository.UserRepository;
-import com.stock.survive.service.StockItemsService;
+import com.stock.survive.service.StockItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,22 +17,22 @@ import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
-public class StockItemsServiceImpl implements StockItemsService {
+public class StockItemServiceImpl implements StockItemService {
 
-    private final StockItemsRepository stockItemsRepository;
+    private final StockItemRepository stockItemRepository;
     private final UserRepository userRepository;
 
 
     @Override
     public PageResponseDto<StockEndDayDto> getEndDayData(PageRequestDto pageRequestDto, LocalDate targetDate) {
         if (targetDate == null) {
-            targetDate = stockItemsRepository.findMaxDate();
+            targetDate = stockItemRepository.findMaxDate();
         }
 
         Pageable pageable = PageRequest.of(pageRequestDto.getPage() - 1, pageRequestDto.getSize());
 
         // Repository에서 이미 DTO Page를 반환
-        Page<StockEndDayDto> page = stockItemsRepository.findEndOfDayLatest(targetDate, pageable);
+        Page<StockEndDayDto> page = stockItemRepository.findEndOfDayLatest(targetDate, pageable);
 
         // 각 DTO에 rate 계산
         page.getContent().forEach(dto -> {
@@ -54,7 +54,7 @@ public class StockItemsServiceImpl implements StockItemsService {
 
     @Override
     public LocalDate getLatestDataDate() {
-        return stockItemsRepository.findMaxDate();
+        return stockItemRepository.findMaxDate();
     }
 
     @Override

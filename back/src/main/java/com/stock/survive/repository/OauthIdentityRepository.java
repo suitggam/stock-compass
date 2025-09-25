@@ -1,5 +1,6 @@
 package com.stock.survive.repository;
 import com.stock.survive.entity.*;
+import com.stock.survive.enumType.PlatformType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

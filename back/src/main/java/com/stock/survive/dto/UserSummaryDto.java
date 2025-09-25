@@ -18,7 +18,7 @@ public class UserSummaryDto {
     private String nickname;
     private boolean cancel;
     private Integer totalReward;
-    private Integer cash;
+    private Long cash;
     private String createdAt;
 
     private String avatarUrl;
