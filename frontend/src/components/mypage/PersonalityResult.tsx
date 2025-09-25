@@ -1,4 +1,5 @@
 import type { MyPageData } from '../../types/MyPageData';
+import { Link } from 'react-router';
 
 type Props = {
   data?: MyPageData['personality'] | null;
@@ -31,10 +32,12 @@ export default function PersonalityResult({ data }: Props) {
 
           <p className="text-slate-400 mb-6">아직 진단을 받지 않으셨습니다.</p>
 
-          {/* 진단 시작 버튼(나중에 온클릭 네비게이트로 투자성향파악게임에 연결되도록)*/}
-          <button className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-amber-700 transition-all shadow-lg">
+          <Link
+            to="/game"
+            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-amber-700 transition-all shadow-lg"
+          >
             성향 진단 시작하기
-          </button>
+          </Link>
         </div>
       </section>
     );

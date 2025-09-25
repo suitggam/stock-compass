@@ -30,7 +30,7 @@ public class MyPageServiceImpl implements MyPageService {
         String avatar = pickAvatarUrl(u);
 
         var favs = u.getFavorites().stream()
-                .map(si -> new MyPageDto.FavoriteItemDto(si.getItemNo(), si.getCompanyName()))
+                .map(si -> new MyPageDto.FavoriteItemDto(si.getItemNo(), si.getCompanyName(), si.getTicker()))
                 .toList();
 
         return MyPageDto.ofWithFavorites(u, avatar, favs);
