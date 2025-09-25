@@ -4,12 +4,13 @@ import TradePanel from "../components/TendencyGame/TradePanel";
 import TradeRecord from "../components/TendencyGame/TradeRecord";
 import StockOverview from "../components/TendencyGame/StockOverview";
 import StockHighlights from "../components/TendencyGame/StockHighlights";
+import TradeSuccessModal from "../components/TendencyGame/TradeSuccessModal";
 import { useTendencyGame } from "../hooks/useTendencyGame";
 import { useState, useEffect } from "react";
 
 export default function TendencyGamePage() {
-    const { state, loading, error, summaryItems, tradeAmount, setTradeAmount, order, nextWeek, finish } =
-        useTendencyGame();
+  const { state, loading, error, summaryItems, tradeAmount, setTradeAmount, order, nextWeek, finish, tradeSuccessModal, closeTradeSuccessModal } =
+    useTendencyGame();
 
     const [currentChartData, setCurrentChartData] = useState(null);
 
@@ -90,8 +91,16 @@ export default function TendencyGamePage() {
                             qty: t.quantity,
                         }))}
                     />
-                </section>
-            </div>
-        </div>
-    );
+        </section>
+      </div>
+      
+      <TradeSuccessModal
+        isOpen={tradeSuccessModal.isOpen}
+        onClose={closeTradeSuccessModal}
+        tradeType={tradeSuccessModal.tradeType}
+        quantity={tradeSuccessModal.quantity}
+        price={tradeSuccessModal.price}
+      />
+    </div>
+  );
 }
