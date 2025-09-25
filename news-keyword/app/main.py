@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from datetime import datetime
 import logging
 import os
+import time
 from typing import Optional, Dict, List
 from contextlib import asynccontextmanager
 from keyword_extractor import KeywordExtractor
@@ -153,6 +154,8 @@ async def extract_keywords(request: KeywordRequest):
             "use_ai_filter": true
         }
     """
+    start_time = time.time()
+    
     try:
         logger.info(f"🚀 키워드 추출 요청: {request.company_name}, {request.start_date}-{request.end_date}")
         
@@ -252,6 +255,9 @@ async def extract_keywords(request: KeywordRequest):
             filtered_keyword_count=result.get("filtered_keyword_count", 0)
         )
         
+        # 총 소요 시간 계산
+        total_time = time.time() - start_time
+        
         # 날짜별 뉴스 개수 로그 출력
         daily_count = result.get("daily_news_count", {})
         if daily_count:
@@ -260,16 +266,26 @@ async def extract_keywords(request: KeywordRequest):
             logger.info(f"날짜별 뉴스 개수: {daily_summary}")
         else:
             logger.info(f"키워드 추출 완료: '{request.company_name}' 관련 뉴스 {result['total_news_count']}개에서 {len(result['keywords'])}개 키워드 추출")
+        
+        # 총 API 응답 시간 출력
+        logger.info(f"🎯 총 API 응답 시간: {total_time:.2f}초")
+        
         return response
         
     except FileNotFoundError as e:
+        total_time = time.time() - start_time
         logger.error(f"파일을 찾을 수 없습니다: {str(e)}")
+        logger.error(f"❌ API 실패 응답 시간: {total_time:.2f}초")
         raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:
+        total_time = time.time() - start_time
         logger.error(f"잘못된 요청: {str(e)}")
+        logger.error(f"❌ API 실패 응답 시간: {total_time:.2f}초")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        total_time = time.time() - start_time
         logger.error(f"내부 서버 오류: {str(e)}")
+        logger.error(f"❌ API 실패 응답 시간: {total_time:.2f}초")
         raise HTTPException(status_code=500, detail=f"키워드 추출 중 오류가 발생했습니다: {str(e)}")
 
 if __name__ == "__main__":

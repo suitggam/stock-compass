@@ -9,6 +9,8 @@ from typing import Dict, List
 from collections import Counter
 import logging
 import pandas as pd
+import time
+from csv_cache_manager import CSVCacheManager
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +18,8 @@ class PandasAnalyzer:
     """Pandas를 사용한 키워드 추출 분석기"""
     
     def __init__(self):
-        pass
+        # CSV 캐시 매니저 초기화
+        self.csv_cache = CSVCacheManager()
     
     def extract_keywords_with_pandas(self, company_name: str, start_date: str, end_date: str, top_keywords: int, csv_files: List[str]) -> Dict:
         """
@@ -28,16 +31,40 @@ class PandasAnalyzer:
         all_dataframes = []
         total_loaded_rows = 0
         
-        # 모든 CSV 파일 읽기
+        # 모든 CSV 파일 읽기 (캐시 우선 사용)
         for csv_path in csv_files:
             try:
-                logger.info(f"CSV 파일 읽는 중: {os.path.basename(csv_path)}")
-                df = pd.read_csv(csv_path, encoding='utf-8')
+                filename = os.path.basename(csv_path)
+                logger.info(f"CSV 파일 처리 중: {filename}")
+                
+                file_start_time = time.time()
+                
+                # 1. 캐시에서 먼저 확인
+                df = self.csv_cache.load_from_cache(csv_path)
+                
+                if df is not None:
+                    # 캐시에서 로드 성공
+                    file_read_time = time.time() - file_start_time
+                    logger.info(f"🚀 {filename} 캐시 로드: {len(df):,}행, {file_read_time:.3f}초")
+                else:
+                    # 2. 캐시에 없으면 S3에서 읽고 캐시에 저장
+                    logger.info(f"📥 {filename} S3에서 읽는 중...")
+                    read_start_time = time.time()
+                    df = pd.read_csv(csv_path, encoding='utf-8')
+                    read_time = time.time() - read_start_time
+                    
+                    # 캐시에 저장
+                    cache_saved = self.csv_cache.save_to_cache(csv_path, df)
+                    
+                    file_read_time = time.time() - file_start_time
+                    cache_status = "✅ 캐시됨" if cache_saved else "❌ 캐시 실패"
+                    logger.info(f"📁 {filename} S3 읽기: {len(df):,}행, {read_time:.2f}초 ({cache_status})")
+                
                 all_dataframes.append(df)
                 total_loaded_rows += len(df)
-                logger.info(f"  - 로드된 행 수: {len(df)}")
+                
             except Exception as e:
-                logger.warning(f"CSV 파일 읽기 실패: {csv_path}, 오류: {e}")
+                logger.warning(f"CSV 파일 처리 실패: {csv_path}, 오류: {e}")
                 continue
         
         if not all_dataframes:
@@ -100,6 +127,9 @@ class PandasAnalyzer:
                 # 상위 키워드가 많이 포함된 뉴스 기사들 추출
                 top_keywords_list = list(keywords_dict.keys())[:top_keywords]
                 top_news_articles = self.extract_top_news_articles(filtered_df, top_keywords_list)
+                
+                # 캐시 통계 출력
+                self.csv_cache.print_cache_stats()
                 
                 return {
                     "company_name": company_name,
