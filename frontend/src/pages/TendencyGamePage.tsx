@@ -6,8 +6,10 @@ import StockOverview from "../components/TendencyGame/StockOverview";
 import StockHighlights from "../components/TendencyGame/StockHighlights";
 import TradeSuccessModal from '../components/TendencyGame/TradeSuccessModal';
 import GameFinishModal from '../components/TendencyGame/GameFinishModal';
+import LoginRequiredModal from '../components/TendencyGame/LoginRequiredModal';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useTendencyGame } from "../hooks/useTendencyGame";
+import { useAuth } from "../stores/auth";
 import { useEffect, useMemo, useState } from "react";
 import { extractKeywords, getStockInfo } from "../api/StockInfosApi";
 import { useNavigate } from 'react-router';
@@ -30,10 +32,29 @@ export default function TendencyGamePage() {
     nextWeekLoading
   } = useTendencyGame();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [loginRequiredModal, setLoginRequiredModal] = useState(false);
 
   const handleGoHome = () => {
     navigate('/');
   };
+
+  const handleCloseLoginModal = () => {
+    setLoginRequiredModal(false);
+  };
+
+  // 로그인하지 않은 사용자는 모달을 띄우고 홈으로 리다이렉트
+  useEffect(() => {
+    if (!user) {
+      setLoginRequiredModal(true);
+      // 모달을 보여준 후 홈으로 이동
+      const timer = setTimeout(() => {
+        navigate('/');
+      }, 2000); // 2초 후 홈으로 이동
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user, navigate]);
 
   const [currentChartData, setCurrentChartData] = useState(null);
   const [keywords, setKeywords] = useState<string[]>([]);
@@ -147,6 +168,19 @@ export default function TendencyGamePage() {
     }
   }, [state]);
 
+  // 로그인하지 않은 사용자는 모달만 표시
+  if (!user) {
+    return (
+      <div className="min-h-screen">
+        <LoginRequiredModal
+          isOpen={loginRequiredModal}
+          onClose={handleCloseLoginModal}
+          onGoHome={handleGoHome}
+        />
+      </div>
+    );
+  }
+
   if (loading && !state) return <div className="min-h-screen grid place-items-center">불러오는 중…</div>;
   if (error && !state) return <div className="min-h-screen grid place-items-center text-red-600">{error}</div>;
   if (!state || !so) return null;
@@ -226,12 +260,18 @@ export default function TendencyGamePage() {
         price={tradeSuccessModal.price}
       />
 
-      <GameFinishModal
-        isOpen={gameFinishModal.isOpen}
-        onClose={closeGameFinishModal}
-        onGoHome={handleGoHome}
-        result={gameFinishModal.result}
-      />
-    </div>
-  );
-}
+       <GameFinishModal
+         isOpen={gameFinishModal.isOpen}
+         onClose={closeGameFinishModal}
+         onGoHome={handleGoHome}
+         result={gameFinishModal.result}
+       />
+
+       <LoginRequiredModal
+         isOpen={loginRequiredModal}
+         onClose={handleCloseLoginModal}
+         onGoHome={handleGoHome}
+       />
+     </div>
+   );
+ }
