@@ -49,36 +49,6 @@ class StockDataSystem:
             logging.error(f"MySQL 연결 실패: {e}")
             return False
 
-    def create_table(self, drop_if_exists=False):
-        try:
-            with self.engine.connect() as conn:
-                if drop_if_exists:
-                    conn.execute(text("DROP TABLE IF EXISTS stock_infos"))
-                    conn.commit()
-                    logging.info("🗑️ 기존 stock_infos 테이블 삭제 완료")
-                create_table_query = """
-CREATE TABLE IF NOT EXISTS stock_infos (
-    info_no BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    item_no BIGINT UNSIGNED NOT NULL,
-    date DATE NOT NULL,
-    start_price BIGINT NOT NULL,
-    end_price BIGINT NOT NULL,
-    high_price BIGINT NOT NULL,
-    low_price BIGINT NOT NULL,
-    volume BIGINT NOT NULL,
-    market_cap BIGINT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_item_date (item_no, date)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-"""
-                conn.execute(text(create_table_query))
-                conn.commit()
-                logging.info("✅ stock_infos 테이블 확인/생성 완료")
-                return True
-        except Exception as e:
-            logging.error(f"테이블 생성 실패: {e}")
-            return False
-
     def check_data_exists(self, date_str):
         try:
             with self.engine.connect() as conn:
@@ -158,8 +128,7 @@ CREATE TABLE IF NOT EXISTS stock_infos (
 
     def collect_historical_data(self, years=5):
         logging.info(f"🏗️ {years}년치 히스토리컬 데이터 수집 시작")
-        self.create_table(drop_if_exists=True)
-
+        
         end_date = datetime.now()
         start_date = end_date - timedelta(days=years * 365)
         start_date_str = start_date.strftime("%Y%m%d")
@@ -271,9 +240,6 @@ def main():
     system = StockDataSystem()
 
     if not system.create_connection():
-        sys.exit(1)
-
-    if not system.create_table():
         sys.exit(1)
 
     if args.command == 'init':

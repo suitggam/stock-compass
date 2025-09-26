@@ -2,7 +2,7 @@ package com.stock.survive.serviceImpl;
 
 import com.stock.survive.dto.tendency.TendencyGameFinishRequest;
 import com.stock.survive.dto.tendency.TendencyGameOrderRequest;
-import com.stock.survive.dto.tendency.TendencyGameResultResponse;
+import com.stock.survive.dto.tendency.TendencyGameResponse;
 import com.stock.survive.dto.tendency.TendencyGameStateResponse;
 import com.stock.survive.dto.tendency.TendencyGameStartRequest;
 import com.stock.survive.entity.StockInfos;
@@ -57,7 +57,6 @@ public class TendencyGameServiceImpl implements TendencyGameService {
     private final StockInfosRepository stockInfosRepository;
     private final GameChartsRepository gameChartsRepository;
     
-    // 인메모리 세션 저장소 (옵션 A)
     private final ConcurrentHashMap<Long, TendencyGameSession> sessions = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, List<TendencyGameWeek>> weeksBySession = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, List<TendencyGameTrade>> tradesBySession = new ConcurrentHashMap<>();
@@ -71,12 +70,10 @@ public class TendencyGameServiceImpl implements TendencyGameService {
     public TendencyGameStateResponse start(Long userId, TendencyGameStartRequest request) {
         User user = fetchUser(userId);
         
-        // 미리 준비된 게임 차트 중 하나를 무작위로 선택
         TendencyGameChart selectedChart = selectGameChart();
         StockItems stockItem = stockItemRepository.findById(selectedChart.getItemNo())
                 .orElseThrow(() -> new IllegalStateException("게임 차트에 해당하는 종목이 없습니다."));
         
-        // 선택된 차트의 기간에 해당하는 주식 정보만 가져옴
         List<StockInfos> timeline = stockInfosRepository.findByStockItem_ItemNoAndDateBetween(
                 stockItem.getItemNo(), selectedChart.getStartDate(), selectedChart.getEndDate());
         
@@ -104,7 +101,6 @@ public class TendencyGameServiceImpl implements TendencyGameService {
                 .volatileBuyCount(0)
                 .volatileSellCount(0)
                 .sellDominantWeekCount(0)
-                .yieldAboveThreshold(false)
                 .build();
         
         buildWeeks(session, timeline);
@@ -124,7 +120,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
     public TendencyGameStateResponse placeOrder(Long userId, Long sessionId, TendencyGameOrderRequest request) {
         TendencyGameSession session = fetchSession(userId, sessionId);
         ensureInProgress(session);
-
+        
         TendencyGameWeek currentWeek = currentWeek(session);
         int price = safePrice(currentWeek.getClosePrice());
         
@@ -142,7 +138,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
                 session.setVolatileSellCount(session.getVolatileSellCount() + 1);
             }
         }
-
+        
         TendencyGameTrade trade = TendencyGameTrade.builder()
                 .id(tradeSeq.getAndIncrement())
                 .session(session)
@@ -156,7 +152,6 @@ public class TendencyGameServiceImpl implements TendencyGameService {
                 .build();
         getTrades(session.getId()).add(trade);
         
-        // 세션 갱신 저장
         sessions.put(session.getId(), session);
         return buildStateResponse(session);
     }
@@ -178,7 +173,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
     }
     
     @Override
-    public TendencyGameResultResponse finish(Long userId, TendencyGameFinishRequest request) {
+    public TendencyGameResponse finish(Long userId, TendencyGameFinishRequest request) {
         TendencyGameSession session = fetchSession(userId, request.sessionId());
         ensureInProgress(session);
         
@@ -198,51 +193,54 @@ public class TendencyGameServiceImpl implements TendencyGameService {
         long totalAsset = session.getCash() + stockValuation;
         double totalYield = calculateYield(session.getInitialCash(), totalAsset);
         
-        List<TendencyGameTrade> trades = getTrades(session.getId());
-        int volatilityBuy = (int) trades.stream()
-                .filter(trade -> Boolean.TRUE.equals(trade.getVolatilityContext()))
-                .filter(trade -> trade.getType() == TendencyGameTradeType.BUY)
-                .count();
-        int volatilitySell = (int) trades.stream()
-                .filter(trade -> Boolean.TRUE.equals(trade.getVolatilityContext()))
-                .filter(trade -> trade.getType() == TendencyGameTradeType.SELL)
-                .count();
-        
-        int sellDominantWeeks = countSellDominantWeeks(session.getMaxWeek(), trades);
-        
-        session.setVolatileBuyCount(volatilityBuy);
-        session.setVolatileSellCount(volatilitySell);
-        session.setSellDominantWeekCount(sellDominantWeeks);
-        session.setYieldAboveThreshold(totalYield >= YIELD_THRESHOLD);
         session.setFinishedAt(LocalDateTime.now());
         session.setDecisionElapsedMillis(Duration.between(session.getStartedAt(), session.getFinishedAt()).toMillis());
         session.setStatus(TendencyGameStatus.FINISHED);
         
-        TendencyProfile profile = resolveTendencyProfile(totalYield, volatilityBuy + volatilitySell, sellDominantWeeks);
-        session.setTendencyType(profile.getType());
-        session.setRecommendation(profile.getRecommendation());
-        sessions.put(session.getId(), session);
+        long totalGameTimeSeconds = session.getDecisionElapsedMillis() / 1000;
+        int volatileTradeCount = session.getVolatileBuyCount() + session.getVolatileSellCount();
+        int sellDominantWeekCount = session.getSellDominantWeekCount();
         
-        return new TendencyGameResultResponse(
-                session.getId(),
-                session.getMaxWeek(),
-                session.getCurrentWeek(),
-                Math.toIntExact(totalAsset),
-                session.getRealizedProfit(),
-                totalYield,
-                session.getYieldAboveThreshold(),
-                session.getTendencyType(),
-                session.getRecommendation(),
-                session.getDecisionElapsedMillis() / 1000,
-                session.getVolatileBuyCount(),
-                session.getVolatileSellCount(),
-                session.getSellDominantWeekCount(),
-                session.getStartedAt(),
-                session.getFinishedAt()
-        );
+        int calculatedI = Math.min(100, Math.max(0, (volatileTradeCount * 10 + 10)));
+        int calculatedE = 100 - calculatedI;
+        
+        int calculatedS = Math.min(100, Math.max(0, (int) (totalGameTimeSeconds / 2)));
+        int calculatedN = 100 - calculatedS;
+        
+        int calculatedF = Math.min(100, Math.max(0, (sellDominantWeekCount * 10)));
+        int calculatedT = 100 - calculatedF;
+        
+        double baseYield = 3.0;
+        int calculatedJ = (int) Math.min(100, Math.max(0, (baseYield - totalYield) * 10));
+        int calculatedP = 100 - calculatedJ;
+        
+        return TendencyGameResponse.builder()
+                .sessionId(session.getId())
+                .maxWeek(session.getMaxWeek())
+                .finalWeek(session.getCurrentWeek())
+                .totalAsset(Math.toIntExact(totalAsset))
+                .realizedProfit(session.getRealizedProfit())
+                .totalYield(totalYield)
+                .yieldAboveThreshold(totalYield >= YIELD_THRESHOLD)
+                .tendencyType("결과 산출")
+                .recommendation("결과 산출")
+                .decisionElapsedSeconds(totalGameTimeSeconds)
+                .volatileBuyCount(session.getVolatileBuyCount())
+                .volatileSellCount(session.getVolatileSellCount())
+                .sellDominantWeekCount(session.getSellDominantWeekCount())
+                .startedAt(session.getStartedAt())
+                .finishedAt(session.getFinishedAt())
+                .tendencyI(calculatedI)
+                .tendencyE(calculatedE)
+                .tendencyS(calculatedS)
+                .tendencyN(calculatedN)
+                .tendencyF(calculatedF)
+                .tendencyT(calculatedT)
+                .tendencyJ(calculatedJ)
+                .tendencyP(calculatedP)
+                .build();
     }
     
-    // ===== In-memory helpers =====
     private List<TendencyGameWeek> getWeeks(Long sessionId) {
         return weeksBySession.computeIfAbsent(sessionId, k -> new ArrayList<>());
     }
@@ -261,14 +259,12 @@ public class TendencyGameServiceImpl implements TendencyGameService {
     private void buildWeeks(TendencyGameSession session, List<StockInfos> selected) {
         List<TendencyGameWeek> list = new ArrayList<>();
         
-        // 데이터 개수가 10주(10개)가 되도록 샘플링 간격을 계산
         int dataStep = selected.size() / session.getMaxWeek();
         if (dataStep == 0) {
             throw new IllegalStateException("주간 데이터를 생성할 수 없습니다.");
         }
         
         for (int i = 0; i < session.getMaxWeek(); i++) {
-            // 1주차, 2주차...에 해당하는 데이터만 선택
             StockInfos current = selected.get(i * dataStep);
             int closePrice = safePrice(Optional.ofNullable(current.getEndPrice()).orElse(0));
             int previousPrice = closePrice;
@@ -282,7 +278,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
                     .session(session)
                     .weekIndex(i + 1)
                     .startDate(current.getDate())
-                    .endDate(current.getDate().plusDays(6)) // endDate는 단순히 startDate + 6일로 설정
+                    .endDate(current.getDate().plusDays(6))
                     .closePrice(closePrice)
                     .changePrice(change)
                     .changeRate(changeRate)
@@ -326,34 +322,6 @@ public class TendencyGameServiceImpl implements TendencyGameService {
         }
         int randomIndex = ThreadLocalRandom.current().nextInt(charts.size());
         return charts.get(randomIndex);
-    }
-    
-    // 이 메서드는 더 이상 사용되지 않으므로 삭제하거나 유지할 수 있습니다.
-    private StockItems selectStockItem(TendencyGameStartRequest request) {
-        if (request != null) {
-            if (StringUtils.hasText(request.ticker())) {
-                return entityManager.createQuery("SELECT si FROM StockItems si WHERE si.ticker = :ticker", StockItems.class)
-                        .setParameter("ticker", request.ticker().toUpperCase(Locale.ROOT))
-                        .setMaxResults(1)
-                        .getResultStream()
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalArgumentException("ticker에 해당하는 종목이 없습니다."));
-            }
-            if (request.itemNo() != null) {
-                return stockItemRepository.findById(request.itemNo().longValue())
-                        .orElseThrow(() -> new IllegalArgumentException("itemNo에 해당하는 종목이 없습니다."));
-            }
-        }
-        
-        // DTO 의존 없이 직접 종목 목록을 조회해 무작위 선택(최대 50개 후보)
-        List<StockItems> candidates = entityManager
-                .createQuery("SELECT si FROM StockItems si ORDER BY si.itemNo ASC", StockItems.class)
-                .setMaxResults(50)
-                .getResultList();
-        if (candidates.isEmpty()) {
-            throw new IllegalStateException("등록된 종목이 없습니다.");
-        }
-        return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
     }
     
     private User fetchUser(Long userId) {
@@ -484,7 +452,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
         );
         
         List<String> labels = weeks.stream()
-                .map(w -> w.getStartDate().toString()) // LocalDate 객체를 "YYYY-MM-DD" 문자열로 변환
+                .map(w -> w.getStartDate().toString())
                 .collect(Collectors.toList());
         List<Integer> prices = weeks.stream().map(w -> safePrice(w.getClosePrice())).collect(Collectors.toList());
         

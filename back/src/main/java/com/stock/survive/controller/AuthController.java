@@ -65,7 +65,6 @@ public class AuthController {
                                @RequestParam String state,
                                HttpServletResponse res) {
         try {
-            log.info("📌 Google OAuth 콜백 호출, code={}, state={}", code, state);
             google.verifyState(state);
             var info = google.exchangeAndFetchUser(code);
             var user = linker.linkOrCreateByProvider(info);
@@ -75,7 +74,6 @@ public class AuthController {
 
             res.sendRedirect(frontHome());
         } catch (Exception e) {
-            log.error("❌ Google OAuth 콜백 처리 중 에러", e);
             try { res.sendRedirect(frontOrigin + "/login?error=google_oauth_failed"); } catch (Exception ignored) {}
         }
     }

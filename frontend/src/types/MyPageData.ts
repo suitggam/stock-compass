@@ -7,7 +7,7 @@ export interface MyPageData {
   cash: number;
   createdAt: string | null;
   avatarUrl?: string;
-  favorites?: { itemId: number; name: string }[];
+  favorites?: { itemId: number; name: string; ticker: string }[];
   personality?: { type: string; summary: string } | null;
   mockInvestHistory?:
     | { id: number; symbol: string; quantity: number; price: number; tradedAt: string }[]

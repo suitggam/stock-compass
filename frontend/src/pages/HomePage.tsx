@@ -27,6 +27,10 @@ export default function HomePage() {
   const [size] = useState(21);
   const [totalPages, setTotalPages] = useState(1);
 
+  const handleStockClick = (ticker: string) => {
+    navigate(`/stock/${ticker}`);
+  };
+
   // 장 시간 확인 (09:00 ~ 15:30)
   useEffect(() => {
     const checkMarketOpen = () => {
@@ -145,7 +149,7 @@ export default function HomePage() {
             volume={stock.volume}
             marketCap={stock.marketCap}
             categoryName={stock.categoryName}
-            onCardClick={() => navigate(`/stock/${stock.ticker}`)}
+            onCardClick={() => handleStockClick(stock.ticker)}
           />
         ))}
       </div>

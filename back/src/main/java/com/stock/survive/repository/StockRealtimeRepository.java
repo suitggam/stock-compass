@@ -31,6 +31,5 @@ public interface StockRealtimeRepository extends JpaRepository<StockRealtime, Lo
 """)
     Page<StockRealtimeDto> findAllWithLatestInfo(Pageable pageable);
     
-    Optional<StockRealtime> findByTicker(String ticker);
 
 }

@@ -13,7 +13,6 @@ const TendencyGame = lazy(() => import("../pages/TendencyGamePage"));
 const StockInfo = lazy(() => import("../pages/StockInfoPage"));
 const Trade = lazy(() => import("../pages/TradePage"));
 const TradeInfo = lazy(() => import("../pages/TradeInfoPage"));
-const PortfolioPage = lazy(() => import("../pages/PortfolioPage"));
 const Search = lazy(() => import("../pages/SearchPage"));
 
 const Router = createBrowserRouter([
@@ -85,14 +84,7 @@ const Router = createBrowserRouter([
           </Suspense>
         ),
       },
-      {
-        path: "portfolio",
-        element: (
-          <Suspense fallback={<LoadingPage />}>
-            <PortfolioPage />
-          </Suspense>
-        ),
-      },
+
       {
         path: "trade",
         element: (

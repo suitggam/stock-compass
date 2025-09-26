@@ -1,11 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
 import ChartHeader from "../components/Chart/ChartHeader";
 import TimeTerm from "../components/Chart/TimeTerm";
 import NewsCard from "../components/NewsCard";
 import ChartMain from "../components/Chart/ChartMain";
 import DateModal from "./DateModal";
 import ChartNews from "../components/Chart/ChartNews";
+import LoginRequiredModal from "../components/TendencyGame/LoginRequiredModal";
 
 import {
   TermText,
@@ -34,19 +35,34 @@ import { useRealtimeStore } from "../stores/RealtimeState";
 import { useAuth } from "../stores/auth";
 import TradeKeywords from "../components/Trade/TradeKeywords";
 import TradeCard from "../components/Trade/TradeCard";
-import { mockData } from "../types/Trade";
+import {
+  type UserAsset,
+  type UserStockHoldingDto,
+  type UserTradeHistory,
+} from "../types/Trade";
 import TradeHistory from "../components/Trade/TradeHistory";
-import { mockData2, type UserTrade } from "../types/user";
+import {
+  getUserStockHolding,
+  userAsset,
+  userTradeHistory,
+} from "../api/TradeApi"; // userAsset import
 
 function isMarketOpen(): boolean {
   const now = new Date();
   const totalMinutes = now.getHours() * 60 + now.getMinutes();
   return totalMinutes >= 9 * 60 && totalMinutes <= 15 * 60 + 30;
 }
+
 function TradeInfoPage() {
   const { ticker } = useParams<{ ticker: string }>();
+  const navigate = useNavigate();
   const marketOpen = isMarketOpen();
-  const [userTrade, setUserTrade] = useState<UserTrade>(mockData2);
+  const [userTrade, setUserTrade] = useState<UserAsset>({
+    cash: 0,
+    haveStock: 0,
+    originalMoney: 0,
+  }); // 초기값 설정
+  // 자산 정보 상태
 
   const realtime = useRealtimeStore((s) => s.data[ticker ?? ""]);
   const connectRealtime = useRealtimeStore((s) => s.connect);
@@ -62,11 +78,67 @@ function TradeInfoPage() {
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [news, setNews] = useState<News[]>([]);
   const [aiAnalysis, setAiAnalysis] = useState<string>("");
+  const [userHolding, setUserHolding] = useState<UserStockHoldingDto | null>(
+    null
+  );
 
   const [isFavorite, setIsFavorite] = useState(false);
 
   const { user } = useAuth();
   const isLoggedIn = Boolean(user);
+  const [loginRequiredModal, setLoginRequiredModal] = useState(false);
+
+  const [tradeHistory, setTradeHistory] = useState<UserTradeHistory[]>([]);
+  const [dailyNewsCount, setDailyNewsCount] = useState<Record<string, number>>(
+    {}
+  );
+
+  const handleGoHome = () => {
+    navigate("/");
+  };
+
+  const handleCloseLoginModal = () => {
+    setLoginRequiredModal(false);
+  };
+
+  // 로그인하지 않은 사용자는 모달을 띄우고 홈으로 리다이렉트
+  useEffect(() => {
+    if (!user) {
+      setLoginRequiredModal(true);
+      // 모달을 보여준 후 홈으로 이동
+      const timer = setTimeout(() => {
+        navigate("/");
+      }, 2000); // 2초 후 홈으로 이동
+
+      return () => clearTimeout(timer);
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (!isLoggedIn || !ticker) return;
+    (async () => {
+      try {
+        const res = await userTradeHistory(ticker);
+        setTradeHistory(res); // API에서 받은 실제 거래 내역
+      } catch (err) {
+        console.error("사용자 거래 내역 로드 실패:", err);
+        setTradeHistory([]);
+      }
+    })();
+  }, [ticker, isLoggedIn]);
+
+  // 사용자 자산 정보 가져오기
+  useEffect(() => {
+    if (!isLoggedIn) return; // 로그인 상태일 때만 실행
+    (async () => {
+      try {
+        const res = await userAsset(); // 실제 데이터 호출
+        setUserTrade(res); // 자산 데이터를 상태에 저장
+      } catch (err) {
+        console.error("사용자 자산 데이터 가져오기 실패:", err);
+      }
+    })();
+  }, [isLoggedIn]); // 로그인 상태가 변경될 때마다 호출
 
   // 관심목록 상태 조회
   useEffect(() => {
@@ -183,30 +255,48 @@ function TradeInfoPage() {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [stockData, startDate, endDate]);
 
+  useEffect(() => {
+    if (!isLoggedIn || !ticker) return;
+    (async () => {
+      try {
+        const res = await getUserStockHolding(ticker);
+        setUserHolding(res);
+      } catch (err) {
+        console.error("보유 수량 로드 실패:", err);
+        setUserHolding(null);
+      }
+    })();
+  }, [ticker, isLoggedIn]);
+
   // 키워드 & 뉴스 & 분석
   useEffect(() => {
     if (!latestStock || !startDate || !endDate) return;
+
     (async () => {
       try {
-        const {
-          keywords: keywordList,
-          news: newsList,
-          aiAnalysis: analysis,
-        } = await extractKeywords(
+        const response = await extractKeywords(
           latestStock.ticker,
           latestStock.companyName,
           startDate.toISOString().slice(0, 10),
           endDate.toISOString().slice(0, 10)
         );
 
+        // keywords는 Record<string, number> -> Keyword[]로 변환
+        const keywordList: Keyword[] = Object.entries(response.keywords).map(
+          ([keyword, count]) => ({ keyword, count })
+        );
+
         setKeywords(keywordList);
-        setNews(newsList);
-        setAiAnalysis(analysis);
+        setNews(response.topNewsArticles ?? []);
+        setAiAnalysis(response.aiAnalysis);
+        setDailyNewsCount(response.dailyNewsCount ?? {}); // 새로 추가한 상태
+        console.log("📰 dailyNewsCount:", response.dailyNewsCount);
       } catch (err) {
         console.error("키워드 & 뉴스 추출 실패:", err);
         setKeywords([]);
         setNews([]);
         setAiAnalysis("");
+        setDailyNewsCount({});
       }
     })();
   }, [latestStock, startDate, endDate]);
@@ -257,26 +347,33 @@ function TradeInfoPage() {
 
   const pastPrice = filteredData[0]?.endPrice ?? displayPrice;
 
-  const handleTrade = (type: "BUY" | "SELL", amount: number) => {
-    console.log(type, amount);
-
+  const handleTrade = (type: "BUY" | "SELL", volume: number) => {
+    const now = new Date();
+    const trade: UserTradeHistory = {
+      ticker: ticker!,
+      tradeType: type,
+      price: displayPrice, // 주당 가격
+      volume, // ✅ 수량(주)
+      createdAt: now,
+    };
+    console.log(trade.volume);
     setUserTrade((prev) => {
-      const cash = prev.cash;
-      const haveStock = prev.haveStock;
-      let newCash = cash;
-      let newStock = haveStock;
+      const stockValue = displayPrice * volume; // ✅ 총 금액(가격 * 수량)
+
+      let newCash = prev.cash;
+      let newStock = prev.haveStock;
 
       if (type === "BUY") {
-        newCash -= amount;
-        newStock += amount;
+        newCash -= stockValue; // 현금에서 총 금액 차감
+        newStock += stockValue; // 보유 주식 금액 증가
       } else {
-        newCash += amount;
-        newStock -= amount;
+        newCash += stockValue; // 현금에 총 금액 추가
+        newStock -= stockValue; // 보유 주식 금액 감소
       }
 
       const totalMoney = newCash + newStock;
       const marginPercent =
-        ((totalMoney - prev.totalMoney) / prev.totalMoney) * 100;
+        ((totalMoney - prev.originalMoney) / prev.originalMoney) * 100;
 
       return {
         ...prev,
@@ -286,14 +383,29 @@ function TradeInfoPage() {
         marginPercent,
       };
     });
+
+    setTradeHistory((prev) => [trade, ...prev]);
   };
+
+  // 로그인하지 않은 사용자는 모달만 표시
+  if (!user) {
+    return (
+      <div className="min-h-screen">
+        <LoginRequiredModal
+          isOpen={loginRequiredModal}
+          onClose={handleCloseLoginModal}
+          onGoHome={handleGoHome}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br py-8 px-6 from-slate-900 via-slate-800 to-slate-900">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* 왼쪽 메인 콘텐츠 영역 */}
-          <div className="xl:col-span-3 space-y-6">
+          <div className="xl:col-span-2 space-y-6">
             {/* 차트 섹션 */}
             <div className="bg-gradient-to-br from-slate-800 to-slate-700 text-white rounded-2xl shadow-xl p-6 border border-slate-600">
               <ChartHeader
@@ -327,7 +439,11 @@ function TradeInfoPage() {
               />
 
               <div className="mt-4">
-                <ChartMain term={selectedTerm.text} data={chartData} />
+                <ChartMain
+                  term={selectedTerm.text}
+                  data={chartData}
+                  dailyNewsCount={dailyNewsCount}
+                />
               </div>
             </div>
 
@@ -363,13 +479,13 @@ function TradeInfoPage() {
                 나의 자산
               </h2>
               <TradeCard
-                ticker={ticker!} // ticker 추가
+                ticker={ticker!}
                 stockPrice={displayPrice}
                 userTrade={userTrade}
+                userHolding={userHolding}
+                setUserHolding={setUserHolding} // ✅ 추가
                 onTrade={handleTrade}
                 onTradeSuccess={() => {
-                  // 거래 성공 시 추가 처리 (선택사항)
-                  // 예: 거래 내역 새로고침, 토스트 알림 등
                   console.log("거래가 성공적으로 완료되었습니다.");
                 }}
               />
@@ -380,7 +496,7 @@ function TradeInfoPage() {
               <h2 className="font-bold mb-6 text-amber-400 text-xl flex items-center gap-2">
                 투자 거래 내역
               </h2>
-              <TradeHistory tradeHistory={mockData} />
+              <TradeHistory tradeHistory={tradeHistory} />
             </div>
           </div>
         </div>

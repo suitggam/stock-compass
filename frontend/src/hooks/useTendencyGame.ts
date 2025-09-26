@@ -26,6 +26,7 @@ export function useTendencyGame() {
     isOpen: false,
     result: null,
   });
+  const [nextWeekLoading, setNextWeekLoading] = useState(false);
 
   const start = useCallback(async (opts?: { ticker?: string; itemNo?: number }) => {
     setLoading(true);
@@ -86,7 +87,7 @@ export function useTendencyGame() {
 
   const nextWeek = useCallback(async () => {
     if (!sessionId) return;
-    setLoading(true);
+    setNextWeekLoading(true);
     setError(null);
     try {
       const res = await tendencyGameApi.nextWeek(sessionId);
@@ -94,7 +95,7 @@ export function useTendencyGame() {
     } catch (e: any) {
       setError(e?.message ?? "다음 주 이동 실패");
     } finally {
-      setLoading(false);
+      setNextWeekLoading(false);
     }
   }, [sessionId]);
 
@@ -177,6 +178,7 @@ export function useTendencyGame() {
     closeTradeSuccessModal,
     gameFinishModal,
     closeGameFinishModal,
+    nextWeekLoading,
   };
 }
 

@@ -58,6 +58,9 @@ export default function StockInfoPage() {
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [news, setNews] = useState<News[]>([]);
   const [aiAnalysis, setAiAnalysis] = useState<string>("");
+  const [dailyNewsCount, setDailyNewsCount] = useState<Record<string, number>>(
+    {}
+  );
 
   const [isFavorite, setIsFavorite] = useState(false);
 
@@ -182,30 +185,36 @@ export default function StockInfoPage() {
   // 키워드 & 뉴스 & 분석
   useEffect(() => {
     if (!latestStock || !startDate || !endDate) return;
+
     (async () => {
       try {
-        const {
-          keywords: keywordList,
-          news: newsList,
-          aiAnalysis: analysis,
-        } = await extractKeywords(
+        const response = await extractKeywords(
           latestStock.ticker,
           latestStock.companyName,
           startDate.toISOString().slice(0, 10),
           endDate.toISOString().slice(0, 10)
         );
 
+        // keywords는 Record<string, number> -> Keyword[]로 변환
+        const keywordList: Keyword[] = Object.entries(response.keywords).map(
+          ([keyword, count]) => ({ keyword, count })
+        );
+
         setKeywords(keywordList);
-        setNews(newsList);
-        setAiAnalysis(analysis);
+        setNews(response.topNewsArticles ?? []);
+        setAiAnalysis(response.aiAnalysis);
+        setDailyNewsCount(response.dailyNewsCount ?? {}); // 새로 추가한 상태
+        console.log("📰 dailyNewsCount:", response.dailyNewsCount);
       } catch (err) {
         console.error("키워드 & 뉴스 추출 실패:", err);
         setKeywords([]);
         setNews([]);
         setAiAnalysis("");
+        setDailyNewsCount({});
       }
     })();
   }, [latestStock, startDate, endDate]);
+
   // 실시간 가격 반영된 차트 데이터
   const chartData = useMemo(() => {
     if (!filteredData.length) return [];
@@ -289,7 +298,11 @@ export default function StockInfoPage() {
               />
 
               <div className="mt-4">
-                <ChartMain term={selectedTerm.text} data={chartData} />
+                <ChartMain
+                  term={selectedTerm.text}
+                  data={chartData}
+                  dailyNewsCount={dailyNewsCount}
+                />
               </div>
             </div>
           </div>
