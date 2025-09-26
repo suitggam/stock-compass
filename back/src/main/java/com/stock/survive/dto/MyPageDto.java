@@ -33,8 +33,8 @@ public class MyPageDto {
                 .socialEmail(u.getSocialEmail())
                 .nickname(u.getNickname())
                 .cancel(u.isCancel())
-                .totalReward(u.getTotalReward())
-                .cash(u.getCash())
+                .totalReward(u.getAccount().getTotalReward())
+                .cash(u.getAccount().getCash())
                 .createdAt(u.getCreatedAt() != null
                         ? u.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null)
                 .avatarUrl(avatarUrl)

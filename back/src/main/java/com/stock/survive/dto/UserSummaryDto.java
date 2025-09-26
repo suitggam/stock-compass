@@ -26,7 +26,7 @@ public class UserSummaryDto {
     public static UserSummaryDto of(User u) {
         return new UserSummaryDto(
                 u.getId(), u.getSocialEmail(), u.getNickname(), u.isCancel(),
-                u.getTotalReward(), u.getCash(),
+                u.getAccount().getTotalReward(), u.getAccount().getCash(),
                 u.getCreatedAt() != null ? u.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null,
                 null // avatarUrl 기본값
         );
@@ -36,7 +36,7 @@ public class UserSummaryDto {
     public static UserSummaryDto of(User u, String avatarUrl) {
         return new UserSummaryDto(
                 u.getId(), u.getSocialEmail(), u.getNickname(), u.isCancel(),
-                u.getTotalReward(), u.getCash(),
+                u.getAccount().getTotalReward(), u.getAccount().getCash(),
                 u.getCreatedAt() != null ? u.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null,
                 avatarUrl
         );
