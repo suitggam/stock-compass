@@ -1,11 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
 import ChartHeader from "../components/Chart/ChartHeader";
 import TimeTerm from "../components/Chart/TimeTerm";
 import NewsCard from "../components/NewsCard";
 import ChartMain from "../components/Chart/ChartMain";
 import DateModal from "./DateModal";
 import ChartNews from "../components/Chart/ChartNews";
+import LoginRequiredModal from "../components/TendencyGame/LoginRequiredModal";
 
 import {
   TermText,
@@ -46,6 +47,7 @@ function isMarketOpen(): boolean {
 
 function TradeInfoPage() {
   const { ticker } = useParams<{ ticker: string }>();
+  const navigate = useNavigate();
   const marketOpen = isMarketOpen();
   const [userTrade, setUserTrade] = useState<UserAsset>({
     cash: 0,
@@ -73,8 +75,30 @@ function TradeInfoPage() {
 
   const { user } = useAuth();
   const isLoggedIn = Boolean(user);
+  const [loginRequiredModal, setLoginRequiredModal] = useState(false);
 
   const [tradeHistory, setTradeHistory] = useState<UserTradeHistory[]>([]);
+
+  const handleGoHome = () => {
+    navigate('/');
+  };
+
+  const handleCloseLoginModal = () => {
+    setLoginRequiredModal(false);
+  };
+
+  // 로그인하지 않은 사용자는 모달을 띄우고 홈으로 리다이렉트
+  useEffect(() => {
+    if (!user) {
+      setLoginRequiredModal(true);
+      // 모달을 보여준 후 홈으로 이동
+      const timer = setTimeout(() => {
+        navigate('/');
+      }, 2000); // 2초 후 홈으로 이동
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     if (!isLoggedIn || !ticker) return;
@@ -323,6 +347,19 @@ function TradeInfoPage() {
       };
     });
   };
+
+  // 로그인하지 않은 사용자는 모달만 표시
+  if (!user) {
+    return (
+      <div className="min-h-screen">
+        <LoginRequiredModal
+          isOpen={loginRequiredModal}
+          onClose={handleCloseLoginModal}
+          onGoHome={handleGoHome}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br py-8 px-6 from-slate-900 via-slate-800 to-slate-900">
