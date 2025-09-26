@@ -9,9 +9,4 @@ import org.springframework.data.repository.query.Param;
 
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
-    // 새 구현 -> 유저에서 계좌로 옮긴것
-    @Transactional
-    @Modifying
-    @Query("UPDATE Account a SET a.cash = :cash, a.haveStock = :haveStock WHERE a.accountNo = :accountNo")
-    void updateCashAndHaveStock(@Param("accountNo") Long accountNo, @Param("cash") Long cash, @Param("haveStock") Long haveStock);
 }
