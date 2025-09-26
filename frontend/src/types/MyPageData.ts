@@ -3,12 +3,22 @@ export interface MyPageData {
   socialEmail: string;
   nickname: string;
   cancel: boolean;
-  totalReward: number;
-  cash: number;
   createdAt: string | null;
   avatarUrl?: string;
   favorites?: { itemId: number; name: string; ticker: string }[];
-  personality?: { type: string; summary: string } | null;
+  gameResult?: {
+    gameNo: number;
+    userNo: number;
+    tendency_i: number;
+    tendency_e: number;
+    tendency_s: number;
+    tendency_n: number;
+    tendency_f: number;
+    tendency_t: number;
+    tendency_j: number;
+    tendency_p: number;
+    createdAt: string;
+  } | null;
   mockInvestHistory?:
     | { id: number; symbol: string; quantity: number; price: number; tradedAt: string }[]
     | null;

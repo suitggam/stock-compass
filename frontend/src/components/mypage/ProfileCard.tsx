@@ -107,12 +107,6 @@ export default function ProfileCard({ favoriteCount = 0, gameCount = 0 }: Props)
             <div className="text-amber-400 text-2xl font-bold">{gameCount.toLocaleString()}</div>
             <div className="text-slate-300 text-xs">게임 횟수</div>
           </div>
-
-          {/* 잔고 */}
-          <div className="rounded-xl p-4 text-center bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-400/50 sm:col-span-2">
-            <div className="text-amber-300 text-2xl font-bold">{user.cash.toLocaleString()}원</div>
-            <div className="text-slate-300 text-xs">나의 잔고</div>
-          </div>
         </div>
 
         <div className="flex justify-end">

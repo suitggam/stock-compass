@@ -34,7 +34,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("select f.itemNo from User u join u.favorites f where u.id = :userId")
     List<Long> findFavoriteItemIds(@org.springframework.data.repository.query.Param("userId") Long userId);
 
-    //어카운트 레포에 옮겨서 사용, 일단 레포에 넣어는 놨음
     @Transactional
     @Modifying
     @Query("UPDATE Account a SET a.cash = :cash, a.haveStock = :haveStock WHERE a.user.id = :userNo")

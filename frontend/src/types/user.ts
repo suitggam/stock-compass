@@ -3,8 +3,6 @@ export interface User {
   nickname: string;
   socialEmail: string;
   createdAt: string;
-  totalReward: number;
-  cash: number;
 
   avatarUrl?: string;
 }
