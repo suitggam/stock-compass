@@ -201,17 +201,6 @@ export default function TendencyGamePage() {
             onNextWeek={nextWeek}
             onEndGame={async () => {
               const res = await finish();
-              if (res) {
-                alert(
-                  `게임 종료\n총 자산: ${new Intl.NumberFormat('ko-KR').format(
-                    res.totalAsset,
-                  )}원\n실현 손익: ${new Intl.NumberFormat('ko-KR').format(
-                    res.realizedProfit,
-                  )}원\n수익률: ${res.totalYield.toFixed(2)}%\n성향: ${res.tendencyType}\n추천: ${
-                    res.recommendation
-                  }`,
-                );
-              }
             }}
             term="0주"
             onTermChange={() => {}}
