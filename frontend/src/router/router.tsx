@@ -14,6 +14,7 @@ const StockInfo = lazy(() => import("../pages/StockInfoPage"));
 const Trade = lazy(() => import("../pages/TradePage"));
 const TradeInfo = lazy(() => import("../pages/TradeInfoPage"));
 const Search = lazy(() => import("../pages/SearchPage"));
+const Influence = lazy(() => import("../pages/InfluencePage"));
 
 const Router = createBrowserRouter([
   {
@@ -106,6 +107,14 @@ const Router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingPage />}>
             <StockInfo />
+          </Suspense>
+        ),
+      },
+      {
+        path: "influence",
+        element: (
+          <Suspense fallback={<LoadingPage />}>
+            <Influence />
           </Suspense>
         ),
       },
