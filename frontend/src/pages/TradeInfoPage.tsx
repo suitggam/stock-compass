@@ -34,9 +34,9 @@ import { useRealtimeStore } from "../stores/RealtimeState";
 import { useAuth } from "../stores/auth";
 import TradeKeywords from "../components/Trade/TradeKeywords";
 import TradeCard from "../components/Trade/TradeCard";
-import { mockData, type UserAsset } from "../types/Trade";
+import { type UserAsset, type UserTradeHistory } from "../types/Trade";
 import TradeHistory from "../components/Trade/TradeHistory";
-import { userAsset } from "../api/TradeApi"; // userAsset import
+import { userAsset, userTradeHistory } from "../api/TradeApi"; // userAsset import
 
 function isMarketOpen(): boolean {
   const now = new Date();
@@ -73,6 +73,21 @@ function TradeInfoPage() {
 
   const { user } = useAuth();
   const isLoggedIn = Boolean(user);
+
+  const [tradeHistory, setTradeHistory] = useState<UserTradeHistory[]>([]);
+
+  useEffect(() => {
+    if (!isLoggedIn || !ticker) return;
+    (async () => {
+      try {
+        const res = await userTradeHistory(ticker);
+        setTradeHistory(res); // API에서 받은 실제 거래 내역
+      } catch (err) {
+        console.error("사용자 거래 내역 로드 실패:", err);
+        setTradeHistory([]);
+      }
+    })();
+  }, [ticker, isLoggedIn]);
 
   // 사용자 자산 정보 가져오기
   useEffect(() => {
@@ -312,9 +327,9 @@ function TradeInfoPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br py-8 px-6 from-slate-900 via-slate-800 to-slate-900">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* 왼쪽 메인 콘텐츠 영역 */}
-          <div className="xl:col-span-3 space-y-6">
+          <div className="xl:col-span-2 space-y-6">
             {/* 차트 섹션 */}
             <div className="bg-gradient-to-br from-slate-800 to-slate-700 text-white rounded-2xl shadow-xl p-6 border border-slate-600">
               <ChartHeader
@@ -399,7 +414,7 @@ function TradeInfoPage() {
               <h2 className="font-bold mb-6 text-amber-400 text-xl flex items-center gap-2">
                 투자 거래 내역
               </h2>
-              <TradeHistory tradeHistory={mockData} />
+              <TradeHistory tradeHistory={tradeHistory} />
             </div>
           </div>
         </div>

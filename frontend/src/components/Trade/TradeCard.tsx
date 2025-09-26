@@ -137,16 +137,20 @@ function TradeCard({
           </span>
         </div>
         <div className="flex justify-between border-b border-slate-700 pb-2">
-          <span>보유 현금</span>
+          <span>현재 보유 현금</span>
           <span className="font-semibold">
             {userTrade.cash.toLocaleString()} 원
           </span>
         </div>
         <div className="flex justify-between border-b border-slate-700 pb-2">
-          <span>보유 주식</span>
+          <span>총 보유 주식 금액</span>
           <span className="font-semibold">
             {userTrade.haveStock.toLocaleString()} 원
           </span>
+        </div>
+        <div className="flex justify-between border-b border-slate-700 pb-2">
+          <span>현재 보유 주식 수</span>
+          <span className="font-semibold">1 주</span>
         </div>
         <div className="flex justify-between">
           <span>전체 손익률</span>
@@ -179,7 +183,7 @@ function TradeCard({
         <div className="flex items-center gap-2">
           <input
             type="text"
-            className={`w-32 text-center ${inputColor} bg-slate-700 rounded py-1 px-2 border border-slate-600 focus:border-blue-500 focus:outline-none`}
+            className={`text-center ${inputColor} bg-slate-700 rounded py-1 px-5 border border-slate-600 focus:border-blue-500 focus:outline-none`}
             value={amount}
             onChange={handleChange}
             disabled={loading}

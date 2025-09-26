@@ -21,5 +21,6 @@ public class ExtractKeywordsDto {
     private Map<String, Integer> keywords;
     private List<TopNewsArticleDto> topNewsArticles;
     private String aiAnalysis;
+    private Map<String, Integer> dailyNewsCount;
 
 }

@@ -1,7 +1,9 @@
-export interface History {
+export interface UserTradeHistory {
+  ticker: string;
   tradeType: HistoryType;
   price: number;
-  createAt: Date;
+  volume: number;
+  createdAt: Date;
 }
 
 export interface TradeHistoryDto {
@@ -25,16 +27,3 @@ export interface UserAsset {
 }
 
 type HistoryType = "BUY" | "SELL";
-
-export const mockData: History[] = [
-  {
-    tradeType: "BUY",
-    price: 10000,
-    createAt: new Date(),
-  },
-  {
-    tradeType: "SELL",
-    price: 10000,
-    createAt: new Date(),
-  },
-];

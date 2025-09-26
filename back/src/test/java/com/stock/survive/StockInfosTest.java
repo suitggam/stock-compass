@@ -60,4 +60,6 @@ public class StockInfosTest {
 //        log.info("itemNo={} 최신 종가={}", itemNo, latestPrice);
 //    }
 
+
+
 }

@@ -13,19 +13,24 @@ import type { StockInfos } from "../../types/StockInfos";
 interface ChartProps {
   data: StockInfos[];
   term: string;
+  dailyNewsCount: Record<string, number>;
 }
 
-function ChartMain({ data, term }: ChartProps) {
+function ChartMain({ data, term, dailyNewsCount }: ChartProps) {
   // 숫자 포맷
   function numberFormat(num: number) {
     return num.toLocaleString();
   }
 
-  // chart용 데이터: dateString 추가
-  const chartData = data.map((d) => ({
-    ...d,
-    dateString: d.date, // yyyy-MM-dd 문자열 그대로 사용
-  }));
+  // chart용 데이터: dateString 추가 + dailyNewsCount 반영
+  const chartData = data.map((d) => {
+    const key = d.date.replace(/-/g, ""); // "2025-09-26" → "20250926"
+    return {
+      ...d,
+      dateString: d.date,
+      newsCount: dailyNewsCount[key] ?? 0,
+    };
+  });
 
   // Custom Tooltip
   const CustomTooltip = ({
@@ -38,18 +43,30 @@ function ChartMain({ data, term }: ChartProps) {
     label?: string;
   }) => {
     if (active && payload && payload.length > 0) {
-      const p = payload[0];
+      const pricePoint = payload.find((p) => p.dataKey === "endPrice");
+      const newsPoint = payload.find((p) => p.dataKey === "newsCount");
+
       return (
         <div className="bg-slate-800 text-white p-3 rounded-lg shadow-lg border border-slate-600">
           <p className="text-base">
             날짜: <span className="font-bold text-amber-300">{label}</span>
           </p>
-          <p className="text-base">
-            종가:{" "}
-            <span className="font-bold text-amber-300">
-              {numberFormat(p.value ?? 0)} {/* undefined 처리 */}
-            </span>
-          </p>
+          {pricePoint && (
+            <p className="text-base">
+              종가:{" "}
+              <span className="font-bold text-amber-300">
+                {numberFormat(pricePoint.value ?? 0)}
+              </span>
+            </p>
+          )}
+          {newsPoint && (
+            <p className="text-base">
+              뉴스 수:{" "}
+              <span className="font-bold text-emerald-400">
+                {numberFormat(newsPoint.value ?? 0)}
+              </span>
+            </p>
+          )}
         </div>
       );
     }
@@ -58,24 +75,18 @@ function ChartMain({ data, term }: ChartProps) {
 
   if (!chartData || chartData.length === 0) return null;
 
-  // 최신 데이터 찾기 (문자열 비교)
-  const latestData = chartData.reduce((prev, curr) => {
-    return curr.dateString > prev.dateString ? curr : prev;
-  });
-
+  // 최신 데이터 찾기
+  const latestData = chartData.reduce((prev, curr) =>
+    curr.dateString > prev.dateString ? curr : prev
+  );
   const latestDateString = latestData.dateString;
 
   // 날짜 순 정렬
-  const sortedData = [...chartData].sort((a, b) =>
-    a.dateString > b.dateString ? 1 : -1
-  );
+  const filteredData = chartData
+    .sort((a, b) => (a.dateString > b.dateString ? 1 : -1))
+    .filter((d) => d.dateString <= latestDateString);
 
-  // 최신 날짜까지 필터
-  const filteredData = sortedData.filter(
-    (d) => d.dateString <= latestDateString
-  );
-
-  // X축 interval 설정
+  // X축 interval 계산
   let xInterval: number | "preserveStartEnd" = 0;
   if (term === "사용자 지정") {
     const len = filteredData.length;
@@ -122,15 +133,31 @@ function ChartMain({ data, term }: ChartProps) {
               interval={xInterval}
               tick={{ fontSize: 12 }}
             />
-            <YAxis stroke="#cbd5e1" width={60} />
+            <YAxis yAxisId="left" stroke="#cbd5e1" width={60} />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              stroke="#10b981"
+              width={60}
+            />
             <Tooltip content={<CustomTooltip />} />
             <Line
+              yAxisId="left"
               type="monotone"
               dataKey="endPrice"
               stroke="#fbbf24"
               strokeWidth={2}
               dot={{ r: 4, stroke: "#fbbf24", fill: "#fbbf24" }}
               activeDot={{ r: 6, stroke: "#f59e0b", fill: "#fbbf24" }}
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="newsCount"
+              stroke="#10b981"
+              strokeWidth={2}
+              dot={{ r: 3, stroke: "#10b981", fill: "#10b981" }}
+              activeDot={{ r: 5, stroke: "#059669", fill: "#10b981" }}
             />
           </LineChart>
         </ResponsiveContainer>

@@ -1,5 +1,6 @@
 package com.stock.survive.dto;
 
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,11 +12,10 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TradeHistoryDto {
+public class UserTradeHistoryDto {
+
     private String tradeType;  // "BUY" or "SELL"
     private Long price;
     private Integer volume;
-    private Long totalPrice;
-    private LocalDateTime createAt; // 거래 날짜
-
+    private LocalDateTime createdAt; // 거래 날짜
 }
