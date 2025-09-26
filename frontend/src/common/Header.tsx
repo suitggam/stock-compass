@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../stores/auth";
+import LoginRequiredModal from "../components/TendencyGame/LoginRequiredModal";
 import logoImg from "../assets/logo.webp";
 
 function getInitials(name: string) {
@@ -15,6 +16,7 @@ export default function Header() {
   const [search, setSearch] = useState("");
   const [openAll, setOpenAll] = useState(false); // xs: 전체 패널
   const [openNav, setOpenNav] = useState(false); // sm~lg: 세 친구 패널
+  const [loginRequiredModal, setLoginRequiredModal] = useState(false);
   const navigate = useNavigate();
 
   const user = useAuth((s) => s.user);
@@ -50,6 +52,29 @@ export default function Header() {
     setOpenNav(false);
   };
 
+  const handleGoHome = () => {
+    navigate('/');
+  };
+
+  const handleCloseLoginModal = () => {
+    setLoginRequiredModal(false);
+  };
+
+  const handleTradeClick = (e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault();
+      setLoginRequiredModal(true);
+      // 모달을 보여준 후 홈으로 이동
+      const timer = setTimeout(() => {
+        navigate('/');
+      }, 2000); // 2초 후 홈으로 이동
+      
+      return () => clearTimeout(timer);
+    }
+    setOpenAll(false);
+    setOpenNav(false);
+  };
+
   const NavLinks = ({ onClick }: { onClick: () => void }) => (
     <>
       <Link
@@ -62,7 +87,7 @@ export default function Header() {
       <Link
         to="/trade"
         className="px-2 py-2 text-slate-300 hover:text-white font-bold flex-none shrink-0 whitespace-nowrap"
-        onClick={onClick}
+        onClick={handleTradeClick}
       >
         모의 투자
       </Link>
@@ -241,6 +266,12 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      <LoginRequiredModal
+        isOpen={loginRequiredModal}
+        onClose={handleCloseLoginModal}
+        onGoHome={handleGoHome}
+      />
     </header>
   );
 }
