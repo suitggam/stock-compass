@@ -1,7 +1,8 @@
 package com.stock.survive.serviceImpl;
 
-import com.stock.survive.dto.TradeHistoryDto;
+import com.stock.survive.dto.UserAsset;
 import com.stock.survive.dto.UserAssetDto;
+import com.stock.survive.dto.UserTradeHistoryDto;
 import com.stock.survive.entity.StockItems;
 import com.stock.survive.entity.TradeHistory;
 import com.stock.survive.entity.User;
@@ -14,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +29,7 @@ public class TradeHistoryServiceImpl implements TradeHistoryService {
 
     @Override
     public UserAssetDto getUserAssets(Long userNo) {
-        Optional<User> user=userRepository.findById(userNo);
+        Optional<User> user = userRepository.findById(userNo);
         return UserAssetDto.builder()
                 .cash(user.get().getCash())
                 .haveStock(user.get().getHaveStock())
@@ -35,10 +38,9 @@ public class TradeHistoryServiceImpl implements TradeHistoryService {
     }
 
 
-
     @Transactional
     @Override
-    public TradeHistoryDto processBuy(Long userNo, String ticker, Long price, Integer volume) {
+    public UserAsset processBuy(Long userNo, String ticker, Long price, Integer volume) {
         // 1. 티커로 주식 정보 조회
         StockItems stockItem = stockItemRepository.findByTicker(ticker);
         Optional<User> optionalUser = userRepository.findById(userNo);
@@ -68,18 +70,18 @@ public class TradeHistoryServiceImpl implements TradeHistoryService {
 
 
         // 6. 거래 내역을 DTO로 반환
-        return TradeHistoryDto.builder()
+        return UserAsset.builder()
                 .tradeType("BUY")
                 .price(price)
                 .volume(volume)
                 .totalPrice(totalPrice)
-                .createAt(tradeHistory.getCreateAt()) // 거래 생성 시점
+                .createdAt((tradeHistory.getCreatedAt())) // 거래 생성 시점
                 .build();
     }
 
     @Transactional
     @Override
-    public TradeHistoryDto processSell(Long userNo, String ticker, Long price, Integer volume) {
+    public UserAsset processSell(Long userNo, String ticker, Long price, Integer volume) {
         // 1. 티커로 주식 정보 조회
         StockItems stockItem = stockItemRepository.findByTicker(ticker);
         Optional<User> optionalUser = userRepository.findById(userNo);
@@ -95,7 +97,7 @@ public class TradeHistoryServiceImpl implements TradeHistoryService {
 
         // 4. 거래 내역 저장
         TradeHistory tradeHistory = TradeHistory.builder()
-                .tradeType(TradeType.BUY)
+                .tradeType(TradeType.SELL)
                 .price(price)
                 .volume(volume)
                 .totalPrice(totalPrice)
@@ -109,15 +111,31 @@ public class TradeHistoryServiceImpl implements TradeHistoryService {
 
 
         // 6. 거래 내역을 DTO로 반환
-        return TradeHistoryDto.builder()
+        return UserAsset.builder()
                 .tradeType("SELL")
                 .price(price)
                 .volume(volume)
                 .totalPrice(totalPrice)
-                .createAt(tradeHistory.getCreateAt()) // 거래 생성 시점
+                .createdAt(tradeHistory.getCreatedAt()) // 거래 생성 시점
                 .build();
     }
 
+    @Override
+    public List<UserTradeHistoryDto> getUserTradeHistory(Long userNo, String ticker) {
 
+        Optional<User> user = userRepository.findById(userNo);
+        StockItems stockItem = stockItemRepository.findByTicker(ticker);
+
+        return tradeHistoryRepository.findByUserAndStockItem(user.get().getId(), stockItem.getItemNo())
+                .stream()
+                .map(trade -> UserTradeHistoryDto.builder()
+                        .tradeType(trade.getTradeType().name()) // "BUY" or "SELL"
+                        .price(trade.getPrice())
+                        .volume(trade.getVolume())
+                        .createdAt(trade.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
 }
+
 

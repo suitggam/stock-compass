@@ -30,6 +30,7 @@ export interface ExtractKeywordsResponse {
   keywords: Record<string, number>;
   topNewsArticles?: News[];
   aiAnalysis: string; // 문자열로만 관리
+  dailyNewsCount: Record<string, number>;
 }
 
 export const TermText: Term[] = [

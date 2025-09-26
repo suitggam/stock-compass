@@ -122,6 +122,8 @@ public class StockInfosServiceImpl implements StockInfosService {
                 .toList();
 
         String aiAnalysis = (String) response.get("ai_analysis");
+        Map<String, Integer> dailyNewsCount = (Map<String, Integer>) response.get("daily_news_count");
+
 
         // 6️⃣ 최종 DTO 반환
         return ExtractKeywordsDto.builder()
@@ -133,6 +135,7 @@ public class StockInfosServiceImpl implements StockInfosService {
                 .keywords(keywords)
                 .topNewsArticles(topNewsArticles)
                 .aiAnalysis(aiAnalysis)
+                .dailyNewsCount(dailyNewsCount)
                 .build();
     }
     

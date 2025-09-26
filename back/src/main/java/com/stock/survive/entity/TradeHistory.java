@@ -25,9 +25,9 @@ public class TradeHistory {
     @Column(name = "trade_no")
     private Long tradeNo;
 
-    @Column(name = "create_at")
+    @Column(name = "created_at")
     @CreatedDate
-    private LocalDateTime createAt;
+    private LocalDateTime createdAt;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "trade_type")
@@ -39,7 +39,7 @@ public class TradeHistory {
     @Column(name = "volume")
     private Integer volume;
 
-    @Column(name = "totalPrice")
+    @Column(name = "total_price")
     private Long totalPrice;
 
 

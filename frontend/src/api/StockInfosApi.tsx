@@ -1,11 +1,6 @@
 // src/api/StockInfosApi.tsx
 import axios from "axios";
-import type {
-  ExtractKeywordsResponse,
-  Keyword,
-  News,
-  StockInfos,
-} from "../types/StockInfos";
+import type { ExtractKeywordsResponse, StockInfos } from "../types/StockInfos";
 import { getAccessToken } from "./tokenCache";
 
 export const API_SERVER_HOST =
@@ -19,7 +14,8 @@ export const extractKeywords = async (
   companyName: string,
   startDate: string,
   endDate: string
-): Promise<{ keywords: Keyword[]; news: News[]; aiAnalysis: string }> => {
+): Promise<ExtractKeywordsResponse> => {
+  // 반환 타입을 ExtractKeywordsResponse로
   const payload = {
     companyName,
     startDate,
@@ -30,21 +26,10 @@ export const extractKeywords = async (
 
   const url = `${prefix}/extract-keywords/${ticker}`;
   const res = await axios.post<ExtractKeywordsResponse>(url, payload);
-
-  const keywords = Object.entries(res.data.keywords || {}).map(
-    ([keyword, count]) => ({ keyword, count })
-  );
-  const news = (res.data.topNewsArticles ?? []).map((n) => ({
-    title: n.title,
-    date: n.date,
-    url: n.url,
-  }));
-  // 백엔드에서 직접 aiAnalysis 문자열을 받음
-  const aiAnalysis = res.data.aiAnalysis ?? "";
-
   console.log(res.data);
 
-  return { keywords, news, aiAnalysis };
+  // 그대로 반환
+  return res.data; // keywords, topNewsArticles, aiAnalysis, dailyNewsCount 모두 포함
 };
 
 // 🔹 주식 정보 API - 토큰 추가 ✅
