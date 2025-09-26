@@ -4,6 +4,7 @@ import type {
   TradeHistoryDto,
   UserAsset,
   UserTradeHistory,
+  UserStockHoldingDto,
 } from "../types/Trade";
 import { api } from "./client";
 
@@ -12,6 +13,16 @@ export const userAsset = async (): Promise<UserAsset> => {
 
   return response;
 };
+
+export const getUserStockHolding = async (
+  ticker: string
+): Promise<UserStockHoldingDto> => {
+  const response = await api.get<UserStockHoldingDto>(
+    `/api/trade/holding/${ticker}`
+  );
+  return response;
+};
+
 export const userTradeHistory = async (
   ticker: string
 ): Promise<UserTradeHistory[]> => {

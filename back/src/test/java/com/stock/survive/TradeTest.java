@@ -52,8 +52,8 @@ public class TradeTest {
         log.info("---------------------------");
 
         Optional<User> optionalUser = userRepository.findById(userNo);
-        log.info(optionalUser.get().getCash());
-        log.info(optionalUser.get().getHaveStock());
+        log.info(optionalUser.get().getAccount().getCash());
+        log.info(optionalUser.get().getAccount().getHaveStock());
 
     }
 
@@ -75,8 +75,8 @@ public class TradeTest {
         log.info("---------------------------");
 
         Optional<User> optionalUser = userRepository.findById(userNo);
-        log.info(optionalUser.get().getCash());
-        log.info(optionalUser.get().getHaveStock());
+        log.info(optionalUser.get().getAccount().getCash());
+        log.info(optionalUser.get().getAccount().getHaveStock());
 
     }
 

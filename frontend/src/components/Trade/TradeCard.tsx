@@ -1,25 +1,29 @@
 import { useState } from "react";
 import { useTrade } from "../../hooks/useTrade";
-import { sellStock } from "../../api/TradeApi";
-import type { UserAsset } from "../../types/Trade";
+import type { UserAsset, UserStockHoldingDto } from "../../types/Trade";
+import type { TradeHistoryDto } from "../../types/Trade";
 
 interface TradeCardProps {
-  ticker: string; // 종목 코드 추가
-  userTrade: UserAsset;
+  ticker: string;
   stockPrice: number;
+  userTrade: UserAsset;
+  userHolding?: UserStockHoldingDto | null;
   onTrade?: (type: "BUY" | "SELL", amount: number) => void; // 로컬 상태 업데이트용
   onTradeSuccess?: () => void; // 거래 성공 시 추가 처리
+  setUserHolding?: (holding: UserStockHoldingDto) => void; // 즉시 보유 수량 업데이트용
 }
 
 function TradeCard({
   ticker,
-  userTrade,
   stockPrice,
+  userTrade,
+  userHolding,
   onTrade,
   onTradeSuccess,
+  setUserHolding,
 }: TradeCardProps) {
   const [amount, setAmount] = useState<number>(0);
-  const { loading, error, buyStock, clearError } = useTrade();
+  const { loading, error, buyStock, sellStock, clearError } = useTrade();
 
   const handleBuy = async () => {
     if (amount <= 0) {
@@ -35,27 +39,27 @@ function TradeCard({
 
     try {
       clearError();
-
-      // 실제 API 호출
-      const result = await buyStock({
+      const result: TradeHistoryDto | null = await buyStock({
         ticker,
         price: stockPrice,
         volume: amount,
       });
 
       if (result) {
-        // 성공 시
         alert(
           `매수 완료!\n종목: ${ticker}\n수량: ${amount}주\n총 금액: ${result.totalPrice.toLocaleString()}원`
         );
 
-        // 로컬 상태 업데이트 (기존 로직 유지)
+        // 즉시 보유 수량 업데이트
+        if (setUserHolding) {
+          setUserHolding({
+            ticker,
+            quantity: (userHolding?.quantity ?? 0) + amount,
+          });
+        }
+
         if (onTrade) onTrade("BUY", amount);
-
-        // 추가 처리 (예: 거래 내역 새로고침)
         if (onTradeSuccess) onTradeSuccess();
-
-        // 수량 초기화
         setAmount(0);
       }
     } catch (err) {
@@ -70,35 +74,34 @@ function TradeCard({
       return;
     }
 
-    const totalValue = amount * stockPrice;
-    if (totalValue > userTrade.haveStock) {
+    if ((userHolding?.quantity ?? 0) < amount) {
       alert("보유 주식이 부족합니다.");
       return;
     }
 
     try {
       clearError();
-
-      // 실제 API 호출
-      const result = await sellStock({
+      const result: TradeHistoryDto | null = await sellStock({
         ticker,
         price: stockPrice,
         volume: amount,
       });
 
       if (result) {
-        // 성공 시
         alert(
           `매도 완료!\n종목: ${ticker}\n수량: ${amount}주\n총 금액: ${result.totalPrice.toLocaleString()}원`
         );
 
-        // 로컬 상태 업데이트 (기존 로직 유지)
+        // 즉시 보유 수량 업데이트
+        if (setUserHolding) {
+          setUserHolding({
+            ticker,
+            quantity: (userHolding?.quantity ?? 0) - amount,
+          });
+        }
+
         if (onTrade) onTrade("SELL", amount);
-
-        // 추가 처리
         if (onTradeSuccess) onTradeSuccess();
-
-        // 수량 초기화
         setAmount(0);
       }
     } catch (err) {
@@ -109,7 +112,6 @@ function TradeCard({
 
   const increase = () => setAmount((prev) => prev + 1);
   const decrease = () => setAmount((prev) => (prev > 0 ? prev - 1 : 0));
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (/^\d*$/.test(value)) {
@@ -121,14 +123,12 @@ function TradeCard({
 
   return (
     <div className="bg-slate-800 text-white rounded-2xl shadow-lg p-6 space-y-6">
-      {/* 에러 메시지 */}
       {error && (
         <div className="bg-red-500/20 border border-red-500 rounded-lg p-3 text-red-300 text-sm">
           {error}
         </div>
       )}
 
-      {/* 자산 정보 */}
       <div className="space-y-3">
         <div className="flex justify-between border-b border-slate-700 pb-2">
           <span>총 자산</span>
@@ -150,7 +150,7 @@ function TradeCard({
         </div>
         <div className="flex justify-between border-b border-slate-700 pb-2">
           <span>현재 보유 주식 수</span>
-          <span className="font-semibold">1 주</span>
+          <span className="font-semibold">{userHolding?.quantity ?? 0} 주</span>
         </div>
         <div className="flex justify-between">
           <span>전체 손익률</span>
@@ -163,21 +163,22 @@ function TradeCard({
                 : "text-red-400"
             }`}
           >
-            {(userTrade.cash + userTrade.haveStock - userTrade.originalMoney) /
+            {((userTrade.cash + userTrade.haveStock - userTrade.originalMoney) /
               userTrade.originalMoney >
             0
               ? "+"
-              : ""}
-            {(
-              (userTrade.cash + userTrade.haveStock - userTrade.originalMoney) /
-              userTrade.originalMoney
-            ).toFixed(2)}{" "}
+              : "") +
+              (
+                (userTrade.cash +
+                  userTrade.haveStock -
+                  userTrade.originalMoney) /
+                userTrade.originalMoney
+              ).toFixed(2)}{" "}
             %
           </span>
         </div>
       </div>
 
-      {/* 투자 수량 조절 + 버튼 */}
       <div className="space-y-3">
         <label className="block text-sm text-slate-300">투자 수량</label>
         <div className="flex items-center gap-2">
@@ -205,7 +206,6 @@ function TradeCard({
           </button>
         </div>
 
-        {/* 예상 금액 표시 */}
         <div className="text-sm text-slate-300 text-center bg-slate-700 rounded py-2">
           거래금액: {(amount * stockPrice).toLocaleString()}원
         </div>
@@ -220,7 +220,7 @@ function TradeCard({
           </button>
           <button
             className="flex-1 bg-red-500 px-4 py-2 rounded-lg text-white font-semibold hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={handleSell} // 매도 버튼 활성화
+            onClick={handleSell}
             disabled={loading || amount <= 0}
           >
             {loading ? "처리중..." : "매도"}

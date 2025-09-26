@@ -35,9 +35,17 @@ import { useRealtimeStore } from "../stores/RealtimeState";
 import { useAuth } from "../stores/auth";
 import TradeKeywords from "../components/Trade/TradeKeywords";
 import TradeCard from "../components/Trade/TradeCard";
-import { type UserAsset, type UserTradeHistory } from "../types/Trade";
+import {
+  type UserAsset,
+  type UserStockHoldingDto,
+  type UserTradeHistory,
+} from "../types/Trade";
 import TradeHistory from "../components/Trade/TradeHistory";
-import { userAsset, userTradeHistory } from "../api/TradeApi"; // userAsset import
+import {
+  getUserStockHolding,
+  userAsset,
+  userTradeHistory,
+} from "../api/TradeApi"; // userAsset import
 
 function isMarketOpen(): boolean {
   const now = new Date();
@@ -70,6 +78,9 @@ function TradeInfoPage() {
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [news, setNews] = useState<News[]>([]);
   const [aiAnalysis, setAiAnalysis] = useState<string>("");
+  const [userHolding, setUserHolding] = useState<UserStockHoldingDto | null>(
+    null
+  );
 
   const [isFavorite, setIsFavorite] = useState(false);
 
@@ -243,6 +254,19 @@ function TradeInfoPage() {
       )
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [stockData, startDate, endDate]);
+
+  useEffect(() => {
+    if (!isLoggedIn || !ticker) return;
+    (async () => {
+      try {
+        const res = await getUserStockHolding(ticker);
+        setUserHolding(res);
+      } catch (err) {
+        console.error("보유 수량 로드 실패:", err);
+        setUserHolding(null);
+      }
+    })();
+  }, [ticker, isLoggedIn]);
 
   // 키워드 & 뉴스 & 분석
   useEffect(() => {
@@ -455,9 +479,11 @@ function TradeInfoPage() {
                 나의 자산
               </h2>
               <TradeCard
-                ticker={ticker!} // ticker 추가
+                ticker={ticker!}
                 stockPrice={displayPrice}
-                userTrade={userTrade} // userTrade 상태 사용
+                userTrade={userTrade}
+                userHolding={userHolding}
+                setUserHolding={setUserHolding} // ✅ 추가
                 onTrade={handleTrade}
                 onTradeSuccess={() => {
                   console.log("거래가 성공적으로 완료되었습니다.");
