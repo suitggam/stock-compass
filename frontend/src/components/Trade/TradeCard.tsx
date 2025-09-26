@@ -50,7 +50,7 @@ function TradeCard({
         );
 
         // 로컬 상태 업데이트 (기존 로직 유지)
-        if (onTrade) onTrade("BUY", totalCost);
+        if (onTrade) onTrade("BUY", amount);
 
         // 추가 처리 (예: 거래 내역 새로고침)
         if (onTradeSuccess) onTradeSuccess();
@@ -93,7 +93,7 @@ function TradeCard({
         );
 
         // 로컬 상태 업데이트 (기존 로직 유지)
-        if (onTrade) onTrade("SELL", totalValue);
+        if (onTrade) onTrade("SELL", amount);
 
         // 추가 처리
         if (onTradeSuccess) onTradeSuccess();

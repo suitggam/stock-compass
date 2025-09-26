@@ -7,7 +7,6 @@ import com.stock.survive.entity.StockItems;
 import com.stock.survive.entity.TradeHistory;
 import com.stock.survive.entity.User;
 import com.stock.survive.enumType.TradeType;
-import com.stock.survive.repository.AccountRepository;
 import com.stock.survive.repository.StockItemRepository;
 import com.stock.survive.repository.TradeHistoryRepository;
 import com.stock.survive.repository.UserRepository;
@@ -33,9 +32,9 @@ public class TradeHistoryServiceImpl implements TradeHistoryService {
     public UserAssetDto getUserAssets(Long userNo) {
         Optional<User> user = userRepository.findById(userNo);
         return UserAssetDto.builder()
-                .cash(user.get().getCash())
-                .haveStock(user.get().getHaveStock())
-                .originalMoney(user.get().getOriginalMoney())
+                .cash(user.get().getAccount().getCash())
+                .haveStock(user.get().getAccount().getHaveStock())
+                .originalMoney(user.get().getAccount().getOriginalMoney())
                 .build();
     }
 
@@ -53,8 +52,8 @@ public class TradeHistoryServiceImpl implements TradeHistoryService {
         Long totalPrice = price * volume;
 
         // 3. 사용자 자산 업데이트
-        Long setCash = user.getCash() - totalPrice;
-        Long setHaveStock = user.getHaveStock() + totalPrice;
+        Long setCash = user.getAccount().getCash() - totalPrice;
+        Long setHaveStock = user.getAccount().getHaveStock() + totalPrice;
 
         // 4. 거래 내역 저장
         TradeHistory tradeHistory = TradeHistory.builder()
@@ -62,6 +61,7 @@ public class TradeHistoryServiceImpl implements TradeHistoryService {
                 .price(price)
                 .volume(volume)
                 .totalPrice(totalPrice)
+                .account(user.getAccount())
                 .user(user)
                 .stockItems(stockItem)
                 .build();
@@ -94,8 +94,8 @@ public class TradeHistoryServiceImpl implements TradeHistoryService {
         Long totalPrice = price * volume;
 
         // 3. 사용자 자산 업데이트
-        Long setCash = user.getCash() + totalPrice;
-        Long setHaveStock = user.getHaveStock() - totalPrice;
+        Long setCash = user.getAccount().getCash() + totalPrice;
+        Long setHaveStock = user.getAccount().getHaveStock() - totalPrice;
 
         // 4. 거래 내역 저장
         TradeHistory tradeHistory = TradeHistory.builder()
@@ -103,6 +103,7 @@ public class TradeHistoryServiceImpl implements TradeHistoryService {
                 .price(price)
                 .volume(volume)
                 .totalPrice(totalPrice)
+                .account(user.getAccount())
                 .user(user)
                 .stockItems(stockItem)
                 .build();

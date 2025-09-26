@@ -78,9 +78,12 @@ function TradeInfoPage() {
   const [loginRequiredModal, setLoginRequiredModal] = useState(false);
 
   const [tradeHistory, setTradeHistory] = useState<UserTradeHistory[]>([]);
+  const [dailyNewsCount, setDailyNewsCount] = useState<Record<string, number>>(
+    {}
+  );
 
   const handleGoHome = () => {
-    navigate('/');
+    navigate("/");
   };
 
   const handleCloseLoginModal = () => {
@@ -93,9 +96,9 @@ function TradeInfoPage() {
       setLoginRequiredModal(true);
       // 모달을 보여준 후 홈으로 이동
       const timer = setTimeout(() => {
-        navigate('/');
+        navigate("/");
       }, 2000); // 2초 후 홈으로 이동
-      
+
       return () => clearTimeout(timer);
     }
   }, [user, navigate]);
@@ -244,27 +247,32 @@ function TradeInfoPage() {
   // 키워드 & 뉴스 & 분석
   useEffect(() => {
     if (!latestStock || !startDate || !endDate) return;
+
     (async () => {
       try {
-        const {
-          keywords: keywordList,
-          news: newsList,
-          aiAnalysis: analysis,
-        } = await extractKeywords(
+        const response = await extractKeywords(
           latestStock.ticker,
           latestStock.companyName,
           startDate.toISOString().slice(0, 10),
           endDate.toISOString().slice(0, 10)
         );
 
+        // keywords는 Record<string, number> -> Keyword[]로 변환
+        const keywordList: Keyword[] = Object.entries(response.keywords).map(
+          ([keyword, count]) => ({ keyword, count })
+        );
+
         setKeywords(keywordList);
-        setNews(newsList);
-        setAiAnalysis(analysis);
+        setNews(response.topNewsArticles ?? []);
+        setAiAnalysis(response.aiAnalysis);
+        setDailyNewsCount(response.dailyNewsCount ?? {}); // 새로 추가한 상태
+        console.log("📰 dailyNewsCount:", response.dailyNewsCount);
       } catch (err) {
         console.error("키워드 & 뉴스 추출 실패:", err);
         setKeywords([]);
         setNews([]);
         setAiAnalysis("");
+        setDailyNewsCount({});
       }
     })();
   }, [latestStock, startDate, endDate]);
@@ -315,23 +323,28 @@ function TradeInfoPage() {
 
   const pastPrice = filteredData[0]?.endPrice ?? displayPrice;
 
-  const handleTrade = (type: "BUY" | "SELL", amount: number) => {
-    console.log(type, amount);
-
+  const handleTrade = (type: "BUY" | "SELL", volume: number) => {
+    const now = new Date();
+    const trade: UserTradeHistory = {
+      ticker: ticker!,
+      tradeType: type,
+      price: displayPrice, // 주당 가격
+      volume, // ✅ 수량(주)
+      createdAt: now,
+    };
+    console.log(trade.volume);
     setUserTrade((prev) => {
-      if (!prev) return prev;
+      const stockValue = displayPrice * volume; // ✅ 총 금액(가격 * 수량)
 
-      const cash = prev.cash;
-      const haveStock = prev.haveStock;
-      let newCash = cash;
-      let newStock = haveStock;
+      let newCash = prev.cash;
+      let newStock = prev.haveStock;
 
       if (type === "BUY") {
-        newCash -= amount;
-        newStock += amount;
+        newCash -= stockValue; // 현금에서 총 금액 차감
+        newStock += stockValue; // 보유 주식 금액 증가
       } else {
-        newCash += amount;
-        newStock -= amount;
+        newCash += stockValue; // 현금에 총 금액 추가
+        newStock -= stockValue; // 보유 주식 금액 감소
       }
 
       const totalMoney = newCash + newStock;
@@ -346,6 +359,8 @@ function TradeInfoPage() {
         marginPercent,
       };
     });
+
+    setTradeHistory((prev) => [trade, ...prev]);
   };
 
   // 로그인하지 않은 사용자는 모달만 표시
@@ -400,7 +415,11 @@ function TradeInfoPage() {
               />
 
               <div className="mt-4">
-                <ChartMain term={selectedTerm.text} data={chartData} />
+                <ChartMain
+                  term={selectedTerm.text}
+                  data={chartData}
+                  dailyNewsCount={dailyNewsCount}
+                />
               </div>
             </div>
 
