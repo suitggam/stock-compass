@@ -7,6 +7,7 @@ import com.stock.survive.entity.StockItems;
 import com.stock.survive.entity.TradeHistory;
 import com.stock.survive.entity.User;
 import com.stock.survive.enumType.TradeType;
+import com.stock.survive.repository.AccountRepository;
 import com.stock.survive.repository.StockItemRepository;
 import com.stock.survive.repository.TradeHistoryRepository;
 import com.stock.survive.repository.UserRepository;
@@ -27,6 +28,7 @@ public class TradeHistoryServiceImpl implements TradeHistoryService {
     private final UserRepository userRepository;
     private final TradeHistoryRepository tradeHistoryRepository;
 
+
     @Override
     public UserAssetDto getUserAssets(Long userNo) {
         Optional<User> user = userRepository.findById(userNo);
@@ -45,8 +47,8 @@ public class TradeHistoryServiceImpl implements TradeHistoryService {
         StockItems stockItem = stockItemRepository.findByTicker(ticker);
         Optional<User> optionalUser = userRepository.findById(userNo);
 
-
         User user = optionalUser.get();
+
         // 2. 거래 금액 계산
         Long totalPrice = price * volume;
 

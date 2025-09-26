@@ -25,9 +25,6 @@ public class User {
     @Column(name = "user_no")
     private Long id;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<TradeHistory> tradeHistories = new ArrayList<>();
 
     @Column(name = "social_email", length = 254, nullable = false, unique = true)
     private String socialEmail;
@@ -39,21 +36,11 @@ public class User {
     @Column(name = "nickname",length = 30, nullable = false)
     private String nickname;
 
-    @Builder.Default
-    @Column(name = "total_reward", nullable = false)
-    private Integer totalReward = 0;
-
-    @Builder.Default
-    @Column(name = "original_money",nullable = false)
-    private Long originalMoney = 10_000_000L;
-
-    @Builder.Default
-    @Column(name = "cash",nullable = false)
-    private Long cash = 10_000_000L;
-
-    @Builder.Default
-    @Column(name = "haveStock",nullable = false)
-    private Long haveStock=0L;
+    @OneToOne(mappedBy="user",
+            cascade = CascadeType.ALL,
+            orphanRemoval=true,
+            fetch = FetchType.LAZY, optional=false)
+    private Account account;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -67,13 +54,19 @@ public class User {
     @Builder.Default
     private List<OauthIdentity> identities = new ArrayList<>();
 
-
-    // 시간 처리 함수
     @PrePersist
     void onCreate() {
-        // createdAt/updatedAt 자동 세팅
         if (createdAt == null) createdAt = LocalDateTime.now();
         if (updatedAt == null) updatedAt = LocalDateTime.now();
+        if (this.account == null) {
+            this.account = Account.builder()
+                    .user(this)
+                    .totalReward(0)
+                    .originalMoney(10_000_000L)
+                    .cash(10_000_000L)
+                    .haveStock(0L)
+                    .build();
+        }
     }
 
     @PreUpdate
