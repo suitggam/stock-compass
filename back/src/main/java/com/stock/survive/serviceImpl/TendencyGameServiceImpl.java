@@ -26,7 +26,6 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -34,7 +33,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -196,11 +194,14 @@ public class TendencyGameServiceImpl implements TendencyGameService {
         session.setFinishedAt(LocalDateTime.now());
         session.setDecisionElapsedMillis(Duration.between(session.getStartedAt(), session.getFinishedAt()).toMillis());
         session.setStatus(TendencyGameStatus.FINISHED);
+        sessions.put(session.getId(), session); // 최종 상태를 인메모리에 반영
         
+        // 💡 MBTI 성향 지표 계산
         long totalGameTimeSeconds = session.getDecisionElapsedMillis() / 1000;
         int volatileTradeCount = session.getVolatileBuyCount() + session.getVolatileSellCount();
         int sellDominantWeekCount = session.getSellDominantWeekCount();
         
+        // --- MBTI 계산 로직 ---
         int calculatedI = Math.min(100, Math.max(0, (volatileTradeCount * 10 + 10)));
         int calculatedE = 100 - calculatedI;
         
@@ -214,6 +215,18 @@ public class TendencyGameServiceImpl implements TendencyGameService {
         int calculatedJ = (int) Math.min(100, Math.max(0, (baseYield - totalYield) * 10));
         int calculatedP = 100 - calculatedJ;
         
+        // 💡 최종 4자리 MBTI 문자열 (tendencyResult) 결정
+        String calculatedResult = resolveMbtiResult(
+                calculatedI, calculatedE,
+                calculatedS, calculatedN,
+                calculatedT, calculatedF,
+                calculatedJ, calculatedP
+        );
+        
+        // 💡 TendencyType과 Recommendation 결정 (복구)
+        TendencyProfile finalProfile = resolveTendencyProfile(totalYield, volatileTradeCount, sellDominantWeekCount);
+        
+        // 💡 TendencyGameResponse에 계산된 모든 값을 담아 반환
         return TendencyGameResponse.builder()
                 .sessionId(session.getId())
                 .maxWeek(session.getMaxWeek())
@@ -222,8 +235,8 @@ public class TendencyGameServiceImpl implements TendencyGameService {
                 .realizedProfit(session.getRealizedProfit())
                 .totalYield(totalYield)
                 .yieldAboveThreshold(totalYield >= YIELD_THRESHOLD)
-                .tendencyType("결과 산출")
-                .recommendation("결과 산출")
+                .tendencyType(finalProfile.getType())
+                .recommendation(finalProfile.getRecommendation())
                 .decisionElapsedSeconds(totalGameTimeSeconds)
                 .volatileBuyCount(session.getVolatileBuyCount())
                 .volatileSellCount(session.getVolatileSellCount())
@@ -238,9 +251,35 @@ public class TendencyGameServiceImpl implements TendencyGameService {
                 .tendencyT(calculatedT)
                 .tendencyJ(calculatedJ)
                 .tendencyP(calculatedP)
+                .tendencyResult(calculatedResult)
                 .build();
     }
     
+    // 💡 MBTI 성향 지표 점수를 기반으로 최종 4자리 유형 문자열을 결정하는 헬퍼 메서드
+    private String resolveMbtiResult(
+            int i, int e,
+            int s, int n,
+            int t, int f,
+            int j, int p
+    ) {
+        StringBuilder mbti = new StringBuilder();
+        
+        // 1. E/I 결정: E가 I보다 높으면 E, 같거나 낮으면 I (요구사항: 같으면 I)
+        mbti.append(e > i ? 'E' : 'I');
+        
+        // 2. S/N 결정: S가 N보다 높거나 같으면 S, 아니면 N (요구사항: 같으면 S)
+        mbti.append(s >= n ? 'S' : 'N');
+        
+        // 3. T/F 결정: T가 F보다 높으면 T, 아니면 F (요구사항: 같으면 F)
+        mbti.append(t > f ? 'T' : 'F');
+        
+        // 4. J/P 결정: J가 P보다 높거나 같으면 J, 아니면 P (요구사항: 같으면 J)
+        mbti.append(j >= p ? 'J' : 'P');
+        
+        return mbti.toString();
+    }
+    
+    // ===== In-memory helpers (start/state/order/nextWeek에서 사용) =====
     private List<TendencyGameWeek> getWeeks(Long sessionId) {
         return weeksBySession.computeIfAbsent(sessionId, k -> new ArrayList<>());
     }
@@ -410,27 +449,6 @@ public class TendencyGameServiceImpl implements TendencyGameService {
         }
     }
     
-    private int countSellDominantWeeks(int maxWeek, List<TendencyGameTrade> trades) {
-        int count = 0;
-        for (int week = 1; week <= maxWeek; week++) {
-            final int w = week; // effectively final for lambda
-            int buyQty = trades.stream()
-                    .filter(trade -> trade.getWeekIndex() == w)
-                    .filter(trade -> trade.getType() == TendencyGameTradeType.BUY)
-                    .mapToInt(TendencyGameTrade::getQuantity)
-                    .sum();
-            int sellQty = trades.stream()
-                    .filter(trade -> trade.getWeekIndex() == w)
-                    .filter(trade -> trade.getType() == TendencyGameTradeType.SELL)
-                    .mapToInt(TendencyGameTrade::getQuantity)
-                    .sum();
-            if (sellQty > buyQty) {
-                count++;
-            }
-        }
-        return count;
-    }
-    
     private TendencyGameStateResponse buildStateResponse(TendencyGameSession session) {
         List<TendencyGameWeek> weeks = getWeeks(session.getId());
         weeks.sort(Comparator.comparingInt(TendencyGameWeek::getWeekIndex));
@@ -533,6 +551,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
         return ((double) totalAsset - initialCash) / initialCash * 100.0;
     }
     
+    // 💡 TendencyProfile 결정 로직 복구
     private TendencyProfile resolveTendencyProfile(double totalYield, int volatileTrades, int sellDominantWeeks) {
         if (totalYield >= 5.0 || volatileTrades >= 6) {
             return new TendencyProfile("AGGRESSIVE", "공격적인 성향으로 적극적인 투자를 선호합니다.");
@@ -543,7 +562,7 @@ public class TendencyGameServiceImpl implements TendencyGameService {
         return new TendencyProfile("BALANCED", "수익과 리스크를 균형 있게 고려하는 성향입니다.");
     }
     
-    // TendencyProfile 레코드를 클래스로 변경
+    // 💡 TendencyProfile 클래스 복구
     private static class TendencyProfile {
         private final String type;
         private final String recommendation;

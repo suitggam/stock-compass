@@ -45,6 +45,7 @@ public class GameResultServiceImpl implements GameResultService {
                 .tendencyT(response.tendencyT())
                 .tendencyJ(response.tendencyJ())
                 .tendencyP(response.tendencyP())
+                .tendencyResult(response.tendencyResult())
                 .build();
         
         gameResultRepository.save(gameResult);

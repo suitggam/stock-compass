@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Table(name = "game_results")
 public class GameResult {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "game_no")
@@ -47,6 +48,9 @@ public class GameResult {
     
     @Column(name = "tendency_p", nullable = false)
     private Integer tendencyP;
+    
+    @Column(name = "tendency_result", nullable = false)
+    private String tendencyResult;
     
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -23,6 +23,7 @@ public class GameResultDto {
     private Integer tendencyT;
     private Integer tendencyJ;
     private Integer tendencyP;
+    private String  tendencyResult;
     
     public static GameResultDto from(GameResult gr) {
         if (gr == null) return null;
@@ -38,6 +39,7 @@ public class GameResultDto {
                 .tendencyT(gr.getTendencyT())
                 .tendencyJ(gr.getTendencyJ())
                 .tendencyP(gr.getTendencyP())
+                .tendencyResult(gr.getTendencyResult())
                 .build();
     }
 }
