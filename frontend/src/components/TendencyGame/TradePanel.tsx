@@ -22,6 +22,8 @@ type TradePanelProps = {
     onTermChange(term: string): void;
     maxAffordable: number;
     maxSellable: number;
+    currentWeek?: number;
+    maxWeek?: number;
 };
 
 export default function TradePanel({
@@ -40,6 +42,8 @@ export default function TradePanel({
     onTermChange,
     maxAffordable,
     maxSellable,
+    currentWeek = 1,
+    maxWeek = 10,
 }: TradePanelProps) {
     const infoItems = [
         { label: '보유 주식', value: `${formatNumber(stockCount)}주` },
@@ -55,6 +59,10 @@ export default function TradePanel({
 
     const canBuy = tradeAmount > 0 && tradeAmount <= Math.max(0, Math.floor(maxAffordable));
     const canSell = tradeAmount > 0 && tradeAmount <= Math.max(0, Math.floor(maxSellable));
+    
+    // 주차에 따른 버튼 활성화 조건
+    const canGoToNextWeek = currentWeek < maxWeek; // 10주가 되기 전까지는 '다음주로' 활성화
+    const canEndGame = currentWeek >= maxWeek; // 10주차가 되면 종료 버튼 활성화
 
     const quickSet = (amount: number) => {
         onTradeAmountChange(Math.max(0, Math.floor(amount)));
@@ -142,14 +150,24 @@ export default function TradePanel({
                     <button
                         type="button"
                         onClick={onNextWeek}
-                        className="flex-1 rounded-lg border border-slate-600 px-4 py-2 font-semibold text-white hover:bg-slate-700"
+                        disabled={!canGoToNextWeek}
+                        className={`flex-1 rounded-lg border border-slate-600 px-4 py-2 font-semibold text-white transition hover:bg-slate-700 ${
+                            canGoToNextWeek 
+                                ? 'bg-yellow-500 hover:bg-yellow-600' 
+                                : 'bg-gray-500 cursor-not-allowed opacity-50'
+                        }`}
                     >
-                        다음 주로
+                        {canGoToNextWeek ? '다음 주로' : '최대 주차'}
                     </button>
                     <button
                         type="button"
                         onClick={onEndGame}
-                        className="flex-1 rounded-lg border border-indigo-400 px-4 py-2 font-semibold text-indigo-400 hover:bg-indigo-900"
+                        disabled={!canEndGame}
+                        className={`flex-1 rounded-lg border border-indigo-400 px-4 py-2 font-semibold text-white transition hover:bg-indigo-900 ${
+                            canEndGame 
+                                ? 'bg-indigo-500 hover:bg-indigo-600' 
+                                : 'bg-gray-500 cursor-not-allowed opacity-50'
+                        }`}
                     >
                         종료
                     </button>

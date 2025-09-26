@@ -28,6 +28,7 @@ public record TendencyGameResponse(
         Integer tendencyF,
         Integer tendencyT,
         Integer tendencyJ,
-        Integer tendencyP
+        Integer tendencyP,
+        String tendencyResult
 ) {
 }
