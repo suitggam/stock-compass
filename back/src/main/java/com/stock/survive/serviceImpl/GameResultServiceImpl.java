@@ -3,7 +3,7 @@ package com.stock.survive.serviceImpl;
 import com.stock.survive.dto.GameResultDto;
 import com.stock.survive.dto.tendency.TendencyGameFinishRequest;
 import com.stock.survive.dto.tendency.TendencyGameResponse;
-import com.stock.survive.entity.GameResultEntity;
+import com.stock.survive.entity.GameResult;
 import com.stock.survive.repository.GameResultRepository;
 import com.stock.survive.service.GameResultService;
 import com.stock.survive.service.TendencyGameService;
@@ -23,7 +23,7 @@ public class GameResultServiceImpl implements GameResultService {
     @Override
     @Transactional(Transactional.TxType.SUPPORTS)
     public GameResultDto getLatestByUserNo(Long userNo) {
-        GameResultEntity gr = gameResultRepository
+        GameResult gr = gameResultRepository
                 .findTopByUserNoOrderByCreatedAtDesc(userNo)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "GAME_RESULT_NOT_FOUND"));
         
@@ -35,7 +35,7 @@ public class GameResultServiceImpl implements GameResultService {
     public TendencyGameResponse finish(Long userId, TendencyGameFinishRequest request) {
         TendencyGameResponse response = tendencyGameService.finish(userId, request);
         
-        GameResultEntity gameResultEntity = GameResultEntity.builder()
+        GameResult gameResult = GameResult.builder()
                 .userNo(userId)
                 .tendencyI(response.tendencyI())
                 .tendencyE(response.tendencyE())
@@ -45,9 +45,10 @@ public class GameResultServiceImpl implements GameResultService {
                 .tendencyT(response.tendencyT())
                 .tendencyJ(response.tendencyJ())
                 .tendencyP(response.tendencyP())
+                .tendencyResult(response.tendencyResult())
                 .build();
         
-        gameResultRepository.save(gameResultEntity);
+        gameResultRepository.save(gameResult);
         
         return response;
     }
