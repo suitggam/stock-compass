@@ -14,6 +14,8 @@ from typing import Optional, Dict, List
 from contextlib import asynccontextmanager
 from keyword_extractor import KeywordExtractor
 from cache_manager import CacheManager
+import glob
+import math
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -287,6 +289,146 @@ async def extract_keywords(request: KeywordRequest):
         logger.error(f"내부 서버 오류: {str(e)}")
         logger.error(f"❌ API 실패 응답 시간: {total_time:.2f}초")
         raise HTTPException(status_code=500, detail=f"키워드 추출 중 오류가 발생했습니다: {str(e)}")
+
+
+# ------------------------------
+# 기업 영향력 API (Parquet → pyarrow)
+# ------------------------------
+
+class InfluenceItem(BaseModel):
+    rank: int
+    company: str
+    score: float
+    relative: float
+    score_type: str  # "pagerank" | "degree"
+
+
+def _resolve_parquet_glob(base_path: str) -> str:
+    # S3 경로는 그대로 사용. 디렉터리로 끝나면 *.parquet 자동 부여
+    if isinstance(base_path, str) and base_path.lower().startswith("s3://"):
+        if base_path.endswith("/"):
+            return base_path + "*.parquet"
+        return base_path
+    if os.path.isdir(base_path):
+        return os.path.join(base_path, "*.parquet")
+    return base_path
+
+
+def _load_influence_with_pyarrow(path_glob: str, top_n: int, target_company: Optional[str] = None):
+    try:
+        import pyarrow.parquet as pq
+        import pyarrow as pa
+        import pandas as pd
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"pyarrow/pandas 로드 실패: {e}")
+
+    # 로컬 vs S3 구분 및 파일 리스트 수집
+    file_list: List[str] = []
+    is_s3 = isinstance(path_glob, str) and path_glob.lower().startswith("s3://")
+    has_wildcard = isinstance(path_glob, str) and ("*" in path_glob or "?" in path_glob or "[" in path_glob)
+
+    if is_s3:
+        try:
+            import fsspec
+            fs = fsspec.filesystem("s3")
+            if has_wildcard:
+                file_list = fs.glob(path_glob)
+            else:
+                file_list = [path_glob]
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"S3 접근 실패: {e}")
+    else:
+        file_list = glob.glob(path_glob)
+
+    if not file_list:
+        raise HTTPException(status_code=404, detail=f"Parquet 파일을 찾을 수 없습니다: {path_glob}")
+
+    try:
+        if is_s3:
+            s3fs = pa.fs.S3FileSystem()
+            tables = [pq.read_table(fp, filesystem=s3fs) for fp in file_list]
+        else:
+            tables = [pq.read_table(fp) for fp in file_list]
+        table = pa.concat_tables(tables, promote=True)
+        pdf = table.to_pandas()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Parquet 로드 실패: {e}")
+
+    cols = set(pdf.columns)
+
+    # Case 1: PageRank 결과
+    if {"company", "pagerank_score"}.issubset(cols):
+        df = pdf[["company", "pagerank_score"]].copy()
+        if target_company:
+            # 부분 일치로 필터링
+            df = df[df["company"].astype(str).str.contains(target_company)]
+        if df.empty:
+            return [], "pagerank"
+        df = df.sort_values("pagerank_score", ascending=False)
+        max_score = float(df.iloc[0]["pagerank_score"]) if not df.empty else 0.0
+        top_df = df.head(top_n)
+        items = []
+        for idx, row in enumerate(top_df.itertuples(index=False), 1):
+            score = float(getattr(row, "pagerank_score") or 0.0)
+            rel = (score / max_score * 100.0) if max_score > 0 else 0.0
+            items.append({
+                "rank": idx,
+                "company": str(getattr(row, "company")),
+                "score": round(score, 10),
+                "relative": round(rel, 2),
+                "score_type": "pagerank"
+            })
+        return items, "pagerank"
+
+    # Case 2: 연결 그래프 결과 → 임시 영향력 (가중 in/out-degree 합)
+    if {"src", "dst", "weight"}.issubset(cols):
+        df = pdf[["src", "dst", "weight"]].copy()
+        if target_company:
+            mask = df["src"].astype(str).str.contains(target_company) | df["dst"].astype(str).str.contains(target_company)
+            df = df[mask]
+        if df.empty:
+            return [], "degree"
+        out_w = df.groupby("src")["weight"].sum()
+        in_w = df.groupby("dst")["weight"].sum()
+        companies = sorted(set(out_w.index).union(in_w.index))
+        influence = []
+        for c in companies:
+            influence.append((c, float(out_w.get(c, 0.0)) + float(in_w.get(c, 0.0))))
+        influence.sort(key=lambda x: x[1], reverse=True)
+        topk = influence[: top_n]
+        if not topk:
+            return [], "degree"
+        max_score = topk[0][1]
+        items = []
+        for idx, (company, score) in enumerate(topk, 1):
+            rel = (score / max_score * 100.0) if max_score > 0 else 0.0
+            items.append({
+                "rank": idx,
+                "company": str(company),
+                "score": float(round(score, 6)),
+                "relative": float(round(rel, 2)),
+                "score_type": "degree"
+            })
+        return items, "degree"
+
+    # Unknown schema
+    raise HTTPException(status_code=422, detail="지원하지 않는 Parquet 스키마입니다. 'company,pagerank_score' 또는 'src,dst,weight'를 기대합니다.")
+
+
+@app.get("/influence", response_model=List[InfluenceItem])
+async def get_influence(path: str = "s3://cheesecrust-spark-data-bucket/outputs/pagerank/pagerank/", top: int = 20, company: Optional[str] = None):
+    """
+    Parquet 결과에서 기업 영향력 순위를 반환합니다.
+    - 기본 경로: /output
+    - 기본 top: 20
+    - company 지정 시 해당 이름이 포함된 기업만 필터링하여 순위 반환
+    """
+    if top <= 0:
+        raise HTTPException(status_code=400, detail="top 은 1 이상이어야 합니다.")
+
+    path_glob = _resolve_parquet_glob(path)
+    items, score_type = _load_influence_with_pyarrow(path_glob, top, company)
+    return items
 
 if __name__ == "__main__":
     import uvicorn
