@@ -61,7 +61,7 @@ export default function MyPage() {
           {/* 상단 2열 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <ProfileCard favoriteCount={favoriteCount} />
-            <PersonalityResult data={data?.personality ?? null} />
+            <PersonalityResult data={data?.gameResult ?? null} />
           </div>
 
           {/* 하단 섹션들 */}

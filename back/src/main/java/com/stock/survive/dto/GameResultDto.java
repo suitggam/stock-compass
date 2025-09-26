@@ -1,6 +1,6 @@
 package com.stock.survive.dto;
 
-import com.stock.survive.entity.GameResultEntity;
+import com.stock.survive.entity.GameResult;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,7 +24,7 @@ public class GameResultDto {
     private Integer tendencyJ;
     private Integer tendencyP;
     
-    public static GameResultDto from(GameResultEntity gr) {
+    public static GameResultDto from(GameResult gr) {
         if (gr == null) return null;
         return GameResultDto.builder()
                 .gameNo(gr.getGameNo())

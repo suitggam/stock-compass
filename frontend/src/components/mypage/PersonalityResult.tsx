@@ -2,7 +2,7 @@ import type { MyPageData } from '../../types/MyPageData';
 import { Link } from 'react-router';
 
 type Props = {
-  data?: MyPageData['personality'] | null;
+  data?: MyPageData['gameResult'] | null;
 };
 
 export default function PersonalityResult({ data }: Props) {
@@ -55,11 +55,11 @@ export default function PersonalityResult({ data }: Props) {
         <div className="space-y-4">
           {/* 성향 타입 */}
           <div className="p-4 bg-gradient-to-r from-amber-500/20 to-amber-600/20 rounded-xl border border-amber-400/30">
-            <div className="text-3xl font-extrabold text-amber-300 mb-2">{data.type}</div>
-            <p className="text-slate-300 leading-relaxed">{data.summary}</p>
+            <div className="text-3xl font-extrabold text-amber-300 mb-2">대충무슨 투자성향이다</div>
+            <p className="text-slate-300 leading-relaxed">대충 들어갈 설명</p>
           </div>
 
-          {/* 추가 정보가 있다면 표시할 수 있는 공간 */}
+          {/* 점수 */}
           <div className="flex justify-center">
             <button className="text-amber-400 hover:text-amber-300 text-sm font-medium transition-colors">
               상세 결과 보기 →
