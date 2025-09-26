@@ -123,6 +123,8 @@ export default function TendencyGamePage() {
 
     const run = async () => {
       setKeywordsLoading(true);
+      let originalCompanyName: string;
+      
       try {
         // ticker로 최신 회사명(원본) 조회
         const infos = await getStockInfo(so.ticker);
@@ -130,19 +132,33 @@ export default function TendencyGamePage() {
           if (!prev) return curr;
           return new Date(curr.date) > new Date(prev.date) ? curr : prev;
         }, undefined as any);
-        const originalCompanyName = latest?.companyName ?? so.companyAlias;
+        originalCompanyName = latest?.companyName ?? so.companyAlias;
 
         // 원본 회사명으로 키워드/뉴스 요청
         const res = await extractKeywords(so.ticker, originalCompanyName, startDate, endDate);
-        setKeywords(res.keywords.map((k) => k.keyword).slice(0, 5));
+        
+        // keywords는 Record<string, number> -> string[]로 변환
+        const extractedKeywords = Object.keys(res.keywords || {})
+          .sort((a, b) => (res.keywords[b] || 0) - (res.keywords[a] || 0)) // 빈도수로 정렬
+          .slice(0, 5); // 상위 5개만 선택
+        setKeywords(extractedKeywords);
 
-        // 뉴스 제목 내 원본 회사명만 치환
-        const anonNews = (res.news ?? []).map((n) => ({
-          ...n,
+        // 뉴스 데이터 처리 - topNewsArticles 사용
+        const newsData = res.topNewsArticles || [];
+        const anonNews = newsData.map((n) => ({
           title: anonymizeTitle(n.title, originalCompanyName),
+          url: n.url,
+          date: n.date,
         }));
         setNews(anonNews);
-      } catch {
+      } catch (error) {
+        console.error("❌ 키워드/뉴스 추출 실패:", error);
+        console.error("🔍 에러 상세:", {
+          ticker: so.ticker,
+          companyName: originalCompanyName!,
+          startDate,
+          endDate
+        });
         setKeywords([]);
         setNews([]);
       } finally {
@@ -164,7 +180,7 @@ export default function TendencyGamePage() {
       setCurrentChartData({
         labels: chartLabels,
         datasets: [{ label: 'Price', data: chartPrices }],
-      });
+      } as any);
     }
   }, [state]);
 
@@ -234,12 +250,14 @@ export default function TendencyGamePage() {
             onSell={() => order('SELL', tradeAmount)}
             onNextWeek={nextWeek}
             onEndGame={async () => {
-              const res = await finish();
+              await finish();
             }}
             term="0주"
             onTermChange={() => {}}
             maxAffordable={tp.maxAffordable}
             maxSellable={tp.maxSellable}
+            currentWeek={state?.week || 1}
+            maxWeek={state?.maxWeek || 10}
           />
           <TradeRecord
             items={state.trades.map((t) => ({
