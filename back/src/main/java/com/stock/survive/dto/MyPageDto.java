@@ -1,11 +1,13 @@
 package com.stock.survive.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.stock.survive.entity.GameResult;
 import com.stock.survive.entity.User;
 import lombok.*;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
 @Getter @Setter
 @Builder
@@ -21,10 +23,14 @@ public class MyPageDto {
     private String createdAt;
     private String avatarUrl;
 
-    //관심종목만 일단 구현 하고 나머지 두개는 나중에 처리하는걸로
-    private List<FavoriteItemDto> favorites;           // 관심종목
-    private PersonalityResultDto personality;          // 투자 성향 결과(미구현이면 null)
-    private List<MockInvestmentDto> mockInvestHistory; // 모의투자 기록(미구현이면 null)
+    //관심종목
+    private List<FavoriteItemDto> favorites;
+
+    // 투자 성향 결과
+    private Optional<GameResult> gameResult;
+
+    // 모의투자 기록
+    private List<MockInvestmentDto> mockInvestHistory;
 
     /** 기본 정보만 채움 */
     public static MyPageDto ofBasic(User u, String avatarUrl) {
@@ -33,8 +39,6 @@ public class MyPageDto {
                 .socialEmail(u.getSocialEmail())
                 .nickname(u.getNickname())
                 .cancel(u.isCancel())
-                .totalReward(u.getAccount().getTotalReward())
-                .cash(u.getAccount().getCash())
                 .createdAt(u.getCreatedAt() != null
                         ? u.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null)
                 .avatarUrl(avatarUrl)
@@ -48,7 +52,14 @@ public class MyPageDto {
         return dto;
     }
 
-    // ── 내부(또는 별도 파일) 서브 DTO들 ────────────────────────────────
+    public static MyPageDto ofWithFavAndGameResult(User u, String avatarUrl, List<FavoriteItemDto> favorites, Optional<GameResult> gameResult) {
+        MyPageDto dto = ofBasic(u, avatarUrl);
+        dto.setFavorites(favorites);
+        dto.setGameResult(gameResult);
+        return dto;
+    }
+
+    // 이거 다른 곳에서 쓰는 거랑 달라서 여기
     @Getter @Setter @AllArgsConstructor @NoArgsConstructor
     public static class FavoriteItemDto {
         private Long itemId;
@@ -56,11 +67,6 @@ public class MyPageDto {
         private String ticker;
     }
 
-    @Getter @Setter @AllArgsConstructor @NoArgsConstructor
-    public static class PersonalityResultDto {
-        private String type;     // 예: "INT-R" 등
-        private String summary;  // 한줄 요약
-    }
 
     @Getter @Setter @AllArgsConstructor @NoArgsConstructor
     public static class MockInvestmentDto {
