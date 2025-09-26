@@ -2,6 +2,7 @@ package com.stock.survive.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.stock.survive.entity.GameResult;
+import com.stock.survive.entity.TradeHistory;
 import com.stock.survive.entity.User;
 import lombok.*;
 
@@ -30,7 +31,7 @@ public class MyPageDto {
     private Optional<GameResult> gameResult;
 
     // 모의투자 기록
-    private List<MockInvestmentDto> mockInvestHistory;
+    private List<TradeHistoryDto>  tradeHistory;
 
     /** 기본 정보만 채움 */
     public static MyPageDto ofBasic(User u, String avatarUrl) {
@@ -59,6 +60,12 @@ public class MyPageDto {
         return dto;
     }
 
+    public static MyPageDto ofFull(User u, String avatarUrl, List<FavoriteItemDto> favorites, Optional<GameResult> gameResult, List<TradeHistoryDto> tradeHistory) {
+        MyPageDto dto = ofWithFavAndGameResult(u, avatarUrl, favorites, gameResult);
+        dto.setTradeHistory(tradeHistory);
+        return dto;
+    }
+
     // 이거 다른 곳에서 쓰는 거랑 달라서 여기
     @Getter @Setter @AllArgsConstructor @NoArgsConstructor
     public static class FavoriteItemDto {
@@ -67,13 +74,4 @@ public class MyPageDto {
         private String ticker;
     }
 
-
-    @Getter @Setter @AllArgsConstructor @NoArgsConstructor
-    public static class MockInvestmentDto {
-        private Long id;
-        private String symbol;
-        private Integer quantity;
-        private Long price;      // 체결가
-        private String tradedAt; // ISO 문자열
-    }
 }

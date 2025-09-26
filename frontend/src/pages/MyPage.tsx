@@ -4,7 +4,7 @@ import { useAuth } from '../stores/auth';
 import ProfileCard from '../components/mypage/ProfileCard';
 import PersonalityResult from '../components/mypage/PersonalityResult';
 import Watchlist from '../components/mypage/Watchlist';
-import MockInvestmentHistory from '../components/mypage/MockInvestmentHistory';
+import MockInvestmentHistory from '../components/mypage/TradeHistory';
 import type { MyPageData } from '../types/MyPageData';
 import useAuthGuard from '../hooks/useAuthGuard';
 import { api } from '../api/client';
@@ -67,7 +67,7 @@ export default function MyPage() {
           {/* 하단 섹션들 */}
           <div className="space-y-6">
             <Watchlist items={data?.favorites ?? []} />
-            <MockInvestmentHistory items={data?.mockInvestHistory ?? []} />
+            <MockInvestmentHistory items={data?.tradeHistory ?? []} />
           </div>
         </div>
       </div>

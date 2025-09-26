@@ -2,10 +2,10 @@ import type { MyPageData } from '../../types/MyPageData';
 import { Link } from 'react-router';
 
 type Props = {
-  items?: NonNullable<MyPageData['mockInvestHistory']> | undefined;
+  items?: NonNullable<MyPageData['tradeHistory']> | undefined;
 };
 
-export default function MockInvestmentHistory({ items = [] }: Props) {
+export default function TradeHistory({ items = [] }: Props) {
   const empty = !items || items.length === 0;
 
   // 간단 KPI 예시 (실제 로직은 백엔드 스펙 나오면 교체)
@@ -57,18 +57,17 @@ export default function MockInvestmentHistory({ items = [] }: Props) {
         <div className="flex flex-col gap-3.5">
           {items.map((it) => (
             <div
-              key={it.id}
+              key={it.tradeNo}
               className="p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-600 border border-slate-500 hover:bg-slate-500 hover:border-amber-400 transition-all"
             >
               <div className="min-w-0">
-                <div className="text-white text-[15px] font-semibold truncate">🎮 {it.symbol}</div>
                 <div className="text-slate-400 text-sm">
-                  {new Date(it.tradedAt).toLocaleString()}
+                  {new Date(it.createdAt).toLocaleString()}
                 </div>
               </div>
               <div className="flex items-center gap-3 sm:gap-6">
                 <div className="px-4 py-2 rounded-[10px] text-sm font-bold text-center bg-slate-500 text-amber-300 border border-slate-400">
-                  {it.quantity}주 · {it.price.toLocaleString()}원
+                  {it.volume}주 · {it.price.toLocaleString()}원
                 </div>
               </div>
             </div>
