@@ -18,7 +18,7 @@ function TradeHistory({ tradeHistory }: HistoryCardProps) {
 
   return (
     <>
-      {tradeHistory.map((h, idx) => (
+      {tradeHistory.slice(0, 10).map((h, idx) => (
         <div key={idx} className="pb-1">
           <div className="bg-slate-800 text-white rounded-2xl shadow-lg p-4 border border-slate-700 flex flex-col gap-1">
             <div

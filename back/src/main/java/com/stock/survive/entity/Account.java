@@ -48,16 +48,4 @@ public class Account {
     @Column(name = "haveStock",nullable = false)
     private Long haveStock=0L;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-
-    // 시간 처리 함수
-    @PrePersist
-    void onCreate() {
-        // createdAt/updatedAt 자동 세팅
-        if (createdAt == null) createdAt = LocalDateTime.now();
-    }
-
-
 }

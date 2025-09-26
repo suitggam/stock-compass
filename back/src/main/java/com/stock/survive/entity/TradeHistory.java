@@ -47,8 +47,11 @@ public class TradeHistory {
     @JoinColumn(name = "item_no", nullable = false)
     private StockItems stockItems;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_no", nullable = false)
+    private User user;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "account_no", nullable = false,
-            foreignKey = @ForeignKey(name = "fk_trade_account"))
+    @JoinColumn(name = "account_no", nullable = false)
     private Account account;
 }
