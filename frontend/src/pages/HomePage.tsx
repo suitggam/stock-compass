@@ -81,7 +81,9 @@ export default function HomePage() {
   useEffect(() => {
     if (!isMarketOpen) return;
 
-    const ws = new WebSocket("ws://localhost:8765");
+    const ws = new WebSocket(
+      import.meta.env.VITE_WS_BASE_URL ?? "ws://localhost:8765"
+    );
 
     ws.onopen = () => console.log("✅ WS 연결 성공");
 

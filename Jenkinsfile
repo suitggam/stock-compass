@@ -125,6 +125,7 @@ fi
   docker run --rm -u ${uid}:${gid} \
     -v "$PWD:/src" -w /src \
     -e VITE_API_BASE_URL= \
+    -e VITE_WS_BASE_URL=/ws \
     -e VITE_SERVER_URL=https://j13a301.p.ssafy.io \
     node:20-bullseye bash -lc '
       set -e

@@ -27,3 +27,8 @@ export interface UserAsset {
 }
 
 type HistoryType = "BUY" | "SELL";
+
+export interface UserStockHoldingDto {
+  ticker: string;
+  quantity: number;
+}

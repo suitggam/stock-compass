@@ -71,7 +71,9 @@ export default function SearchPage() {
   useEffect(() => {
     if (!isMarketOpen) return;
 
-    const ws = new WebSocket("ws://localhost:8765");
+    const ws = new WebSocket(
+      import.meta.env.VITE_WS_BASE_URL ?? "ws://localhost:8765"
+    );
     ws.onmessage = (event) => {
       const data: WebSocketRealtime[] = JSON.parse(event.data);
       setWsStocks((prev) => {

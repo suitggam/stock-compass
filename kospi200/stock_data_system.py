@@ -16,10 +16,10 @@ warnings.filterwarnings('ignore')
 
 # MySQL 연결 설정
 DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': 'ssafy',
-    'database': 'survive_stock',
+    'host': os.getenv('DB_HOST', 'db'),     # ← 여기!
+    'user': os.getenv('DB_USER', 'root'),
+    'password': os.getenv('DB_PASSWORD', 'ssafy'),
+    'database': os.getenv('DB_NAME', 'survive_stock'),
     'charset': 'utf8mb4'
 }
 

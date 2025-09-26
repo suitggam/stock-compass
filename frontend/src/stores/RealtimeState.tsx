@@ -13,7 +13,9 @@ export const useRealtimeStore = create<RealtimeState>((set) => {
 
   const connect = () => {
     if (ws) return; // 이미 연결되어 있으면 무시
-    ws = new WebSocket('ws://localhost:8765');
+    ws = new WebSocket(
+      import.meta.env.VITE_WS_BASE_URL ?? 'ws://localhost:8765'
+    );
 
     ws.onopen = () => {
       console.log('✅ WS 연결 성공');
