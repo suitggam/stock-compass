@@ -22,15 +22,24 @@ export default function Header() {
   const user = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
 
+  //로그아웃 확인 후 실행
+  const confirmLogout = async () => {
+    const ok = window.confirm("로그아웃하시겠습니까?");
+    if (ok) {
+      await logout();
+      setOpenAll(false);
+      setOpenNav(false);
+    }
+  };
+
   const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
     setSearch(e.target.value);
+
   const handleSearch = () => {
     const trimmed = search.trim();
     if (!trimmed) {
-      // 검색어 없으면 홈페이지로 이동
       navigate("/");
     } else {
-      // 검색어가 있으면 검색 페이지로 이동
       navigate(`/search?query=${encodeURIComponent(trimmed)}`);
     }
     setOpenAll(false);
@@ -53,7 +62,7 @@ export default function Header() {
   };
 
   const handleGoHome = () => {
-    navigate('/');
+    navigate("/");
   };
 
   const handleCloseLoginModal = () => {
@@ -64,12 +73,11 @@ export default function Header() {
     if (!user) {
       e.preventDefault();
       setLoginRequiredModal(true);
-      // 모달을 보여준 후 홈으로 이동
-      const timer = setTimeout(() => {
-        navigate('/');
-      }, 2000); // 2초 후 홈으로 이동
-      
-      return () => clearTimeout(timer);
+      // 2초 후 홈으로 이동
+      setTimeout(() => {
+        navigate("/");
+      }, 2000);
+      return;
     }
     setOpenAll(false);
     setOpenNav(false);
@@ -98,13 +106,6 @@ export default function Header() {
       >
         기업 영향력
       </Link>
-      {/* <Link
-        to="/ranking"
-        className="px-2 py-2 text-slate-300 hover:text-white font-bold flex-none shrink-0 whitespace-nowrap"
-        onClick={onClick}
-      >
-        모의 투자 랭킹
-      </Link> */}
     </>
   );
 
@@ -136,7 +137,7 @@ export default function Header() {
           </div>
         )}
         <button
-          onClick={() => logout()}
+          onClick={confirmLogout}
           className="flex-none shrink-0 h-10 px-3 text-sm rounded-lg border border-slate-600 hover:bg-slate-700/60 whitespace-nowrap"
         >
           로그아웃
@@ -160,12 +161,10 @@ export default function Header() {
             <img src={logoImg} alt="로고이미지" className="h-8 w-auto" />
           </Link>
 
-          {/* lg↑: 세 친구 가로 노출(랩핑 방지) */}
           <div className="hidden lg:flex items-center gap-4 min-w-0 flex-nowrap">
             <NavLinks onClick={() => {}} />
           </div>
 
-          {/* sm〜lg: 세 친구만 드롭다운 */}
           <div className="hidden sm:block lg:hidden">
             <button
               onClick={() => setOpenNav((v) => !v)}
@@ -202,8 +201,6 @@ export default function Header() {
           </div>
         </div>
 
-        {/* 우측: 검색 + 인증영역 (sm↑에서만 노출)
-            → 랩핑/수축 방지: flex-nowrap + min-w-0, 각 버튼은 flex-none */}
         <div className="hidden sm:flex items-center gap-3 min-w-0 flex-nowrap">
           <input
             className="min-w-[9rem] md:min-w-[14rem] w-[14rem] md:w-[18rem] flex-auto px-4 h-10 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
@@ -221,7 +218,6 @@ export default function Header() {
           <AuthArea />
         </div>
 
-        {/* xs: 전체 패널 버튼 */}
         <button
           aria-label="전체 메뉴"
           className="sm:hidden inline-flex items-center justify-center rounded-lg p-2 hover:bg-slate-700/50"
@@ -243,7 +239,6 @@ export default function Header() {
         </button>
       </nav>
 
-      {/* xs: 전체 패널 (세 친구 + 검색 + 인증영역) */}
       <div
         className={`sm:hidden overflow-hidden transition-[max-height] duration-300 ${
           openAll ? "max-h-[520px]" : "max-h-0"
