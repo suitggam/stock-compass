@@ -13,7 +13,7 @@ import java.util.Optional;
 @Getter @Setter
 @Builder
 @NoArgsConstructor @AllArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_NULL) // null 필드는 응답에서 숨김(선택)
+@JsonInclude(JsonInclude.Include.NON_NULL) // null 필드는 응답에서 숨김
 public class MyPageDto {
     private Long userNo;
     private String socialEmail;
@@ -53,6 +53,7 @@ public class MyPageDto {
         return dto;
     }
 
+    /** 게임 결과 데이터까지 채움 */
     public static MyPageDto ofWithFavAndGameResult(User u, String avatarUrl, List<FavoriteItemDto> favorites, Optional<GameResult> gameResult) {
         MyPageDto dto = ofBasic(u, avatarUrl);
         dto.setFavorites(favorites);
@@ -60,6 +61,7 @@ public class MyPageDto {
         return dto;
     }
 
+    /** 마지막 거래 내역까지 채움 */
     public static MyPageDto ofFull(User u, String avatarUrl, List<FavoriteItemDto> favorites, Optional<GameResult> gameResult, List<TradeHistoryDto> tradeHistory) {
         MyPageDto dto = ofWithFavAndGameResult(u, avatarUrl, favorites, gameResult);
         dto.setTradeHistory(tradeHistory);

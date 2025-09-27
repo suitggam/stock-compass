@@ -1,4 +1,4 @@
-type TradeType = 'BUY' | 'SELL';
+type TradeType = "BUY" | "SELL";
 
 export interface TradeHistoryEntry {
   tradeNo: number;
@@ -21,14 +21,15 @@ export interface MyPageData {
   gameResult?: {
     gameNo: number;
     userNo: number;
-    tendency_i: number;
-    tendency_e: number;
-    tendency_s: number;
-    tendency_n: number;
-    tendency_f: number;
-    tendency_t: number;
-    tendency_j: number;
-    tendency_p: number;
+    tendencyI: number;
+    tendencyE: number;
+    tendencyS: number;
+    tendencyN: number;
+    tendencyF: number;
+    tendencyT: number;
+    tendencyJ: number;
+    tendencyP: number;
+    tendencyResult: string;
     createdAt: string;
   } | null;
   tradeHistory?: TradeHistoryEntry[] | null;
@@ -49,6 +50,6 @@ export interface PageResponseDto<T> {
 
 export type TradeHistoryPage = PageResponseDto<TradeHistoryEntry>;
 
-export interface MyPageDataPaged extends Omit<MyPageData, 'tradeHistory'> {
+export interface MyPageDataPaged extends Omit<MyPageData, "tradeHistory"> {
   tradeHistory?: TradeHistoryPage | null;
 }

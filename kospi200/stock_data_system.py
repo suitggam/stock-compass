@@ -9,6 +9,7 @@ import warnings
 import logging
 import sys
 import argparse
+import os   #얜 임포트를 왜 안했는가
 
 from stock_items_data import TICKER_TO_ITEM_NO  # item_no 매핑
 
@@ -16,7 +17,7 @@ warnings.filterwarnings('ignore')
 
 # MySQL 연결 설정
 DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'db'),     # ← 여기!
+    'host': os.getenv('DB_HOST', 'localhost'),     # <- 이거 로컬 호스트 기준으로 일단 바꿔놓음
     'user': os.getenv('DB_USER', 'root'),
     'password': os.getenv('DB_PASSWORD', 'ssafy'),
     'database': os.getenv('DB_NAME', 'survive_stock'),
