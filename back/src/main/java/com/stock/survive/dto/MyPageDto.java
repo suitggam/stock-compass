@@ -7,6 +7,7 @@ import com.stock.survive.entity.User;
 import lombok.*;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,12 +27,13 @@ public class MyPageDto {
 
     //관심종목
     private List<FavoriteItemDto> favorites;
-
     // 투자 성향 결과
     private Optional<GameResult> gameResult;
-
     // 모의투자 기록
-    private List<TradeHistoryDto>  tradeHistory;
+    @Builder.Default
+    private List<TradeHistoryDto> tradeHistory = List.of();
+
+    private AccountSummaryDto account;
 
     /** 기본 정보만 채움 */
     public static MyPageDto ofBasic(User u, String avatarUrl) {
@@ -62,9 +64,18 @@ public class MyPageDto {
     }
 
     /** 마지막 거래 내역까지 채움 */
-    public static MyPageDto ofFull(User u, String avatarUrl, List<FavoriteItemDto> favorites, Optional<GameResult> gameResult, List<TradeHistoryDto> tradeHistory) {
+    public static MyPageDto ofFull(
+            User u,
+            String avatarUrl,
+            List<FavoriteItemDto> favorites,
+            Optional<GameResult> gameResult,
+            List<TradeHistoryDto> tradeHistory,
+            AccountSummaryDto account
+    ) {
         MyPageDto dto = ofWithFavAndGameResult(u, avatarUrl, favorites, gameResult);
-        dto.setTradeHistory(tradeHistory);
+        dto.setTradeHistory(tradeHistory != null ? new ArrayList<>(tradeHistory) : new ArrayList<>());
+        dto.setAccount(account);
+        if (account != null) dto.setTotalReward(account.getTotalReward());
         return dto;
     }
 
