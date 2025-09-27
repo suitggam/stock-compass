@@ -42,22 +42,3 @@ export interface MyPageData {
   };
   tradeHistory?: TradeHistoryEntry[];
 }
-
-export interface PageResponseDto<T> {
-  dtoList: T[];
-  pageRequestDto: { page: number; size: number };
-  totalCount: number;
-  prev: boolean;
-  next: boolean;
-  pageNumberList: number[];
-  prevPage: number;
-  nextPage: number;
-  totalPage: number;
-  current: number;
-}
-
-export type TradeHistoryPage = PageResponseDto<TradeHistoryEntry>;
-
-export interface MyPageDataPaged extends Omit<MyPageData, "tradeHistory"> {
-  tradeHistory?: TradeHistoryPage | null;
-}

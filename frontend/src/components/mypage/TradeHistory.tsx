@@ -1,15 +1,20 @@
+import * as React from "react";
 import type { MyPageData, TradeHistoryEntry } from "../../types/MyPageData";
 import { Link } from "react-router";
 
 type Props = {
   items?: MyPageData["tradeHistory"];
   account?: MyPageData["account"];
+  step?: number;
 };
 
-export default function TradeHistory({ items = [], account }: Props) {
+export default function TradeHistory({
+  items = [],
+  account,
+  step = 10,
+}: Props) {
   const empty = !items || items.length === 0;
 
-  // ── KPI 계산(백엔드가 내려준 account가 최우선, 없으면 방어적으로 계산)
   const originalMoney = account?.originalMoney ?? 0;
   const cash = account?.cash ?? 0;
   const haveStock = account?.haveStock ?? 0;
@@ -20,11 +25,11 @@ export default function TradeHistory({ items = [], account }: Props) {
       ? ((totalAsset - originalMoney) * 100) / originalMoney
       : null);
 
-  // 포맷터
+  // ---- 포맷터 ----
   const won = (n: number) => n.toLocaleString("ko-KR");
   const ts = (iso: string) => new Date(iso).toLocaleString();
 
-  // 색상 헬퍼
+  // ---- 색상 헬퍼 ----
   const colors = (t: TradeHistoryEntry["tradeType"]) =>
     t === "BUY"
       ? {
@@ -38,6 +43,24 @@ export default function TradeHistory({ items = [], account }: Props) {
           delta: "text-emerald-300",
         };
 
+  const INITIAL = React.useMemo(
+    () => Math.min(step, items.length),
+    [items.length, step]
+  );
+  const [visibleCount, setVisibleCount] = React.useState(INITIAL);
+
+  React.useEffect(() => {
+    setVisibleCount(Math.min(step, items.length));
+  }, [items, step]);
+
+  const visibleItems = items.slice(0, visibleCount);
+  const remain = Math.max(items.length - visibleCount, 0);
+  const canMore = remain > 0;
+
+  const handleMore = () => {
+    setVisibleCount((v) => Math.min(v + step, items.length));
+  };
+
   return (
     <section className="w-full bg-slate-700 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-slate-600 relative">
       <div className="flex items-center gap-2 mb-5">
@@ -46,7 +69,6 @@ export default function TradeHistory({ items = [], account }: Props) {
         </h3>
       </div>
 
-      {/* ── KPI 4칸 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <KpiCard label="총 자산" value={`${won(totalAsset)}원`} />
         <KpiCard label="총 현금" value={`${won(cash)}원`} />
@@ -61,7 +83,7 @@ export default function TradeHistory({ items = [], account }: Props) {
         />
       </div>
 
-      {/* ── 리스트 */}
+      {/* 리스트 */}
       {empty ? (
         <div className="text-center py-8">
           <div className="text-slate-400 mb-4">투자 내역이 없습니다.</div>
@@ -73,53 +95,69 @@ export default function TradeHistory({ items = [], account }: Props) {
           </Link>
         </div>
       ) : (
-        <div className="flex flex-col gap-3.5">
-          {items.map((it, idx) => {
-            const { badge, sign, delta } = colors(it.tradeType);
-            const totalPrice = it.price * it.volume;
-            const signed = it.tradeType === "SELL" ? totalPrice : -totalPrice;
+        <>
+          <div className="flex flex-col gap-3.5">
+            {visibleItems.map((it, idx) => {
+              const { badge, sign, delta } = colors(it.tradeType);
+              const totalPrice = it.price * it.volume;
+              const signed = it.tradeType === "SELL" ? totalPrice : -totalPrice;
 
-            return (
-              <div
-                key={`${it.itemNo}-${it.createdAt}-${idx}`}
-                className="p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-600 border border-slate-500 hover:bg-slate-500 hover:border-amber-400 transition-all"
+              return (
+                <div
+                  key={`${it.itemNo}-${it.createdAt}-${idx}`}
+                  className="p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-600 border border-slate-500 hover:bg-slate-500 hover:border-amber-400 transition-all"
+                >
+                  {/* 좌: 시간 + 회사명 */}
+                  <div className="min-w-0">
+                    <div className="text-slate-400 text-xs sm:text-sm">
+                      {ts(it.createdAt)}
+                    </div>
+                    <div className="text-white font-semibold truncate">
+                      {it.companyName}
+                    </div>
+                  </div>
+
+                  {/* 우: 거래 요약 */}
+                  <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                    {/* BUY/SELL 뱃지 */}
+                    <span
+                      className={`px-3 py-1 rounded-[10px] text-xs font-bold border ${badge}`}
+                    >
+                      {it.tradeType === "BUY" ? "매수" : "매도"}
+                    </span>
+
+                    {/* 체결가/수량 */}
+                    <div className="px-3 py-1 rounded-[10px] text-sm font-bold text-amber-200 bg-slate-500/70 border border-slate-400">
+                      {it.volume.toLocaleString()}주 · {won(it.price)}원
+                    </div>
+
+                    {/* 총금액(+/-) */}
+                    <div
+                      className={`px-3 py-1 rounded-[10px] text-sm font-bold bg-slate-500/70 border border-slate-400 ${delta}`}
+                    >
+                      {sign}
+                      {won(Math.abs(signed))}원
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 더보기 */}
+          {canMore && (
+            <div className="flex justify-center mt-5">
+              <button
+                type="button"
+                onClick={handleMore}
+                className="px-4 py-2 rounded-lg border border-slate-500 bg-slate-600 text-slate-200 hover:bg-slate-500 hover:border-amber-400 transition-all text-sm font-medium"
+                aria-label="더보기"
               >
-                {/* 좌: 시간 + 회사명 */}
-                <div className="min-w-0">
-                  <div className="text-slate-400 text-xs sm:text-sm">
-                    {ts(it.createdAt)}
-                  </div>
-                  <div className="text-white font-semibold truncate">
-                    {it.companyName}
-                  </div>
-                </div>
-
-                {/* 우: 거래 요약 */}
-                <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-                  {/* BUY/SELL 뱃지 */}
-                  <span
-                    className={`px-3 py-1 rounded-[10px] text-xs font-bold border ${badge}`}
-                  >
-                    {it.tradeType === "BUY" ? "매수" : "매도"}
-                  </span>
-
-                  {/* 체결가/수량 */}
-                  <div className="px-3 py-1 rounded-[10px] text-sm font-bold text-amber-200 bg-slate-500/70 border border-slate-400">
-                    {it.volume.toLocaleString()}주 · {won(it.price)}원
-                  </div>
-
-                  {/* 총금액(+/-) */}
-                  <div
-                    className={`px-3 py-1 rounded-[10px] text-sm font-bold bg-slate-500/70 border border-slate-400 ${delta}`}
-                  >
-                    {sign}
-                    {won(Math.abs(signed))}원
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                + 더보기 {remain > step ? `(${step}/${remain})` : `(${remain})`}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </section>
   );
