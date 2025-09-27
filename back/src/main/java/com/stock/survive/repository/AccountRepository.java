@@ -7,6 +7,9 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface AccountRepository extends JpaRepository<Account, Long> {
+import java.util.Optional;
 
+public interface AccountRepository extends JpaRepository<Account, Long> {
+    @Query("select a from Account a join fetch a.user u where u.id = :userId")
+    Optional<Account> findByUserId(@Param("userId") Long userId);
 }

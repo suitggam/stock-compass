@@ -1,48 +1,67 @@
-import type { MyPageData } from '../../types/MyPageData';
-import { Link } from 'react-router';
+import type { MyPageData, TradeHistoryEntry } from "../../types/MyPageData";
+import { Link } from "react-router";
 
 type Props = {
-  items?: NonNullable<MyPageData['tradeHistory']> | undefined;
+  items?: MyPageData["tradeHistory"];
+  account?: MyPageData["account"];
 };
 
-export default function TradeHistory({ items = [] }: Props) {
+export default function TradeHistory({ items = [], account }: Props) {
   const empty = !items || items.length === 0;
 
-  // 간단 KPI 예시 (실제 로직은 백엔드 스펙 나오면 교체)
-  const totalGames = items.length;
-  const lastTotal = items.at(-1)?.price ?? 0; // 임시 KPI
-  const totalReturnPct = 0; // TODO: 백엔드 제공되면 계산
-  const rank = 0; // TODO: 백엔드 제공되면 표시
+  // ── KPI 계산(백엔드가 내려준 account가 최우선, 없으면 방어적으로 계산)
+  const originalMoney = account?.originalMoney ?? 0;
+  const cash = account?.cash ?? 0;
+  const haveStock = account?.haveStock ?? 0;
+  const totalAsset = account?.totalAsset ?? cash + haveStock;
+  const returnPct =
+    account?.returnPct ??
+    (originalMoney > 0
+      ? ((totalAsset - originalMoney) * 100) / originalMoney
+      : null);
+
+  // 포맷터
+  const won = (n: number) => n.toLocaleString("ko-KR");
+  const ts = (iso: string) => new Date(iso).toLocaleString();
+
+  // 색상 헬퍼
+  const colors = (t: TradeHistoryEntry["tradeType"]) =>
+    t === "BUY"
+      ? {
+          badge: "bg-red-500/20 text-red-300 border-red-400/40",
+          sign: "-",
+          delta: "text-red-300",
+        }
+      : {
+          badge: "bg-emerald-500/20 text-emerald-300 border-emerald-400/40",
+          sign: "+",
+          delta: "text-emerald-300",
+        };
 
   return (
     <section className="w-full bg-slate-700 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-slate-600 relative">
       <div className="flex items-center gap-2 mb-5">
-        <h3 className="text-xl sm:text-2xl font-extrabold text-white">모의 투자 히스토리</h3>
+        <h3 className="text-xl sm:text-2xl font-extrabold text-white">
+          모의 투자 히스토리
+        </h3>
       </div>
 
-      {/* KPI */}
+      {/* ── KPI 4칸 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="rounded-2xl p-5 text-center bg-slate-600 border border-slate-500 hover:border-amber-400 transition-all">
-          <div className="text-amber-400 text-xl sm:text-2xl font-bold">{totalGames}원</div>
-          <div className="text-slate-300 text-xs">총 투자 금액</div>
-        </div>
-        <div className="rounded-2xl p-5 text-center bg-slate-600 border border-slate-500 hover:border-amber-400 transition-all">
-          <div className="text-amber-400 text-xl sm:text-2xl font-bold">
-            {lastTotal.toLocaleString()}원
-          </div>
-          <div className="text-slate-300 text-xs">보유 자산</div>
-        </div>
-        <div className="rounded-2xl p-5 text-center bg-slate-600 border border-slate-500 hover:border-amber-400 transition-all">
-          <div className="text-amber-400 text-xl sm:text-2xl font-bold">{totalReturnPct}%</div>
-          <div className="text-slate-300 text-xs">총 수익률(임시)</div>
-        </div>
-        <div className="rounded-2xl p-5 text-center bg-slate-600 border border-slate-500 hover:border-amber-400 transition-all">
-          <div className="text-amber-400 text-xl sm:text-2xl font-bold">{rank || '-'}</div>
-          <div className="text-slate-300 text-xs">현재 자산 등수(임시)</div>
-        </div>
+        <KpiCard label="총 자산" value={`${won(totalAsset)}원`} />
+        <KpiCard label="총 현금" value={`${won(cash)}원`} />
+        <KpiCard label="총 투자 금액" value={`${won(haveStock)}원`} />
+        <KpiCard
+          label="수익률"
+          value={
+            returnPct == null
+              ? "-"
+              : `${(Math.round(returnPct * 100) / 100).toFixed(2)}%`
+          }
+        />
       </div>
 
-      {/* 리스트 */}
+      {/* ── 리스트 */}
       {empty ? (
         <div className="text-center py-8">
           <div className="text-slate-400 mb-4">투자 내역이 없습니다.</div>
@@ -55,25 +74,64 @@ export default function TradeHistory({ items = [] }: Props) {
         </div>
       ) : (
         <div className="flex flex-col gap-3.5">
-          {items.map((it) => (
-            <div
-              key={it.tradeNo}
-              className="p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-600 border border-slate-500 hover:bg-slate-500 hover:border-amber-400 transition-all"
-            >
-              <div className="min-w-0">
-                <div className="text-slate-400 text-sm">
-                  {new Date(it.createdAt).toLocaleString()}
+          {items.map((it, idx) => {
+            const { badge, sign, delta } = colors(it.tradeType);
+            const totalPrice = it.price * it.volume;
+            const signed = it.tradeType === "SELL" ? totalPrice : -totalPrice;
+
+            return (
+              <div
+                key={`${it.itemNo}-${it.createdAt}-${idx}`}
+                className="p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-600 border border-slate-500 hover:bg-slate-500 hover:border-amber-400 transition-all"
+              >
+                {/* 좌: 시간 + 회사명 */}
+                <div className="min-w-0">
+                  <div className="text-slate-400 text-xs sm:text-sm">
+                    {ts(it.createdAt)}
+                  </div>
+                  <div className="text-white font-semibold truncate">
+                    {it.companyName}
+                  </div>
+                </div>
+
+                {/* 우: 거래 요약 */}
+                <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                  {/* BUY/SELL 뱃지 */}
+                  <span
+                    className={`px-3 py-1 rounded-[10px] text-xs font-bold border ${badge}`}
+                  >
+                    {it.tradeType === "BUY" ? "매수" : "매도"}
+                  </span>
+
+                  {/* 체결가/수량 */}
+                  <div className="px-3 py-1 rounded-[10px] text-sm font-bold text-amber-200 bg-slate-500/70 border border-slate-400">
+                    {it.volume.toLocaleString()}주 · {won(it.price)}원
+                  </div>
+
+                  {/* 총금액(+/-) */}
+                  <div
+                    className={`px-3 py-1 rounded-[10px] text-sm font-bold bg-slate-500/70 border border-slate-400 ${delta}`}
+                  >
+                    {sign}
+                    {won(Math.abs(signed))}원
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 sm:gap-6">
-                <div className="px-4 py-2 rounded-[10px] text-sm font-bold text-center bg-slate-500 text-amber-300 border border-slate-400">
-                  {it.volume}주 · {it.price.toLocaleString()}원
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>
+  );
+}
+
+function KpiCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl p-5 text-center bg-slate-600 border border-slate-500 hover:border-amber-400 transition-all">
+      <div className="text-amber-400 text-xl sm:text-2xl font-bold">
+        {value}
+      </div>
+      <div className="text-slate-300 text-xs">{label}</div>
+    </div>
   );
 }

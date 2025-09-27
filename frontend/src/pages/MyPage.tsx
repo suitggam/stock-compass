@@ -4,7 +4,7 @@ import { useAuth } from "../stores/auth";
 import ProfileCard from "../components/mypage/ProfileCard";
 import GameResult from "../components/mypage/GameResult";
 import Watchlist from "../components/mypage/Watchlist";
-import MockInvestmentHistory from "../components/mypage/TradeHistory";
+import TradeHistory from "../components/mypage/TradeHistory";
 import type { MyPageData } from "../types/MyPageData";
 import useAuthGuard from "../hooks/useAuthGuard";
 import { api } from "../api/client";
@@ -48,8 +48,6 @@ export default function MyPage() {
 
   if (!authUser) return <Navigate to="/" replace />;
 
-  const favoriteCount = data?.favorites?.length ?? 0;
-
   return (
     <div className="min-h-dvh bg-slate-800">
       <div className="py-8">
@@ -62,14 +60,17 @@ export default function MyPage() {
 
           {/* 상단 2열 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <ProfileCard favoriteCount={favoriteCount} />
+            <ProfileCard />
             <GameResult data={data?.gameResult ?? null} />
           </div>
 
           {/* 하단 섹션들 */}
           <div className="space-y-6">
             <Watchlist items={data?.favorites ?? []} />
-            <MockInvestmentHistory items={data?.tradeHistory ?? []} />
+            <TradeHistory
+              items={data?.tradeHistory ?? []}
+              account={data?.account}
+            />
           </div>
         </div>
       </div>

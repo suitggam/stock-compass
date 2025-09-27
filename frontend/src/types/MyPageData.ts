@@ -1,14 +1,13 @@
 type TradeType = "BUY" | "SELL";
 
 export interface TradeHistoryEntry {
-  tradeNo: number;
+  itemNo: number;
+  companyName: string;
   tradeType: TradeType;
   price: number;
   volume: number;
-  totalPrice: number;
-  ticker: string;
-  companyName?: string;
   createdAt: string;
+  totalPrice?: number;
 }
 export interface MyPageData {
   userNo: number;
@@ -32,7 +31,16 @@ export interface MyPageData {
     tendencyResult: string;
     createdAt: string;
   } | null;
-  tradeHistory?: TradeHistoryEntry[] | null;
+
+  account?: {
+    originalMoney: number;
+    cash: number;
+    haveStock: number;
+    totalReward: number;
+    totalAsset: number;
+    returnPct: number | null;
+  };
+  tradeHistory?: TradeHistoryEntry[];
 }
 
 export interface PageResponseDto<T> {
