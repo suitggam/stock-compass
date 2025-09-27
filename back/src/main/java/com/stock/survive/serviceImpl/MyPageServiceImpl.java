@@ -1,10 +1,14 @@
 package com.stock.survive.serviceImpl;
 
+import com.stock.survive.dto.AccountSummaryDto;
 import com.stock.survive.dto.MyPageDto;
+import com.stock.survive.dto.TradeHistoryDto;
 import com.stock.survive.entity.GameResult;
 import com.stock.survive.entity.OauthIdentity;
 import com.stock.survive.entity.User;
+import com.stock.survive.repository.AccountRepository;
 import com.stock.survive.repository.GameResultRepository;
+import com.stock.survive.repository.TradeHistoryRepository;
 import com.stock.survive.repository.UserRepository;
 import com.stock.survive.service.MyPageService;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -25,6 +30,8 @@ public class MyPageServiceImpl implements MyPageService {
 
     private final UserRepository userRepository;
     private final GameResultRepository gameResultRepository;
+    private final TradeHistoryRepository tradeHistoryRepository;
+    private final AccountRepository accountRepository;
 
     @Override
     public MyPageDto getMyPage(Long userId) {
@@ -37,9 +44,15 @@ public class MyPageServiceImpl implements MyPageService {
                 .map(si -> new MyPageDto.FavoriteItemDto(si.getItemNo(), si.getCompanyName(), si.getTicker()))
                 .toList();
 
-        Optional<GameResult> GR = gameResultRepository.findTopByUserNoOrderByCreatedAtDesc(userId);
+        Optional<GameResult> result = gameResultRepository.findTopByUserNoOrderByCreatedAtDesc(userId);
 
-        return MyPageDto.ofWithFavAndGameResult(u, avatar, favs, GR);
+        List<TradeHistoryDto> history = tradeHistoryRepository.findAllByUser(userId);
+
+        var account = accountRepository.findByUserId(userId)
+                .map(AccountSummaryDto::from)
+                .orElse(null);
+
+        return MyPageDto.ofFull(u, avatar, favs, result, history, account);
     }
 
     @Override

@@ -1,3 +1,14 @@
+type TradeType = "BUY" | "SELL";
+
+export interface TradeHistoryEntry {
+  itemNo: number;
+  companyName: string;
+  tradeType: TradeType;
+  price: number;
+  volume: number;
+  createdAt: string;
+  totalPrice?: number;
+}
 export interface MyPageData {
   userNo: number;
   socialEmail: string;
@@ -9,17 +20,25 @@ export interface MyPageData {
   gameResult?: {
     gameNo: number;
     userNo: number;
-    tendency_i: number;
-    tendency_e: number;
-    tendency_s: number;
-    tendency_n: number;
-    tendency_f: number;
-    tendency_t: number;
-    tendency_j: number;
-    tendency_p: number;
+    tendencyI: number;
+    tendencyE: number;
+    tendencyS: number;
+    tendencyN: number;
+    tendencyF: number;
+    tendencyT: number;
+    tendencyJ: number;
+    tendencyP: number;
+    tendencyResult: string;
     createdAt: string;
   } | null;
-  mockInvestHistory?:
-    | { id: number; symbol: string; quantity: number; price: number; tradedAt: string }[]
-    | null;
+
+  account?: {
+    originalMoney: number;
+    cash: number;
+    haveStock: number;
+    totalReward: number;
+    totalAsset: number;
+    returnPct: number | null;
+  };
+  tradeHistory?: TradeHistoryEntry[];
 }

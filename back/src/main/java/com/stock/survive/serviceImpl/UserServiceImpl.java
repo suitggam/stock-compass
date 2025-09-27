@@ -1,9 +1,11 @@
 package com.stock.survive.serviceImpl;
 
 import com.stock.survive.dto.UserSummaryDto;
+import com.stock.survive.entity.GameResult;
 import com.stock.survive.entity.OauthIdentity;
 import com.stock.survive.entity.StockItems;
 import com.stock.survive.entity.User;
+import com.stock.survive.repository.GameResultRepository;
 import com.stock.survive.repository.StockItemRepository;
 import com.stock.survive.repository.UserRepository;
 import com.stock.survive.service.UserService;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -21,6 +24,7 @@ import java.util.Set;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final StockItemRepository stockItemRepository;
+    private final GameResultRepository gameResultRepository;
 
     @Override
     public UserSummaryDto changeNickname(Long userId, String raw) {
@@ -51,8 +55,8 @@ public class UserServiceImpl implements UserService {
     public void deleteMe(Long userId) {
         User u = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "USER_NOT_FOUND"));
+        int grDeleted = gameResultRepository.deleteByUserId(userId);
         userRepository.delete(u);
-        userRepository.flush();
     }
 
 
