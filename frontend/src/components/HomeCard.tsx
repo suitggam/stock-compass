@@ -15,7 +15,7 @@ function numberFormat(num: number) {
 }
 
 function formatMarketCap(marketCap: number) {
-  const inManWon = Math.floor(marketCap / 1000);
+  const inManWon = Math.floor(marketCap / 10000);
   return inManWon.toLocaleString();
 }
 

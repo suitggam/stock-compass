@@ -483,11 +483,12 @@ function TradeInfoPage() {
                 stockPrice={displayPrice}
                 userTrade={userTrade}
                 userHolding={userHolding}
-                setUserHolding={setUserHolding} // ✅ 추가
+                setUserHolding={setUserHolding}
                 onTrade={handleTrade}
                 onTradeSuccess={() => {
                   console.log("거래가 성공적으로 완료되었습니다.");
                 }}
+                marketOpen={marketOpen} // ✅ 여기에 추가
               />
             </div>
 

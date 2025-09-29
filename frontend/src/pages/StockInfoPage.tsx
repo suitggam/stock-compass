@@ -260,7 +260,6 @@ export default function StockInfoPage() {
     : new Date(new Date().setHours(15, 30, 0, 0)).toISOString();
 
   const pastPrice = filteredData[0]?.endPrice ?? displayPrice;
-
   return (
     <div className="min-h-screen bg-gradient-to-br py-10 px-6 from-slate-900 via-slate-800 to-slate-900">
       <div className="max-w-7xl mx-auto space-y-10">

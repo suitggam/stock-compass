@@ -31,4 +31,5 @@ type HistoryType = "BUY" | "SELL";
 export interface UserStockHoldingDto {
   ticker: string;
   quantity: number;
+  avgBuyPrice: number;
 }

@@ -8,4 +8,5 @@ import lombok.Data;
 public class UserStockHoldingDto {
     private String ticker;
     private int quantity; // 현재 보유 수량
+    private double avgBuyPrice;
 }

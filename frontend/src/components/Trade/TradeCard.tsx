@@ -11,6 +11,7 @@ interface TradeCardProps {
   onTrade?: (type: "BUY" | "SELL", amount: number) => void; // 로컬 상태 업데이트용
   onTradeSuccess?: () => void; // 거래 성공 시 추가 처리
   setUserHolding?: (holding: UserStockHoldingDto) => void; // 즉시 보유 수량 업데이트용
+  marketOpen: boolean; // 장 마감 체크
 }
 
 function TradeCard({
@@ -21,11 +22,22 @@ function TradeCard({
   onTrade,
   onTradeSuccess,
   setUserHolding,
+  marketOpen,
 }: TradeCardProps) {
   const [amount, setAmount] = useState<number>(0);
   const { loading, error, buyStock, sellStock, clearError } = useTrade();
 
+  const profitRate =
+    userHolding && userHolding.avgBuyPrice
+      ? ((stockPrice - userHolding.avgBuyPrice) / userHolding.avgBuyPrice) * 100
+      : 0;
+
   const handleBuy = async () => {
+    if (!marketOpen) {
+      alert("장이 마감되었습니다. 거래할 수 없습니다.");
+      return;
+    }
+
     if (amount <= 0) {
       alert("수량을 입력해주세요.");
       return;
@@ -50,11 +62,19 @@ function TradeCard({
           `매수 완료!\n종목: ${ticker}\n수량: ${amount}주\n총 금액: ${result.totalPrice.toLocaleString()}원`
         );
 
-        // 즉시 보유 수량 업데이트
         if (setUserHolding) {
+          const newQuantity = (userHolding?.quantity ?? 0) + amount;
+          const newAvgPrice =
+            userHolding && userHolding.avgBuyPrice
+              ? (userHolding.avgBuyPrice * (userHolding.quantity ?? 0) +
+                  stockPrice * amount) /
+                newQuantity
+              : stockPrice;
+
           setUserHolding({
             ticker,
-            quantity: (userHolding?.quantity ?? 0) + amount,
+            quantity: newQuantity,
+            avgBuyPrice: newAvgPrice,
           });
         }
 
@@ -69,6 +89,11 @@ function TradeCard({
   };
 
   const handleSell = async () => {
+    if (!marketOpen) {
+      alert("장이 마감되었습니다. 거래할 수 없습니다.");
+      return;
+    }
+
     if (amount <= 0) {
       alert("수량을 입력해주세요.");
       return;
@@ -92,11 +117,11 @@ function TradeCard({
           `매도 완료!\n종목: ${ticker}\n수량: ${amount}주\n총 금액: ${result.totalPrice.toLocaleString()}원`
         );
 
-        // 즉시 보유 수량 업데이트
         if (setUserHolding) {
           setUserHolding({
             ticker,
             quantity: (userHolding?.quantity ?? 0) - amount,
+            avgBuyPrice: userHolding?.avgBuyPrice ?? 0,
           });
         }
 
@@ -123,6 +148,13 @@ function TradeCard({
 
   return (
     <div className="bg-slate-800 text-white rounded-2xl shadow-lg p-6 space-y-6">
+      {/* 장 마감 안내 */}
+      {!marketOpen && (
+        <div className="bg-yellow-500/20 border border-yellow-400 rounded-lg p-3 text-red-500 text-center font-semibold mb-3">
+          장이 마감되었습니다.
+        </div>
+      )}
+
       {error && (
         <div className="bg-red-500/20 border border-red-500 rounded-lg p-3 text-red-300 text-sm">
           {error}
@@ -153,28 +185,14 @@ function TradeCard({
           <span className="font-semibold">{userHolding?.quantity ?? 0} 주</span>
         </div>
         <div className="flex justify-between">
-          <span>전체 손익률</span>
+          <span>종목별 손익률</span>
           <span
             className={`font-semibold ${
-              (userTrade.cash + userTrade.haveStock - userTrade.originalMoney) /
-                userTrade.originalMoney >=
-              0
-                ? "text-green-400"
-                : "text-red-400"
+              profitRate >= 0 ? "text-green-400" : "text-red-400"
             }`}
           >
-            {((userTrade.cash + userTrade.haveStock - userTrade.originalMoney) /
-              userTrade.originalMoney >
-            0
-              ? "+"
-              : "") +
-              (
-                (userTrade.cash +
-                  userTrade.haveStock -
-                  userTrade.originalMoney) /
-                userTrade.originalMoney
-              ).toFixed(2)}{" "}
-            %
+            {profitRate >= 0 ? "+" : ""}
+            {profitRate.toFixed(2)}%
           </span>
         </div>
       </div>
@@ -187,20 +205,20 @@ function TradeCard({
             className={`text-center ${inputColor} bg-slate-700 rounded py-1 px-5 border border-slate-600 focus:border-blue-500 focus:outline-none`}
             value={amount}
             onChange={handleChange}
-            disabled={loading}
+            disabled={loading || !marketOpen}
             placeholder="0"
           />
           <button
             className="w-10 bg-green-500 px-3 py-1 rounded text-white font-semibold hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={increase}
-            disabled={loading}
+            disabled={loading || !marketOpen}
           >
             +
           </button>
           <button
             className="w-10 bg-red-500 px-3 py-1 rounded text-white font-semibold hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={decrease}
-            disabled={loading}
+            disabled={loading || !marketOpen}
           >
             -
           </button>
@@ -214,14 +232,14 @@ function TradeCard({
           <button
             className="flex-1 bg-green-500 px-4 py-2 rounded-lg text-white font-semibold hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleBuy}
-            disabled={loading || amount <= 0}
+            disabled={loading || amount <= 0 || !marketOpen}
           >
             {loading ? "처리중..." : "매수"}
           </button>
           <button
             className="flex-1 bg-red-500 px-4 py-2 rounded-lg text-white font-semibold hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleSell}
-            disabled={loading || amount <= 0}
+            disabled={loading || amount <= 0 || !marketOpen}
           >
             {loading ? "처리중..." : "매도"}
           </button>
