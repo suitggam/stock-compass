@@ -29,14 +29,28 @@ public class AccountServiceImpl implements AccountService {
         List<TradeHistory> trades = tradeHistoryRepository.findByUserAndStockItem(userNo, stockItem.getItemNo());
 
         // 3. 현재 보유 수량 계산
-        int quantity = calculateHoldingQuantity(trades);
+        int quantity = 0;
+        double totalCost = 0.0; // 총 매입 금액
+        for (TradeHistory trade : trades) {
+            if (trade.getTradeType() == TradeType.BUY) {
+                quantity += trade.getVolume();
+                totalCost += trade.getPrice() * trade.getVolume();
+            } else if (trade.getTradeType() == TradeType.SELL) {
+                quantity -= trade.getVolume();
+                totalCost -= trade.getPrice() * trade.getVolume(); // 단순화, 평균 계산용
+            }
+        }
+
+        double avgBuyPrice = quantity > 0 ? totalCost / quantity : 0;
 
         // 4. DTO로 반환
         return UserStockHoldingDto.builder()
                 .ticker(ticker)
                 .quantity(quantity)
+                .avgBuyPrice(avgBuyPrice)
                 .build();
     }
+
 
     @Override
     public int calculateHoldingQuantity(List<TradeHistory> trades) {

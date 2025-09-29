@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router"; // react-router-dom 사용
 import HomeCard from "../components/HomeCard";
 import type {
   WebSocketRealtime,
@@ -14,18 +14,33 @@ import {
 
 function TradePage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // URL 쿼리에서 page 가져오기
+  const pageParam = searchParams.get("page");
+  const [page, setPage] = useState<number>(pageParam ? Number(pageParam) : 1);
+
+  const [size] = useState(21);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [backendStocks, setBackendStocks] = useState<BackendRealtime[]>([]);
+  const [endDayStocks, setEndDayStocks] = useState<EndDay[]>([]);
+  const [isMarketOpen, setIsMarketOpen] = useState(true);
   const [wsStocks, setWsStocks] = useState<Map<string, WebSocketRealtime>>(
     new Map()
   );
-  const [endDayStocks, setEndDayStocks] = useState<EndDay[]>([]);
-  const [isMarketOpen, setIsMarketOpen] = useState(true);
 
-  // 페이지네이션 상태
-  const [page, setPage] = useState(1);
-  const [size] = useState(21);
-  const [totalPages, setTotalPages] = useState(1);
+  // URL 쿼리와 page 상태 동기화
+  useEffect(() => {
+    const param = searchParams.get("page");
+    if (param && Number(param) !== page) {
+      setPage(Number(param));
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    setSearchParams({ page: String(page) });
+  }, [page, setSearchParams]);
 
   // 장 시간 확인 (09:00 ~ 15:30)
   useEffect(() => {
@@ -38,24 +53,21 @@ function TradePage() {
           (now.getHours() === 15 && now.getMinutes() < 30));
       setIsMarketOpen(marketOpen);
     };
-
     checkMarketOpen();
     const interval = setInterval(checkMarketOpen, 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // 백엔드 데이터 fetch
+  // 데이터 fetch
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (isMarketOpen) {
-          // 장중: 페이지별 데이터 slice
           const response: PageResponseDto<BackendRealtime> =
-            await getStockRealtimeWithPage(1, 200); // 전체 1000개 가져오기
+            await getStockRealtimeWithPage(1, 200);
           setBackendStocks(response.dtoList);
           setTotalPages(Math.ceil(response.dtoList.length / size));
         } else {
-          // 장마감: 페이지별 데이터 가져오기
           const response: PageResponseDto<EndDay> = await getEndDayWithPage(
             page,
             size
@@ -67,13 +79,10 @@ function TradePage() {
         console.error("❌ API 에러:", err);
       }
     };
-
     fetchData();
-    const interval = setInterval(fetchData, 60 * 1000);
-    return () => clearInterval(interval);
   }, [isMarketOpen, page, size]);
 
-  // WebSocket 연결 (시장 열렸을 때만)
+  // WebSocket (시장 열렸을 때만)
   useEffect(() => {
     if (!isMarketOpen) return;
 
@@ -88,22 +97,13 @@ function TradePage() {
         const data: WebSocketRealtime[] = JSON.parse(event.data);
         setWsStocks((prev) => {
           const updated = new Map(prev);
-          data.forEach((d) => {
-            updated.set(d.ticker, {
-              ticker: d.ticker,
-              price: d.price,
-              rate: d.rate,
-            });
-          });
+          data.forEach((d) => updated.set(d.ticker, d));
           return updated;
         });
       } catch (err) {
         console.error("❌ WS 데이터 파싱 오류:", err, event.data);
       }
     };
-
-    ws.onclose = () => console.log("❌ WS 연결 종료");
-    ws.onerror = (err) => console.error("❌ WS 에러", err);
 
     return () => ws.close();
   }, [isMarketOpen]);
@@ -118,7 +118,7 @@ function TradePage() {
           volume: b.volume,
           marketCap: b.marketCap,
           categoryName: b.categoryName,
-          price: wsItem ? Number(wsItem.price) : 0, // WS 없으면 0
+          price: wsItem ? Number(wsItem.price) : 0,
           rate: wsItem ? wsItem.rate : 0,
         };
       })
@@ -128,7 +128,7 @@ function TradePage() {
         volume: e.volume,
         marketCap: e.marketCap,
         categoryName: e.categoryName,
-        price: e.endPrice, // 종가
+        price: e.endPrice,
         rate: e.rate,
       }));
 
@@ -145,7 +145,9 @@ function TradePage() {
             volume={stock.volume}
             marketCap={stock.marketCap}
             categoryName={stock.categoryName}
-            onCardClick={() => navigate(`/trade/${stock.ticker}`)}
+            onCardClick={() =>
+              navigate(`/trade/${stock.ticker}?fromPage=${page}`)
+            }
           />
         ))}
       </div>
@@ -185,4 +187,5 @@ function TradePage() {
     </div>
   );
 }
+
 export default TradePage;

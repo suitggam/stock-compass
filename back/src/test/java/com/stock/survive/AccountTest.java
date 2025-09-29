@@ -22,6 +22,7 @@ public class AccountTest {
         UserStockHoldingDto userStockHoldingDto = accountService.getUserStockHolding(userNo, ticker);
         log.info(userStockHoldingDto.getTicker());
         log.info(userStockHoldingDto.getQuantity());
+        log.info(userStockHoldingDto.getAvgBuyPrice());
 
 
     }
