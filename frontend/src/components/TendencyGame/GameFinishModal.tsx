@@ -52,16 +52,6 @@ export default function GameFinishModal({ isOpen, onClose, onGoHome, result }: G
               {formatPercentage(result.totalYield)}
             </span>
           </div>
-          <div className="border-t border-slate-200 dark:border-slate-600 pt-3">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-slate-600 dark:text-slate-300 text-sm font-medium">투자 성향</span>
-              <span className="font-bold text-lg text-blue-600 dark:text-blue-400">{result.tendencyType}</span>
-            </div>
-            <div className="text-center">
-              <span className="text-slate-600 dark:text-slate-300 text-sm">추천 전략</span>
-              <p className="text-black dark:text-white font-medium mt-1">{result.recommendation}</p>
-            </div>
-          </div>
         </div>
 
         <div className="flex gap-3">
