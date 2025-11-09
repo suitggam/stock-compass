@@ -40,8 +40,8 @@ services:
       - SPARK_WORKER_WEBUI_PORT=8081
       - JAVA_HOME=/opt/java/openjdk
       - SPARK_HOME=/opt/spark
-      - AWS_ACCESS_KEY_ID=AKIASUXKGFEYEOSHALWI
-      - AWS_SECRET_ACCESS_KEY=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
+      - AWS_ACCESS_KEY_ID=
+      - AWS_SECRET_ACCESS_KEY=
       - AWS_DEFAULT_REGION=ap-northeast-2
       - S3_BUCKET=cheesecrust-spark-data-bucket
       - S3_PREFIX=outputs/pagerank
